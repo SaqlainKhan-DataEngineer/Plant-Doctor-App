@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. PREMIUM ANIMATED CSS ---
+# --- 2. PREMIUM ANIMATED CSS (ULTRA-POLISHED) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -22,31 +22,14 @@ st.markdown("""
     }
     
     /* --- ANIMATIONS --- */
-    @keyframes gradientBG {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
     @keyframes slideUp {
         from { opacity: 0; transform: translateY(50px); }
         to { opacity: 1; transform: translateY(0); }
     }
-    
-    /* --- SUPER ANIMATION (FLOAT + GLOW COMBINED) --- */
-    /* Ye animation ab rukegi nahi */
     @keyframes float-and-glow {
-        0% { 
-            transform: translateY(0px); 
-            box-shadow: 0 0 10px rgba(255,255,255,0.1); 
-        }
-        50% { 
-            transform: translateY(-12px); /* Upar jayega */
-            box-shadow: 0 0 40px rgba(16, 185, 129, 0.6), 0 0 20px rgba(255,255,255,0.4); /* Chamak marega */
-        }
-        100% { 
-            transform: translateY(0px); 
-            box-shadow: 0 0 10px rgba(255,255,255,0.1); 
-        }
+        0% { transform: translateY(0px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
+        50% { transform: translateY(-12px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); }
+        100% { transform: translateY(0px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
     }
 
     /* --- SIDEBAR STYLING --- */
@@ -90,6 +73,11 @@ st.markdown("""
          box-shadow: -5px 0 20px rgba(52, 211, 153, 0.2);
     }
 
+    /* --- MAIN BACKGROUND (Subtle Mesh) --- */
+    .stApp {
+        background: radial-gradient(circle at 10% 20%, rgb(236, 253, 245) 0%, rgb(255, 255, 255) 90%);
+    }
+
     /* --- HERO SECTION --- */
     .hero-container {
         text-align: center;
@@ -111,6 +99,11 @@ st.markdown("""
         margin-bottom: 10px;
         letter-spacing: -2px;
         animation: slideUp 0.8s ease-out;
+    }
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
     
     /* --- GLASS CARDS --- */
@@ -153,6 +146,7 @@ st.markdown("""
         transition: transform 0.3s;
     }
     
+    /* Result Box & Treatment */
     .result-box {
         padding: 30px;
         border-radius: 25px;
@@ -176,8 +170,7 @@ def load_model():
 
 model, processor = load_model()
 
-# --- 4. SIDEBAR (Fixed & Glowing) ---
-# Yahan hum wo 'super animation' use kar rahe hain
+# --- 4. SIDEBAR ---
 st.sidebar.markdown("""
     <div style="display: flex; justify-content: center; margin-bottom: 20px; margin-top: 10px;">
         <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png" 
@@ -271,9 +264,23 @@ elif nav == "🥔  Potato (Aloo)":
             st.image(image, caption="Uploaded Photo", use_column_width=True)
         
         with col2:
-            with st.spinner("🤖 AI analyzing..."):
-                time.sleep(1.5)
+            # --- IMPROVEMENT: FAKE LOADING ANIMATION ---
+            # Ye user ko dikhane ke liye ke AI bohot kaam kar raha hai
+            my_bar = st.progress(0, text="Starting engine...")
             
+            status_text = st.empty()
+            
+            steps = ["🔍 Scanning image...", "🧬 Extracting features...", "📂 Comparing with database...", "✅ Finalizing result..."]
+            
+            for i, step in enumerate(steps):
+                status_text.text(step)
+                my_bar.progress((i + 1) * 25)
+                time.sleep(0.4) # Artificial delay for effect
+                
+            status_text.empty()
+            my_bar.empty()
+            
+            # Prediction Logic
             inputs = processor(images=image, return_tensors="pt")
             with torch.no_grad():
                 outputs = model(**inputs)
@@ -308,9 +315,12 @@ elif nav == "🥔  Potato (Aloo)":
                     <div class='result-box' style='background: {bg_color}; border: 2px solid {border_color};'>
                         <h2 style='color: {border_color}; margin:0; font-weight: 800;'>{clean_label}</h2>
                         <h4 style='color: {border_color}; margin-top: 10px; font-weight: 600;'>{status_msg}</h4>
-                        <p style='margin-top: 5px; color: #555; font-weight: 500;'>Confidence: {conf:.1f}%</p>
                     </div>
                 """, unsafe_allow_html=True)
+                
+                # --- IMPROVEMENT: VISUAL PROGRESS BAR ---
+                st.write(f"**Confidence Score:** {conf:.1f}%")
+                st.progress(int(conf)) # Green bar dikhayega
 
                 if is_healthy:
                     st.balloons()
@@ -351,4 +361,5 @@ elif nav == "🥔  Potato (Aloo)":
                     st.info("Is result ke liye filhal koi makhsoos ilaj available nahi hai.")
 
 elif nav in ["🍅  Tomato Check", "🌽  Corn Field"]:
-    st.info("🚧 Coming Soon in few days...")
+    st.info("🚧 Coming Soon in few days...") 
+    
