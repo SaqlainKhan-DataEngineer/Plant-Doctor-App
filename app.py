@@ -105,25 +105,24 @@ elif nav == "🥔 Potato (Aloo)":
             clean_label = label.replace("_", " ").title()
             conf = torch.softmax(logits, dim=1)[0][idx].item() * 100
             
-            # --- GUARDRAIL CHECK (Yahan change kiya hai) ---
+            # --- GUARDRAIL CHECK ---
             if conf < 90:
-                # Agar confidence 90% se kam hai to ye Error dikhao
                 st.error("⚠️ **Tasveer Pehchani Nahi Ja Rahi!**")
                 st.warning(f"""
                 **AI Confuse hai (Confidence: {conf:.1f}%):**
                 1. Lagta hai ye **Aloo (Potato)** ka patta nahi hai.
                 2. Ya tasveer bohat dhundli (blurry) hai.
-                
-                Meherbani kar ke saaf tasveer upload karein jo sirf Potato Leaf ki ho.
                 """)
             else:
-                # --- Agar confidence 90% se zyada hai tabhi Result dikhao ---
-                
-                # Logic for Status Colors
-                if "healthy" in clean_label.lower():
+                # --- LOGIC FIX HERE (Typo Handle kiya hai) ---
+                # Hum check kar rahe hain ke agar label mein "healthy" YA "healty" (ghalat spelling) ho
+                is_healthy = "healthy" in clean_label.lower() or "healty" in clean_label.lower()
+
+                if is_healthy:
                     bg_color = "#e8f5e9" # Light Green
                     border_color = "#2e7d32"
-                    status_msg = "✅ Fasal Sehatmand Hai"
+                    status_msg = "✅ Sab Theek Hai (All OK)"
+                    clean_label = "Healthy (Sehatmand)" # Label ko bhi theek dikhayein
                 else:
                     bg_color = "#ffebee" # Light Red
                     border_color = "#c62828"
@@ -139,7 +138,7 @@ elif nav == "🥔 Potato (Aloo)":
                 """, unsafe_allow_html=True)
 
                 # Display Treatments
-                if "healthy" in clean_label.lower():
+                if is_healthy:
                     st.balloons()
                     st.markdown("""
                     <div class='treatment-card' style='border-left: 5px solid #4caf50;'>
