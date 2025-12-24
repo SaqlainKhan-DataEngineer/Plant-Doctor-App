@@ -12,9 +12,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. PREMIUM ANIMATED CSS (ALIGNMENT FIXED) ---
+# --- 2. PREMIUM ANIMATED CSS (ULTRA-POLISHED) ---
 st.markdown("""
     <style>
+    /* Import Modern Font */
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
     
     html, body, [class*="css"] {
@@ -27,67 +28,73 @@ st.markdown("""
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
     }
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+    }
     @keyframes slideUp {
         from { opacity: 0; transform: translateY(50px); }
         to { opacity: 1; transform: translateY(0); }
     }
-    /* New Pulse for Image Icon */
-    @keyframes pulse-img {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); filter: brightness(1.2); }
-        100% { transform: scale(1); }
+    /* New Premium Pulse & Glow Animation for Sidebar Logo */
+    @keyframes glow-pulse {
+        0% { filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.4)) brightness(1); transform: scale(1); }
+        50% { filter: drop-shadow(0 0 25px rgba(16, 185, 129, 0.8)) brightness(1.1); transform: scale(1.02); }
+        100% { filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.4)) brightness(1); transform: scale(1); }
     }
 
-    /* --- SIDEBAR STYLING --- */
+    /* --- SIDEBAR STYLING (Dark Luxury Theme) --- */
     [data-testid="stSidebar"] {
-        background-image: linear-gradient(180deg, #022c22 0%, #0d9488 100%);
+        background-image: linear-gradient(180deg, #022c22 0%, #0f766e 100%); /* Deeper, richer gradient */
         border-right: none;
     }
     [data-testid="stSidebar"] * {
         color: #f0fdf4 !important;
     }
 
-    /* New Professional Sidebar Logo Styling */
+    /* --- NEW PREMIUM LOGO STYLING --- */
     [data-testid="stSidebar"] img {
-        margin-bottom: 20px;
-        animation: pulse-img 3s infinite ease-in-out;
+        margin-bottom: 10px;
+        /* Combination of floating and glowing */
+        animation: float 4s ease-in-out infinite, glow-pulse 3s infinite ease-in-out;
         display: block;
         margin-left: auto;
         margin-right: auto;
-        width: 120px !important; /* Fixed width for logo */
+        width: 150px !important; /* Slightly bigger for impact */
     }
     
-    /* --- NAVIGATION BUTTONS ALIGNMENT FIX --- */
-    /* This forces the radio options to be perfectly aligned */
+    /* Navigation Buttons Styling */
     [data-testid="stSidebar"] .stRadio > div[role="radiogroup"] {
         align-items: center;
         justify-content: center;
     }
-
-    /* Styling the individual buttons */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
-        display: flex; /* Makes content align in a row */
-        align-items: center; /* Vertical center */
-        width: 100%; /* Take full width */
-        background: rgba(255, 255, 255, 0.08);
+        display: flex;
+        align-items: center;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05); /* More subtle background */
         padding: 12px 15px;
-        border-radius: 12px;
-        margin-bottom: 10px !important;
-        border: 1px solid rgba(255,255,255,0.1);
-        transition: all 0.3s;
-        text-align: left; /* Ensures text starts from left */
+        border-radius: 15px; /*Softer corners */
+        margin-bottom: 12px !important;
+        border: 1px solid rgba(255,255,255,0.05);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother transition */
+        text-align: left;
+        font-weight: 600;
+        letter-spacing: 0.5px;
     }
-    /* Hover Effect */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
-        background: rgba(255, 255, 255, 0.2);
-        transform: translateX(5px);
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateX(8px);
+        box-shadow: -5px 0 15px rgba(16, 185, 129, 0.2);
     }
-    /* Selected Button Effect */
+    /* Selected Button State */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
-         background: rgba(16, 185, 129, 0.3) !important; /* Brighter Green */
-         border: 1px solid #10b981 !important;
-         font-weight: 700;
-         transform: translateX(5px);
+         background: linear-gradient(90deg, rgba(16, 185, 129, 0.3), transparent) !important;
+         border-left: 4px solid #34d399 !important; /* Brighter accent */
+         font-weight: 800;
+         transform: translateX(8px);
+         box-shadow: -5px 0 20px rgba(52, 211, 153, 0.3);
     }
 
     /* --- HERO SECTION --- */
@@ -102,7 +109,6 @@ st.markdown("""
         margin-bottom: 40px;
         border: 1px solid rgba(255,255,255,0.5);
     }
-    
     .hero-title {
         font-weight: 900;
         font-size: 4rem;
@@ -113,22 +119,16 @@ st.markdown("""
         letter-spacing: -2px;
         animation: slideUp 0.8s ease-out;
     }
-    .hero-subtitle {
-        color: #065f46;
-        font-size: 1.5rem;
-        font-weight: 500;
-        animation: slideUp 1s ease-out;
-    }
     
     /* --- GLASS CARDS --- */
     .feature-card {
-        background: rgba(255, 255, 255, 0.8);
-        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.7); /* More transparency */
+        backdrop-filter: blur(15px); /* Stronger blur */
         padding: 30px;
         border-radius: 25px;
         text-align: center;
         transition: all 0.4s ease;
-        border: 1px solid rgba(255,255,255,0.6);
+        border: 1px solid rgba(255,255,255,0.4);
         box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         min-height: 320px;
         display: flex;
@@ -139,29 +139,25 @@ st.markdown("""
     }
     .feature-card:hover {
         transform: translateY(-15px) scale(1.03);
-        box-shadow: 0 25px 50px rgba(16, 185, 129, 0.2);
-        border-color: #10b981;
+        box-shadow: 0 25px 50px rgba(16, 185, 129, 0.25);
+        border-color: #34d399;
     }
     .feature-icon {
         font-size: 3.5rem;
         margin-bottom: 20px;
-        background: #ecfdf5;
+        background: linear-gradient(135deg, #ecfdf5, #d1fae5);
         width: 100px;
         height: 100px;
         line-height: 100px;
         border-radius: 50%;
         color: #059669;
-        box-shadow: 0 10px 20px rgba(16, 185, 129, 0.15);
-    }
-
-    img {
-        border-radius: 25px;
-        box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
     }
     
+    /* Result Box styling */
     .result-box {
         padding: 30px;
-        border-radius: 20px;
+        border-radius: 25px;
         text-align: center;
         margin-bottom: 25px;
         box-shadow: 0 15px 30px rgba(0,0,0,0.08);
@@ -182,13 +178,14 @@ def load_model():
 
 model, processor = load_model()
 
-# --- 4. SIDEBAR ---
-# New Professional Image Icon
-st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3022/3022938.png", use_column_width=False)
-st.sidebar.markdown("<h1 style='text-align: center; color: white; font-weight: 800; margin-top: 10px; font-size: 2rem;'>Plant Doctor</h1>", unsafe_allow_html=True)
+# --- 4. SIDEBAR (The New Premium Look) ---
+# High-Quality 3D Sprout Image with Glow Effect
+st.sidebar.image("https://cdn3d.iconscout.com/3d/premium/thumb/growing-plant-5356423-4493352.png", use_column_width=False)
+st.sidebar.markdown("<h1 style='text-align: center; color: white; font-weight: 900; margin-top: 5px; font-size: 2.2rem; letter-spacing: -1px;'>Plant Doctor</h1>", unsafe_allow_html=True)
+st.sidebar.markdown("<p style='text-align: center; font-size: 0.9rem; opacity: 0.8; margin-bottom: 25px; font-weight: 400;'>AI Powered Solutions</p>", unsafe_allow_html=True)
 st.sidebar.write("---")
 
-# Navigation - Icons removed from text to improve alignment
+# Navigation Buttons
 nav = st.sidebar.radio("", ["🏠  Home Page", "🥔  Potato (Aloo)", "🍅  Tomato Check", "🌽  Corn Field"])
 
 st.sidebar.write("---")
@@ -208,16 +205,16 @@ if nav == "🏠  Home Page":
     st.markdown("""
     <div class="hero-container">
         <h1 class="hero-title">Smart Farming Assistant</h1>
-        <p class="hero-subtitle">Apni fasal ko bachayein, Jadid <b>AI Technology</b> ke sath.</p>
+        <p style="color: #065f46; font-size: 1.3rem;">Apni fasal ko bachayein, Jadid <b>AI Technology</b> ke sath.</p>
     </div>
     """, unsafe_allow_html=True)
     
-    st.image("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200", use_column_width=True)
+    st.image("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200", use_column_width=True, style="border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.2);")
     
     st.write("") 
     st.write("") 
 
-    st.markdown("<h2 style='text-align: center; color: #064e3b; margin-bottom: 50px; font-weight: 800; font-size: 2.5rem;'>Why Choose Us?</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #064e3b; margin-bottom: 50px; font-weight: 900; font-size: 2.8rem;'>Why Choose Us?</h2>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
     
@@ -225,8 +222,8 @@ if nav == "🏠  Home Page":
         st.markdown("""
         <div class="feature-card">
             <div class="feature-icon">📸</div>
-            <h3 style="color: #064e3b;">Instant Scan</h3>
-            <p style="color: #555;">Bas tasveer upload karein aur <b>1 second</b> mein nateeja payein.</p>
+            <h3 style="color: #064e3b; font-weight: 800;">Instant Scan</h3>
+            <p style="color: #555; font-weight: 600;">Bas tasveer upload karein aur <b>1 second</b> mein nateeja payein.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -234,8 +231,8 @@ if nav == "🏠  Home Page":
         st.markdown("""
         <div class="feature-card">
             <div class="feature-icon">🔬</div>
-            <h3 style="color: #064e3b;">98% Accuracy</h3>
-            <p style="color: #555;">Hamara AI model hazaron tasveeron par train kiya gaya hai.</p>
+            <h3 style="color: #064e3b; font-weight: 800;">98% Accuracy</h3>
+            <p style="color: #555; font-weight: 600;">Hamara AI model hazaron tasveeron par train kiya gaya hai.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -243,8 +240,8 @@ if nav == "🏠  Home Page":
         st.markdown("""
         <div class="feature-card">
             <div class="feature-icon">💊</div>
-            <h3 style="color: #064e3b;">Expert Cure</h3>
-            <p style="color: #555;">Bimari ke hisaab se behtareen <b>dawayi aur ilaj</b> janlein.</p>
+            <h3 style="color: #064e3b; font-weight: 800;">Expert Cure</h3>
+            <p style="color: #555; font-weight: 600;">Bimari ke hisaab se behtareen <b>dawayi aur ilaj</b> janlein.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -266,7 +263,7 @@ elif nav == "🥔  Potato (Aloo)":
         
         with col1:
             image = Image.open(uploaded_file).convert('RGB')
-            st.image(image, caption="Uploaded Photo", use_column_width=True)
+            st.image(image, caption="Uploaded Photo", use_column_width=True, style="border-radius: 20px;")
         
         with col2:
             with st.spinner("🤖 AI analyzing..."):
@@ -304,9 +301,9 @@ elif nav == "🥔  Potato (Aloo)":
 
                 st.markdown(f"""
                     <div class='result-box' style='background: {bg_color}; border: 2px solid {border_color};'>
-                        <h2 style='color: {border_color}; margin:0;'>{clean_label}</h2>
-                        <h4 style='color: {border_color}; margin-top: 10px;'>{status_msg}</h4>
-                        <p style='margin-top: 5px; color: #555;'>Confidence: {conf:.1f}%</p>
+                        <h2 style='color: {border_color}; margin:0; font-weight: 800;'>{clean_label}</h2>
+                        <h4 style='color: {border_color}; margin-top: 10px; font-weight: 600;'>{status_msg}</h4>
+                        <p style='margin-top: 5px; color: #555; font-weight: 500;'>Confidence: {conf:.1f}%</p>
                     </div>
                 """, unsafe_allow_html=True)
 
@@ -314,9 +311,9 @@ elif nav == "🥔  Potato (Aloo)":
                     st.balloons()
                     st.markdown("""
                     <div class='result-box' style='background: white; border-left: 5px solid #059669; text-align: left;'>
-                        <h3 style='color: #059669;'>🎉 Mubarak Ho!</h3>
-                        <p>Aapki fasal bilkul theek hai. Hifazat ke liye ye karein:</p>
-                        <ul>
+                        <h3 style='color: #059669; font-weight: 800;'>🎉 Mubarak Ho!</h3>
+                        <p style="font-weight: 600;">Aapki fasal bilkul theek hai. Hifazat ke liye ye karein:</p>
+                        <ul style="font-weight: 500;">
                             <li>💧 <b>Pani:</b> Waqt par pani dein.</li>
                             <li>👀 <b>Nigrani:</b> Rozana pattay check karein.</li>
                         </ul>
@@ -326,8 +323,8 @@ elif nav == "🥔  Potato (Aloo)":
                 elif "late" in clean_label.lower():
                     st.markdown("""
                     <div class='result-box' style='background: white; border-left: 5px solid #dc2626; text-align: left;'>
-                        <h3 style='color: #dc2626;'>💊 Late Blight Ka Ilaj</h3>
-                        <ul>
+                        <h3 style='color: #dc2626; font-weight: 800;'>💊 Late Blight Ka Ilaj</h3>
+                        <ul style="font-weight: 500;">
                             <li><b>Chemical:</b> Metalaxyl + Mancozeb (2.5g/liter) spray karein.</li>
                             <li><b>Schedule:</b> Har 7-10 din baad spray dohrayein.</li>
                         </ul>
@@ -337,8 +334,8 @@ elif nav == "🥔  Potato (Aloo)":
                 elif "early" in clean_label.lower():
                     st.markdown("""
                     <div class='result-box' style='background: white; border-left: 5px solid #d97706; text-align: left;'>
-                        <h3 style='color: #d97706;'>💊 Early Blight Ka Ilaj</h3>
-                        <ul>
+                        <h3 style='color: #d97706; font-weight: 800;'>💊 Early Blight Ka Ilaj</h3>
+                        <ul style="font-weight: 500;">
                             <li><b>Chemical:</b> Chlorothalonil ya Azoxystrobin spray karein.</li>
                             <li><b>Organic:</b> Neem Oil ka spray bihtareen hai.</li>
                         </ul>
