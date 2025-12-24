@@ -12,17 +12,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ULTRA PREMIUM CSS (ADAPTIVE DIAMOND WIND) ---
+# --- 2. THE ULTIMATE CSS (CLAUDE VISUALS + KIMI SMOOTHNESS) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Outfit', sans-serif;
+        scroll-behavior: smooth; /* Kimi's Smooth Scroll */
     }
 
-    /* --- 1. BACKGROUND PARTICLES (EMERALD WIND) --- */
-    /* Ab hum White ki jagah Greenish shades use karenge jo Light Mode par bhi dikhein */
+    /* --- 1. BACKGROUND PARTICLES (CLAUDE'S DIAMOND WIND - HIGH VISIBILITY) --- */
     .stApp::before {
         content: "";
         position: fixed;
@@ -30,29 +30,17 @@ st.markdown("""
         left: -50%;
         width: 200%;
         height: 200%;
-        
-        /* Emerald & Dark Green Gradients (Visible on White & Black) */
         background-image:
-            /* Darker Green (Visible on Light Mode) */
             radial-gradient(circle at 20px 30px, rgba(4, 120, 87, 0.4) 0px, transparent 3px),
-            /* Bright Emerald (Glowing on Dark Mode) */
             radial-gradient(circle at 40px 70px, rgba(16, 185, 129, 0.5) 0px, transparent 3px),
-            /* Medium Green */
             radial-gradient(circle at 50px 160px, rgba(5, 150, 105, 0.4) 0px, transparent 3px),
-            /* Small Sparkle */
             radial-gradient(circle at 90px 40px, rgba(52, 211, 153, 0.6) 0px, transparent 2px),
-            /* Deep Jungle Green */
-            radial-gradient(circle at 130px 80px, rgba(6, 78, 59, 0.5) 0px, transparent 3px),
-            /* Another Emerald */
-            radial-gradient(circle at 160px 120px, rgba(16, 185, 129, 0.5) 0px, transparent 3px);
-            
+            radial-gradient(circle at 130px 80px, rgba(6, 78, 59, 0.5) 0px, transparent 3px);
         background-repeat: repeat;
         background-size: 200px 200px;
-        
-        /* Diagonal Movement */
-        animation: diamond-wind 25s linear infinite;
+        animation: diamond-wind 30s linear infinite;
         pointer-events: none;
-        z-index: 99;
+        z-index: 0;
     }
 
     @keyframes diamond-wind {
@@ -60,27 +48,81 @@ st.markdown("""
         100% { transform: translateY(100px) translateX(-100px); } 
     }
 
-    /* --- 2. ANIMATIONS --- */
-    @keyframes slideUp {
-        from { opacity: 0; transform: translateY(40px); }
+    /* --- 2. KIMI'S FADE-IN ANIMATION (Smooth Entry) --- */
+    .stApp > div > div > div > div > div[class*="stMarkdown"],
+    .stApp > div > div > div > div > div[data-testid="stImage"] {
+        animation: fadeInUp 0.8s ease-out backwards;
+    }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes float-and-glow {
-        0% { transform: translateY(0px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
-        50% { transform: translateY(-12px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); }
-        100% { transform: translateY(0px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
+
+    /* --- 3. HERO & CARDS STYLING --- */
+    .hero-container {
+        text-align: center;
+        padding: 60px 20px;
+        border-radius: 30px;
+        background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+        margin-bottom: 40px;
+        border: 1px solid rgba(255,255,255,0.6);
+        position: relative;
+        z-index: 1;
     }
-    @keyframes subtlePulse {
-        0%, 100% { filter: brightness(1); }
-        50% { filter: brightness(1.05); }
-    }
+    
     @keyframes gradientBG {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
     }
 
-    /* --- 3. SIDEBAR STYLING --- */
+    /* 3D Floating Cards */
+    .feature-card {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(20px);
+        padding: 30px;
+        border-radius: 25px;
+        text-align: center;
+        border: 1px solid rgba(255,255,255,0.5);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.07);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        transform-style: preserve-3d;
+        transition: transform 0.4s ease, box-shadow 0.4s ease;
+        position: relative;
+        z-index: 1;
+    }
+    .feature-card:hover {
+        transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateY(-10px);
+        box-shadow: 0 25px 50px rgba(16, 185, 129, 0.25);
+        border-color: #34d399;
+    }
+    
+    /* CTA Button (Start Diagnosis) */
+    .cta-button {
+        display: inline-block;
+        background: linear-gradient(90deg, #059669, #10b981);
+        color: white !important;
+        padding: 15px 40px;
+        border-radius: 50px;
+        font-weight: 700;
+        text-decoration: none;
+        box-shadow: 0 10px 25px rgba(16,185,129,0.4);
+        transition: all 0.3s;
+        margin-top: 20px;
+    }
+    .cta-button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 15px 35px rgba(16,185,129,0.6);
+    }
+
+    /* --- 4. SIDEBAR STYLING --- */
     [data-testid="stSidebar"] {
         background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%);
         border-right: none;
@@ -89,26 +131,21 @@ st.markdown("""
         color: #ecfdf5 !important;
     }
     
-    /* Navigation Buttons */
-    [data-testid="stSidebar"] .stRadio > div[role="radiogroup"] {
-        align-items: center;
-        justify-content: center;
+    /* Sidebar Logo Animation */
+    @keyframes float-and-glow {
+        0% { transform: translateY(0px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
+        50% { transform: translateY(-10px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); }
+        100% { transform: translateY(0px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
     }
+
+    /* Navigation Buttons */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
-        display: flex;
-        align-items: center;
-        width: 100%;
         background: rgba(255, 255, 255, 0.05);
         padding: 12px 15px;
         border-radius: 12px;
         margin-bottom: 10px !important;
         border: 1px solid rgba(255,255,255,0.05);
         transition: all 0.3s;
-        text-align: left;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        z-index: 100;
-        position: relative;
     }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
         background: rgba(255, 255, 255, 0.15);
@@ -120,89 +157,14 @@ st.markdown("""
          border-left: 5px solid #34d399 !important;
          font-weight: 800;
          transform: translateX(5px);
-         box-shadow: -5px 0 20px rgba(52, 211, 153, 0.2);
-    }
-
-    /* --- 4. HERO SECTION --- */
-    .hero-container {
-        text-align: center;
-        padding: 60px 20px;
-        border-radius: 30px;
-        background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
-        background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite, subtlePulse 8s ease-in-out infinite, slideUp 0.8s ease-out;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.1);
-        margin-bottom: 40px;
-        border: 1px solid rgba(255,255,255,0.6);
-        position: relative;
-        z-index: 10;
-    }
-    .hero-title {
-        font-weight: 900;
-        font-size: 4rem;
-        background: -webkit-linear-gradient(#064e3b, #059669);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 10px;
-        letter-spacing: -2px;
-    }
-    @media (min-width: 1400px) {
-        .hero-title { font-size: 5rem; letter-spacing: -3px; }
-    }
-
-    /* --- 5. 3D FLOATING CARDS --- */
-    .feature-card {
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        padding: 30px;
-        border-radius: 25px;
-        text-align: center;
-        border: 1px solid rgba(255,255,255,0.5);
-        box-shadow: 0 8px 32px rgba(0,0,0,0.07);
-        min-height: 320px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        transform-style: preserve-3d;
-        transition: transform 0.4s ease, box-shadow 0.4s ease;
-        animation: slideUp 1s ease-out 0.2s backwards;
-        position: relative;
-        z-index: 10;
-    }
-    .feature-card:hover {
-        transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateY(-15px);
-        box-shadow: 0 25px 50px rgba(16, 185, 129, 0.25);
-        border-color: #34d399;
-    }
-    .feature-icon {
-        font-size: 3.5rem;
-        margin-bottom: 20px;
-        background: linear-gradient(135deg, #ecfdf5, #d1fae5);
-        width: 100px;
-        height: 100px;
-        line-height: 100px;
-        border-radius: 50%;
-        color: #059669;
-        box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
-    }
-    
-    img {
-        border-radius: 25px;
-        box-shadow: 0 15px 40px rgba(0,0,0,0.15);
-        transition: transform 0.3s;
-        animation: slideUp 1s ease-out;
     }
     
     .result-box {
         padding: 30px;
         border-radius: 25px;
         text-align: center;
-        margin-bottom: 25px;
-        backdrop-filter: blur(20px);
+        background: rgba(255,255,255,0.9);
         box-shadow: 0 15px 30px rgba(0,0,0,0.08);
-        animation: slideUp 0.5s ease-out;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -250,51 +212,90 @@ st.sidebar.info("**Developers:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engineer
 
 # --- 5. MAIN LOGIC ---
 if nav == "🏠  Home Page":
+    # --- HERO SECTION (ChatGPT Content + Claude Design) ---
     st.markdown("""
     <div class="hero-container">
-        <h1 class="hero-title">Smart Farming Assistant</h1>
-        <p style="color: #065f46; font-size: 1.3rem;">Apni fasal ko bachayein, Jadid <b>AI Technology</b> ke sath.</p>
+        <h1 style="font-size: 4rem; font-weight: 900; background: -webkit-linear-gradient(#064e3b, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Plant Doctor AI</h1>
+        <p style="color:#065f46; font-size:1.4rem; font-weight:600; margin-bottom:10px;">
+            AI-Powered Crop Disease Detection for Smart Farmers
+        </p>
+        <p style="color:#047857; font-size:1.1rem; max-width:700px; margin:auto; line-height:1.6;">
+            Upload a leaf image and get instant disease diagnosis with treatment guidance
+            using deep learning models trained on real agricultural data.
+        </p>
+        <br>
+        <a class="cta-button" href="#">🌿 Start Diagnosis</a>
     </div>
     """, unsafe_allow_html=True)
     
-    st.image("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200", use_column_width=True)
+    st.image("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200", use_column_width=True, style="border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);")
     
-    st.write("") 
-    st.write("") 
+    # --- TRUST INDICATORS (ChatGPT Stats) ---
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    col1, col2, col3, col4 = st.columns(4)
+    stats = [
+        ("🌱", "15K+", "Images Trained"),
+        ("🎯", "98%", "Accuracy"),
+        ("⚡", "< 1s", "Fast Prediction"),
+        ("👨‍🌾", "Expert", "Farmer Approved")
+    ]
+    for col, (icon, value, label) in zip([col1,col2,col3,col4], stats):
+        with col:
+            st.markdown(f"""
+            <div class="feature-card" style="min-height:180px; padding:20px;">
+                <div style="font-size:3rem; margin-bottom:10px;">{icon}</div>
+                <h2 style="margin:0; color:#064e3b; font-weight:800; font-size:2rem;">{value}</h2>
+                <p style="font-weight:600; color:#555; margin:0;">{label}</p>
+            </div>
+            """, unsafe_allow_html=True)
 
-    st.markdown("<h2 style='text-align: center; color: #064e3b; margin-bottom: 50px; font-weight: 900; font-size: 2.8rem;'>Why Choose Us?</h2>", unsafe_allow_html=True)
+    # --- HOW IT WORKS (ChatGPT Steps) ---
+    st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:80px; font-size:3rem;'>How It Works</h2>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
+    steps = [
+        ("📸", "Upload Leaf", "Take a clear photo of the affected leaf."),
+        ("🤖", "AI Analysis", "Deep learning model analyzes patterns."),
+        ("💊", "Get Cure", "Instant diagnosis with cure suggestions.")
+    ]
+    for col, (icon, title, desc) in zip([col1,col2,col3], steps):
+        with col:
+            st.markdown(f"""
+            <div class="feature-card">
+                <div style="font-size:3.5rem; margin-bottom:15px; background: #ecfdf5; width:80px; height:80px; line-height:80px; border-radius:50%; margin: 0 auto 15px auto;">{icon}</div>
+                <h3 style="color:#064e3b; font-weight:700;">{title}</h3>
+                <p style="color:#555;">{desc}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # --- SUPPORTED CROPS (ChatGPT Roadmap) ---
+    st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:80px; font-size:3rem;'>Supported Crops</h2>", unsafe_allow_html=True)
     
-    with col1:
-        st.markdown("""
-        <div class="feature-card">
-            <div class="feature-icon">📸</div>
-            <h3 style="color: #064e3b; font-weight: 800;">Instant Scan</h3>
-            <p style="color: #555; font-weight: 600;">Bas tasveer upload karein aur <b>1 second</b> mein nateeja payein.</p>
-        </div>
-        """, unsafe_allow_html=True)
+    col1, col2, col3 = st.columns(3)
+    crops = [
+        ("🥔", "Potato", "Fully Supported ✅"),
+        ("🍅", "Tomato", "Launching Soon 🚀"),
+        ("🌽", "Corn", "In Development 🛠️")
+    ]
+    for col, (icon, name, status) in zip([col1,col2,col3], crops):
+        with col:
+            st.markdown(f"""
+            <div class="feature-card" style="min-height:220px;">
+                <div style="font-size:4.5rem; margin-bottom:15px;">{icon}</div>
+                <h3 style="color:#064e3b; font-weight:800;">{name}</h3>
+                <p style="font-weight:600; color:#059669;">{status}</p>
+            </div>
+            """, unsafe_allow_html=True)
 
-    with col2:
-        st.markdown("""
-        <div class="feature-card">
-            <div class="feature-icon">🔬</div>
-            <h3 style="color: #064e3b; font-weight: 800;">98% Accuracy</h3>
-            <p style="color: #555; font-weight: 600;">Hamara AI model hazaron tasveeron par train kiya gaya hai.</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col3:
-        st.markdown("""
-        <div class="feature-card">
-            <div class="feature-icon">💊</div>
-            <h3 style="color: #064e3b; font-weight: 800;">Expert Cure</h3>
-            <p style="color: #555; font-weight: 600;">Bimari ke hisaab se behtareen <b>dawayi aur ilaj</b> janlein.</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("---")
-    st.markdown("<p style='text-align: center; color: #aaa; font-size: 0.9rem;'>© 2025 Plant Doctor AI | Designed by Saqlain & Raheel</p>", unsafe_allow_html=True)
+    # --- FOOTER ---
+    st.markdown("""
+    <hr style="border-top: 2px solid #a7f3d0; margin-top: 50px;">
+    <div style="text-align:center; padding:20px; color:#555;">
+        <p style="font-weight:600; font-size:1.1rem;">© 2025 Plant Doctor AI</p>
+        <p style="font-size:0.9rem;">Built with ❤️ using Streamlit, PyTorch & Transformers</p>
+        <p style="font-size:0.85rem; opacity:0.8;">Developed by <b>Saqlain Khan</b> & <b>Raheel Chishti</b></p>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 elif nav == "🥔  Potato (Aloo)":
@@ -311,7 +312,7 @@ elif nav == "🥔  Potato (Aloo)":
         
         with col1:
             image = Image.open(uploaded_file).convert('RGB')
-            st.image(image, caption="Uploaded Photo", use_column_width=True)
+            st.image(image, caption="Uploaded Photo", use_column_width=True, style="border-radius:15px;")
         
         with col2:
             # Scanning Animation
