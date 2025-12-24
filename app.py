@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ULTRA PREMIUM CSS (SOLID PARTICLES) ---
+# --- 2. ULTRA PREMIUM CSS (DIAMOND WIND EFFECT) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -21,28 +21,38 @@ st.markdown("""
         font-family: 'Outfit', sans-serif;
     }
 
-    /* --- 1. BACKGROUND PARTICLES (SOLID & DARKER) --- */
+    /* --- 1. BACKGROUND PARTICLES (DIAMOND WIND) --- */
+    /* Ye poori screen par barik heere (diamonds) banayega */
     .stApp::before {
         content: "";
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        /* Ab Solid Colors use kiye hain taake saaf nazar ayen */
+        top: -50%; /* Start higher to cover movement */
+        left: -50%; /* Start wider */
+        width: 200%; /* Double size for seamless movement */
+        height: 200%;
+        
+        /* Diamond/Star Textures */
         background-image:
-            radial-gradient(circle at 15% 50%, rgba(16, 185, 129, 0.4) 0px, transparent 50px),
-            radial-gradient(circle at 85% 30%, rgba(6, 78, 59, 0.4) 0px, transparent 60px),
-            radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.4) 0px, transparent 40px);
-        background-size: 100% 100%;
-        animation: drift 10s linear infinite; /* Speed aur tez */
+            radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.7) 50%, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.5) 50%, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 50px 160px, rgba(255, 255, 255, 0.6) 50%, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 90px 40px, rgba(16, 185, 129, 0.4) 50%, rgba(0,0,0,0)), /* Greenish Tint */
+            radial-gradient(2px 2px at 130px 80px, rgba(255, 255, 255, 0.5) 50%, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 160px 120px, rgba(16, 185, 129, 0.3) 50%, rgba(0,0,0,0));
+            
+        background-repeat: repeat;
+        background-size: 200px 200px; /* Dense pattern */
+        
+        /* Diagonal Movement: Top-Right to Bottom-Left */
+        animation: diamond-wind 20s linear infinite;
         pointer-events: none;
-        z-index: 99; 
+        z-index: 99;
     }
-    @keyframes drift {
+
+    /* Move from Top-Right (-X) to Bottom-Left (+X, +Y) */
+    @keyframes diamond-wind {
         0% { transform: translateY(0) translateX(0); }
-        50% { transform: translateY(-20px) translateX(20px); }
-        100% { transform: translateY(0) translateX(0); }
+        100% { transform: translateY(100px) translateX(-100px); } 
     }
 
     /* --- 2. ANIMATIONS --- */
@@ -137,7 +147,7 @@ st.markdown("""
 
     /* --- 5. 3D FLOATING CARDS --- */
     .feature-card {
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.85); /* Thora aur solid kiya */
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         padding: 30px;
