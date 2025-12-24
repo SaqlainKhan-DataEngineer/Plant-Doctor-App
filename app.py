@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. THE ULTIMATE CSS (CLAUDE VISUALS + KIMI SMOOTHNESS) ---
+# --- 2. THE ULTIMATE CSS (CLAUDE VISUALS + KIMI SMOOTHNESS + CHATGPT LAYOUT) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -22,7 +22,7 @@ st.markdown("""
         scroll-behavior: smooth; /* Kimi's Smooth Scroll */
     }
 
-    /* --- 1. BACKGROUND PARTICLES (CLAUDE'S DIAMOND WIND - HIGH VISIBILITY) --- */
+    /* --- 1. BACKGROUND PARTICLES (ADAPTIVE DIAMOND WIND) --- */
     .stApp::before {
         content: "";
         position: fixed;
@@ -30,6 +30,7 @@ st.markdown("""
         left: -50%;
         width: 200%;
         height: 200%;
+        /* Greenish sparkles visible on both Light & Dark modes */
         background-image:
             radial-gradient(circle at 20px 30px, rgba(4, 120, 87, 0.4) 0px, transparent 3px),
             radial-gradient(circle at 40px 70px, rgba(16, 185, 129, 0.5) 0px, transparent 3px),
@@ -48,7 +49,8 @@ st.markdown("""
         100% { transform: translateY(100px) translateX(-100px); } 
     }
 
-    /* --- 2. KIMI'S FADE-IN ANIMATION (Smooth Entry) --- */
+    /* --- 2. KIMI'S SMOOTH FADE-IN ANIMATION --- */
+    /* Elements will fade in smoothly instead of popping up */
     .stApp > div > div > div > div > div[class*="stMarkdown"],
     .stApp > div > div > div > div > div[data-testid="stImage"] {
         animation: fadeInUp 0.8s ease-out backwards;
@@ -159,6 +161,16 @@ st.markdown("""
          transform: translateX(5px);
     }
     
+    /* Image Styling (Fixes the Python Error) */
+    img {
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        transition: transform 0.3s;
+    }
+    img:hover {
+        transform: scale(1.01);
+    }
+    
     .result-box {
         padding: 30px;
         border-radius: 25px;
@@ -212,7 +224,7 @@ st.sidebar.info("**Developers:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engineer
 
 # --- 5. MAIN LOGIC ---
 if nav == "🏠  Home Page":
-    # --- HERO SECTION (ChatGPT Content + Claude Design) ---
+    # --- HERO SECTION (ChatGPT Content) ---
     st.markdown("""
     <div class="hero-container">
         <h1 style="font-size: 4rem; font-weight: 900; background: -webkit-linear-gradient(#064e3b, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Plant Doctor AI</h1>
@@ -228,7 +240,8 @@ if nav == "🏠  Home Page":
     </div>
     """, unsafe_allow_html=True)
     
-    st.image("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200", use_column_width=True, style="border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);")
+    # Corrected: Removed 'style' argument. CSS 'img' tag handles styling now.
+    st.image("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200", use_column_width=True)
     
     # --- TRUST INDICATORS (ChatGPT Stats) ---
     st.markdown("<br><br>", unsafe_allow_html=True)
@@ -268,7 +281,7 @@ if nav == "🏠  Home Page":
             </div>
             """, unsafe_allow_html=True)
 
-    # --- SUPPORTED CROPS (ChatGPT Roadmap) ---
+    # --- SUPPORTED CROPS (Roadmap) ---
     st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:80px; font-size:3rem;'>Supported Crops</h2>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
@@ -312,7 +325,8 @@ elif nav == "🥔  Potato (Aloo)":
         
         with col1:
             image = Image.open(uploaded_file).convert('RGB')
-            st.image(image, caption="Uploaded Photo", use_column_width=True, style="border-radius:15px;")
+            # Corrected: Removed 'style' argument here too.
+            st.image(image, caption="Uploaded Photo", use_column_width=True)
         
         with col2:
             # Scanning Animation
