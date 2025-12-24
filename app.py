@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ULTRA PREMIUM CSS (PARTICLES VISIBLE NOW) ---
+# --- 2. ULTRA PREMIUM CSS (PARTICLES ON TOP) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -21,26 +21,30 @@ st.markdown("""
         font-family: 'Outfit', sans-serif;
     }
 
-    /* --- 1. BACKGROUND PARTICLES (High Visibility Fix) --- */
+    /* --- 1. BACKGROUND PARTICLES (NOW VISIBLE ON TOP) --- */
     .stApp::before {
         content: "";
         position: fixed;
-        inset: 0;
-        /* Opacity barha di hai (0.08 se 0.3 kar di) taake nazar ayen */
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        /* Darker Green Circles for Visibility */
         background-image:
-            radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.4) 0%, transparent 40%),
-            radial-gradient(circle at 80% 20%, rgba(6, 78, 59, 0.3) 0%, transparent 40%),
-            radial-gradient(circle at 40% 40%, rgba(52, 211, 153, 0.3) 0%, transparent 40%);
-        background-size: 100% 100%; /* Ensure it covers full screen */
-        animation: drift 15s linear infinite; /* Speed tez ki */
-        pointer-events: none;
-        z-index: -1;
+            radial-gradient(circle at 20% 80%, rgba(6, 78, 59, 0.15) 0%, transparent 20%),
+            radial-gradient(circle at 80% 20%, rgba(6, 78, 59, 0.15) 0%, transparent 20%),
+            radial-gradient(circle at 40% 40%, rgba(16, 185, 129, 0.15) 0%, transparent 20%),
+            radial-gradient(circle at 90% 90%, rgba(5, 150, 105, 0.15) 0%, transparent 20%);
+        background-size: 100% 100%;
+        animation: drift 20s linear infinite;
+        pointer-events: none; /* Clicks will pass through */
+        z-index: 99; /* Brings particles on TOP of everything */
     }
     @keyframes drift {
         0% { transform: translate(0,0) scale(1); }
-        25% { transform: translate(-20px, 20px) scale(1.1); }
-        50% { transform: translate(20px, -20px) scale(1); }
-        75% { transform: translate(-10px, -10px) scale(0.9); }
+        25% { transform: translate(-30px, 30px) scale(1.1); }
+        50% { transform: translate(30px, -30px) scale(0.9); }
+        75% { transform: translate(-20px, -10px) scale(1.05); }
         100% { transform: translate(0,0) scale(1); }
     }
 
@@ -91,6 +95,8 @@ st.markdown("""
         text-align: left;
         font-weight: 600;
         letter-spacing: 0.5px;
+        z-index: 100; /* Sidebar buttons above particles */
+        position: relative;
     }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
         background: rgba(255, 255, 255, 0.15);
@@ -116,6 +122,8 @@ st.markdown("""
         box-shadow: 0 20px 50px rgba(0,0,0,0.1);
         margin-bottom: 40px;
         border: 1px solid rgba(255,255,255,0.6);
+        position: relative;
+        z-index: 10; /* Content above particles */
     }
     .hero-title {
         font-weight: 900;
@@ -126,13 +134,10 @@ st.markdown("""
         margin-bottom: 10px;
         letter-spacing: -2px;
     }
-    @media (min-width: 1400px) {
-        .hero-title { font-size: 5rem; letter-spacing: -3px; }
-    }
-
+    
     /* --- 5. 3D FLOATING CARDS --- */
     .feature-card {
-        background: rgba(255, 255, 255, 0.7); /* Thora safed kiya taake particles ke upar saaf dikhay */
+        background: rgba(255, 255, 255, 0.8); /* Higher opacity */
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         padding: 30px;
@@ -148,6 +153,8 @@ st.markdown("""
         transform-style: preserve-3d;
         transition: transform 0.4s ease, box-shadow 0.4s ease;
         animation: slideUp 1s ease-out 0.2s backwards;
+        position: relative;
+        z-index: 10;
     }
     .feature-card:hover {
         transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateY(-15px);
@@ -388,4 +395,3 @@ elif nav == "🥔  Potato (Aloo)":
 
 elif nav in ["🍅  Tomato Check", "🌽  Corn Field"]:
     st.info("🚧 Coming Soon in few days...")
-    
