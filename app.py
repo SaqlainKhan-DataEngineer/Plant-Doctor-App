@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. PREMIUM ANIMATED CSS (ULTRA-POLISHED) ---
+# --- 2. PREMIUM ANIMATED CSS (FIXED & POLISHED) ---
 st.markdown("""
     <style>
     /* Import Modern Font */
@@ -39,14 +39,14 @@ st.markdown("""
     }
     /* New Premium Pulse & Glow Animation for Sidebar Logo */
     @keyframes glow-pulse {
-        0% { filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.4)) brightness(1); transform: scale(1); }
-        50% { filter: drop-shadow(0 0 25px rgba(16, 185, 129, 0.8)) brightness(1.1); transform: scale(1.02); }
-        100% { filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.4)) brightness(1); transform: scale(1); }
+        0% { filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3)); transform: scale(1); }
+        50% { filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.6)); transform: scale(1.05); }
+        100% { filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3)); transform: scale(1); }
     }
 
     /* --- SIDEBAR STYLING (Dark Luxury Theme) --- */
     [data-testid="stSidebar"] {
-        background-image: linear-gradient(180deg, #022c22 0%, #0f766e 100%); /* Deeper, richer gradient */
+        background-image: linear-gradient(180deg, #022c22 0%, #0f766e 100%);
         border-right: none;
     }
     [data-testid="stSidebar"] * {
@@ -56,12 +56,12 @@ st.markdown("""
     /* --- NEW PREMIUM LOGO STYLING --- */
     [data-testid="stSidebar"] img {
         margin-bottom: 10px;
-        /* Combination of floating and glowing */
         animation: float 4s ease-in-out infinite, glow-pulse 3s infinite ease-in-out;
         display: block;
         margin-left: auto;
         margin-right: auto;
-        width: 150px !important; /* Slightly bigger for impact */
+        width: 140px !important;
+        border-radius: 50%; /* Golai */
     }
     
     /* Navigation Buttons Styling */
@@ -73,12 +73,12 @@ st.markdown("""
         display: flex;
         align-items: center;
         width: 100%;
-        background: rgba(255, 255, 255, 0.05); /* More subtle background */
+        background: rgba(255, 255, 255, 0.05);
         padding: 12px 15px;
-        border-radius: 15px; /*Softer corners */
+        border-radius: 15px;
         margin-bottom: 12px !important;
         border: 1px solid rgba(255,255,255,0.05);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother transition */
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         text-align: left;
         font-weight: 600;
         letter-spacing: 0.5px;
@@ -91,7 +91,7 @@ st.markdown("""
     /* Selected Button State */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
          background: linear-gradient(90deg, rgba(16, 185, 129, 0.3), transparent) !important;
-         border-left: 4px solid #34d399 !important; /* Brighter accent */
+         border-left: 4px solid #34d399 !important;
          font-weight: 800;
          transform: translateX(8px);
          box-shadow: -5px 0 20px rgba(52, 211, 153, 0.3);
@@ -122,8 +122,8 @@ st.markdown("""
     
     /* --- GLASS CARDS --- */
     .feature-card {
-        background: rgba(255, 255, 255, 0.7); /* More transparency */
-        backdrop-filter: blur(15px); /* Stronger blur */
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(15px);
         padding: 30px;
         border-radius: 25px;
         text-align: center;
@@ -153,8 +153,17 @@ st.markdown("""
         color: #059669;
         box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
     }
+
+    /* Global Image Styling (Replaces st.image style) */
+    img {
+        border-radius: 25px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        transition: transform 0.3s;
+    }
+    img:hover {
+        transform: scale(1.01);
+    }
     
-    /* Result Box styling */
     .result-box {
         padding: 30px;
         border-radius: 25px;
@@ -178,14 +187,14 @@ def load_model():
 
 model, processor = load_model()
 
-# --- 4. SIDEBAR (The New Premium Look) ---
-# High-Quality 3D Sprout Image with Glow Effect
-st.sidebar.image("https://cdn3d.iconscout.com/3d/premium/thumb/growing-plant-5356423-4493352.png", use_column_width=False)
+# --- 4. SIDEBAR (Fixed Logo) ---
+# Reliable High Quality Icon (No broken link)
+st.sidebar.image("https://cdn-icons-png.flaticon.com/512/10302/10302221.png", use_column_width=False)
 st.sidebar.markdown("<h1 style='text-align: center; color: white; font-weight: 900; margin-top: 5px; font-size: 2.2rem; letter-spacing: -1px;'>Plant Doctor</h1>", unsafe_allow_html=True)
 st.sidebar.markdown("<p style='text-align: center; font-size: 0.9rem; opacity: 0.8; margin-bottom: 25px; font-weight: 400;'>AI Powered Solutions</p>", unsafe_allow_html=True)
 st.sidebar.write("---")
 
-# Navigation Buttons
+# Navigation
 nav = st.sidebar.radio("", ["🏠  Home Page", "🥔  Potato (Aloo)", "🍅  Tomato Check", "🌽  Corn Field"])
 
 st.sidebar.write("---")
@@ -209,7 +218,8 @@ if nav == "🏠  Home Page":
     </div>
     """, unsafe_allow_html=True)
     
-    st.image("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200", use_column_width=True, style="border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.2);")
+    # FIXED: Removed 'style' argument, handled by CSS
+    st.image("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200", use_column_width=True)
     
     st.write("") 
     st.write("") 
@@ -263,7 +273,8 @@ elif nav == "🥔  Potato (Aloo)":
         
         with col1:
             image = Image.open(uploaded_file).convert('RGB')
-            st.image(image, caption="Uploaded Photo", use_column_width=True, style="border-radius: 20px;")
+            # FIXED: Removed 'style' argument here too
+            st.image(image, caption="Uploaded Photo", use_column_width=True)
         
         with col2:
             with st.spinner("🤖 AI analyzing..."):
@@ -346,4 +357,5 @@ elif nav == "🥔  Potato (Aloo)":
                     st.info("Is result ke liye filhal koi makhsoos ilaj available nahi hai.")
 
 elif nav in ["🍅  Tomato Check", "🌽  Corn Field"]:
-    st.info("🚧 Coming Soon in few days...")
+    st.info("🚧 Coming Soon in few days...") 
+    
