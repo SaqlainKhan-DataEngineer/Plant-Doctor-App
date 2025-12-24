@@ -38,7 +38,6 @@ st.markdown("""
     .slide-images {
         width: 500%; /* 5 Images = 500% width */
         display: flex;
-        /* Speed tez kar di hai: 12s total loop */
         animation: slide_animation 12s infinite ease-in-out; 
     }
     
@@ -56,25 +55,23 @@ st.markdown("""
     /* Keyframes for 5 Images */
     @keyframes slide_animation {
         0% { margin-left: 0%; }
-        15% { margin-left: 0%; }        /* Img 1 Ruka rahega */
+        15% { margin-left: 0%; }        /* Img 1 */
         20% { margin-left: -100%; }     /* Slide to Img 2 */
-        35% { margin-left: -100%; }     /* Img 2 Ruka rahega */
+        35% { margin-left: -100%; }     /* Img 2 */
         40% { margin-left: -200%; }     /* Slide to Img 3 */
-        55% { margin-left: -200%; }     /* Img 3 Ruka rahega */
+        55% { margin-left: -200%; }     /* Img 3 */
         60% { margin-left: -300%; }     /* Slide to Img 4 */
-        75% { margin-left: -300%; }     /* Img 4 Ruka rahega */
+        75% { margin-left: -300%; }     /* Img 4 */
         80% { margin-left: -400%; }     /* Slide to Img 5 */
-        95% { margin-left: -400%; }     /* Img 5 Ruka rahega */
+        95% { margin-left: -400%; }     /* Img 5 */
         100% { margin-left: 0%; }       /* Back to Start */
     }
 
     /* --- 2. GLOBAL TEXT & EMOJI ANIMATIONS --- */
-    /* Har Heading, Paragraph aur Image Load hote waqt animate karegi */
     h1, h2, h3, p, span, a {
         animation: fadeInUp 0.8s ease-out backwards;
     }
     
-    /* Feature Icons (Emojis) ko BOUNCE effect diya hai */
     .feature-icon, .stMarkdown div[data-testid="stMetricValue"] {
         animation: popIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) both;
     }
@@ -122,7 +119,7 @@ st.markdown("""
         border-radius: 30px;
         background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
         background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite, popIn 1s ease-out; /* PopIn Animation Added */
+        animation: gradientBG 15s ease infinite, popIn 1s ease-out;
         box-shadow: 0 20px 50px rgba(0,0,0,0.1);
         margin-bottom: 40px;
         border: 1px solid rgba(255,255,255,0.6);
@@ -136,7 +133,6 @@ st.markdown("""
         100% { background-position: 0% 50%; }
     }
 
-    /* 3D Floating Cards */
     .feature-card {
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(20px);
@@ -154,7 +150,7 @@ st.markdown("""
         transition: transform 0.4s ease, box-shadow 0.4s ease;
         position: relative;
         z-index: 1;
-        animation: fadeInUp 1s ease-out; /* Slide Up Added */
+        animation: fadeInUp 1s ease-out;
     }
     .feature-card:hover {
         transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateY(-10px);
@@ -185,7 +181,7 @@ st.markdown("""
         box-shadow: 0 10px 25px rgba(16,185,129,0.4);
         transition: all 0.3s;
         margin-top: 20px;
-        animation: popIn 1.2s ease-out; /* Pop In */
+        animation: popIn 1.2s ease-out;
     }
     .cta-button:hover {
         transform: scale(1.05);
@@ -301,7 +297,7 @@ if nav == "🏠  Home Page":
     </div>
     """, unsafe_allow_html=True)
     
-    # --- SLIDESHOW SECTION (UPDATED - 5 IMAGES & FASTER) ---
+    # --- SLIDESHOW SECTION (UPDATED - 4th Image Changed) ---
     st.markdown("""
     <div class="slider-frame">
         <div class="slide-images">
@@ -315,7 +311,7 @@ if nav == "🏠  Home Page":
                 <img src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=1200">
             </div>
             <div class="img-container">
-                <img src="https://images.unsplash.com/photo-1595841696677-6489ff3f8cd1?w=1200">
+                <img src="https://images.unsplash.com/photo-1615811361269-202620376903?w=1200">
             </div>
              <div class="img-container">
                 <img src="https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=1200">
@@ -505,3 +501,4 @@ elif nav == "🥔  Potato (Aloo)":
 
 elif nav in ["🍅  Tomato Check", "🌽  Corn Field"]:
     st.info("🚧 Coming Soon in few days...") 
+    
