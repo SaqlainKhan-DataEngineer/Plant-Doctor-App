@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. PREMIUM ANIMATED CSS (LOGO FIXED) ---
+# --- 2. PREMIUM ANIMATED CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -31,7 +31,6 @@ st.markdown("""
         from { opacity: 0; transform: translateY(50px); }
         to { opacity: 1; transform: translateY(0); }
     }
-    /* Logo Pulse Animation */
     @keyframes logo-bounce {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-5px); }
@@ -44,21 +43,6 @@ st.markdown("""
     }
     [data-testid="stSidebar"] * {
         color: #ecfdf5 !important;
-    }
-
-    /* --- NEW LOGO STYLING (The Fix) --- */
-    [data-testid="stSidebar"] img {
-        margin-bottom: 15px;
-        animation: logo-bounce 3s infinite ease-in-out;
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-        width: 130px !important;
-        /* White Ring around Logo for Professional Look */
-        padding: 10px;
-        background: rgba(255,255,255,0.1);
-        border-radius: 50%;
-        border: 2px solid rgba(255,255,255,0.2);
     }
     
     /* Navigation Buttons */
@@ -179,10 +163,16 @@ def load_model():
 
 model, processor = load_model()
 
-# --- 4. SIDEBAR (The Final Professional Logo) ---
-# Shield Icon (Protection/Doctor)
-st.sidebar.image("https://cdn-icons-png.flaticon.com/512/11698/11698467.png", use_column_width=False)
-st.sidebar.markdown("<h1 style='text-align: center; color: white; font-weight: 800; margin-top: 5px; font-size: 2rem;'>Plant Doctor</h1>", unsafe_allow_html=True)
+# --- 4. SIDEBAR (Updated for Centering) ---
+# Hum yahan HTML use kar rahe hain taake image bilkul CENTER mein aye
+st.sidebar.markdown("""
+    <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+        <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png" 
+             style="width: 140px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); padding: 10px; background: rgba(255,255,255,0.1); animation: logo-bounce 3s infinite ease-in-out;">
+    </div>
+    """, unsafe_allow_html=True)
+
+st.sidebar.markdown("<h1 style='text-align: center; color: white; font-weight: 800; margin-top: -10px; font-size: 2rem;'>Plant Doctor</h1>", unsafe_allow_html=True)
 st.sidebar.markdown("<p style='text-align: center; font-size: 0.85rem; opacity: 0.8; margin-bottom: 20px; letter-spacing: 1px;'>AI DIAGNOSTICS</p>", unsafe_allow_html=True)
 st.sidebar.write("---")
 
