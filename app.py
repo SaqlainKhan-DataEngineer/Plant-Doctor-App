@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ANIMATED & PROFESSIONAL CSS ---
+# --- 2. ADVANCED ANIMATED CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
@@ -21,55 +21,65 @@ st.markdown("""
         font-family: 'Poppins', sans-serif;
     }
     
-    /* --- 1. ANIMATIONS --- */
-    /* Floating Animation (Main Page) */
-    @keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-        100% { transform: translateY(0px); }
+    /* --- ANIMATION KEYFRAMES --- */
+    /* Cheezon ko neechay se upar slide karana */
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(40px); }
+        to { opacity: 1; transform: translateY(0); }
     }
-    
-    /* Pulse Animation (Sidebar Logo) - Dhak Dhak */
+    /* Sidebar Logo ki dhak dhak */
     @keyframes pulse {
         0% { transform: scale(1); }
-        50% { transform: scale(1.1); filter: drop-shadow(0 0 10px rgba(255,255,255,0.3)); }
+        50% { transform: scale(1.1); filter: drop-shadow(0 0 8px rgba(255,255,255,0.4)); }
         100% { transform: scale(1); }
     }
-    
-    .animated-icon {
-        display: inline-block;
-        animation: float 3s ease-in-out infinite;
-        font-size: 3rem;
+
+    /* --- SIDEBAR STYLING & ANIMATION --- */
+    [data-testid="stSidebar"] {
+        background-image: linear-gradient(180deg, #052e16 0%, #115e59 100%); 
+        border-right: 3px solid #004d40;
     }
-    
+    [data-testid="stSidebar"] * {
+        color: #e0f2f1 !important;
+    }
     .sidebar-logo {
         display: block;
         margin: 0 auto;
-        animation: pulse 2s infinite; /* Ye sidebar wale ko zinda karega */
-        font-size: 4rem;
+        animation: pulse 2.5s infinite; /* Zinda Logo Animation */
+        font-size: 4.5rem;
         text-align: center;
     }
+    
+    /* --- NAVIGATION MENU STYLING (The tricky part!) --- */
+    /* Radio buttons ko modern menu banana */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 10px 15px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        transition: all 0.3s ease; /* Smooth animation on hover */
+        border: 1px solid transparent;
+    }
+    /* Jab mouse upar jaye (Hover Effect) */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateX(5px); /* Thora sa right move karega */
+        border-left: 4px solid #10b981; /* Green accent border */
+    }
+    /* Jo option select ho */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
+         background: rgba(16, 185, 129, 0.2) !important;
+         border-left: 4px solid #10b981 !important;
+         font-weight: 600;
+    }
 
-    /* --- 2. SIDEBAR STYLING (Deep Jungle + Sky Touch) --- */
-    [data-testid="stSidebar"] {
-        /* Green gradient with a hint of blue at bottom */
-        background-image: linear-gradient(180deg, #052e16 0%, #115e59 100%); 
-        border-right: 2px solid #004d40;
-    }
-    [data-testid="stSidebar"] * {
-        color: #e0f2f1 !important; /* Thora sa safed-blueish text taake parha jaye */
-    }
-    [data-testid="stSidebarNav"] {
-        padding-top: 20px;
-    }
 
-    /* --- 3. MAIN PAGE STYLING --- */
-    /* Background: Halka sa Sky Blue touch */
+    /* --- MAIN PAGE STYLING --- */
     .stApp {
         background: linear-gradient(135deg, #f0f9ff 0%, #dcfce7 100%);
     }
 
-    /* Hero Section */
+    /* Hero Section with Entrance Animation */
     .hero-container {
         text-align: center;
         padding: 30px;
@@ -77,7 +87,9 @@ st.markdown("""
         border-radius: 20px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         margin-bottom: 30px;
-        border-bottom: 5px solid #10b981; /* Bright Green Border */
+        border-bottom: 5px solid #10b981;
+        /* Animation yahan lagayi hai */
+        animation: slideUp 0.8s ease-out; 
     }
     .hero-title {
         color: #064e3b;
@@ -90,7 +102,7 @@ st.markdown("""
         font-size: 1.2rem;
     }
 
-    /* Feature Cards */
+    /* Feature Cards with Staggered Animation */
     .feature-card {
         background: white;
         padding: 25px;
@@ -99,10 +111,12 @@ st.markdown("""
         text-align: center;
         transition: transform 0.3s ease;
         border-top: 5px solid #10b981;
+        /* Cards thori dair baad ayenge (Delay) */
+        animation: slideUp 0.8s ease-out 0.3s backwards; 
     }
     .feature-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.15);
     }
     .feature-icon {
         font-size: 2.5rem;
@@ -116,19 +130,28 @@ st.markdown("""
         color: #059669;
     }
 
-    /* Image Styling */
     img {
         border-radius: 15px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideUp 1s ease-out; /* Image bhi slide hogi */
     }
     
-    /* Result Box */
+    /* Potato Result Section */
     .result-box {
         padding: 20px;
         border-radius: 15px;
         text-align: center;
         margin-bottom: 20px;
         box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        animation: slideUp 0.5s ease-out;
+    }
+    .treatment-card {
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        margin-top: 15px;
+        animation: slideUp 0.6s ease-out 0.2s backwards;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -146,25 +169,23 @@ def load_model():
 model, processor = load_model()
 
 # --- 4. SIDEBAR (Animated) ---
-# Yahan humne Animation Class lagayi hai
 st.sidebar.markdown("<div class='sidebar-logo'>🌱</div>", unsafe_allow_html=True)
-st.sidebar.markdown("<h2 style='text-align: center; color: white;'>Plant Doctor</h2>", unsafe_allow_html=True)
-st.sidebar.markdown("<p style='text-align: center; font-size: 0.9rem; opacity: 0.8;'>AI Based Detection</p>", unsafe_allow_html=True)
-st.sidebar.write("---")
+st.sidebar.markdown("<h2 style='text-align: center; color: white; margin-top: -15px;'>Plant Doctor</h2>", unsafe_allow_html=True)
+st.sidebar.markdown("<p style='text-align: center; font-size: 0.8rem; opacity: 0.7; margin-bottom: 20px;'>AI Based Detection</p>", unsafe_allow_html=True)
 
-nav = st.sidebar.radio("Navigation", ["🏠 Home", "🥔 Potato (Aloo)", "🍅 Tomato", "🌽 Corn"])
+# Navigation with added Icons for beauty
+nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field"])
 
 st.sidebar.write("---")
 st.sidebar.info("**Developed by:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engineer)\n\n👨‍💻 **Raheel Chishti**\n(Team Member)")
 
 # --- 5. MAIN LOGIC ---
-if nav == "🏠 Home":
+if nav == "🏠 Home Page":
     # --- HERO SECTION ---
     st.markdown("""
     <div class="hero-container">
-        <div class="animated-icon">🌿</div>
         <h1 class="hero-title">Smart Farming Assistant</h1>
-        <p class="hero-subtitle">Apni fasal ko bimariyon se bachayein, AI ki madad se.</p>
+        <p class="hero-subtitle">Apni fasal ko bimariyon se bachayein, Jadid AI Technology ki madad se.</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -175,7 +196,7 @@ if nav == "🏠 Home":
     st.write("") 
 
     # --- FEATURES SECTION ---
-    st.markdown("<h3 style='text-align: center; color: #064e3b; margin-bottom: 30px;'>Why Choose This App?</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: #064e3b; margin-bottom: 30px; animation: slideUp 1s ease-out;'>Why Choose This App?</h3>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
     
@@ -184,7 +205,7 @@ if nav == "🏠 Home":
         <div class="feature-card">
             <div class="feature-icon">📸</div>
             <h3>Instant Scan</h3>
-            <p>Tasveer upload karein aur foran nateeja payein.</p>
+            <p>Pattay ki tasveer upload karein aur seconds mein nateeja payein.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -193,7 +214,7 @@ if nav == "🏠 Home":
         <div class="feature-card">
             <div class="feature-icon">💊</div>
             <h3>Expert Cure</h3>
-            <p>Har bimari ka makhsoos ilaj aur dawayi.</p>
+            <p>Bimari ke mutabiq makhsoos dawayi aur ilaj janlein.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -202,13 +223,13 @@ if nav == "🏠 Home":
         <div class="feature-card">
             <div class="feature-icon">🛡️</div>
             <h3>Prevention</h3>
-            <p>Fasal ko mustaqbil mein mehfooz rakhne ke tareeqay.</p>
+            <p>Apni fasal ko aanay wali bimariyon se mehfooz rakhne ke tareeqay.</p>
         </div>
         """, unsafe_allow_html=True)
 
     # --- FOOTER ---
     st.markdown("---")
-    st.markdown("<p style='text-align: center; color: #777;'>© 2025 Plant Doctor AI | Designed by Saqlain & Raheel</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #777; font-size: 0.9rem;'>© 2025 Plant Doctor AI | Designed with ❤️ by Saqlain & Raheel</p>", unsafe_allow_html=True)
 
 
 elif nav == "🥔 Potato (Aloo)":
@@ -228,8 +249,8 @@ elif nav == "🥔 Potato (Aloo)":
             st.image(image, caption="Uploaded Photo", use_column_width=True)
         
         with col2:
-            st.info("🔍 Analyzing image...")
-            time.sleep(1) 
+            with st.spinner("🔍 Analyzing image with AI..."):
+                time.sleep(1) # Thora suspense
             
             # Prediction
             inputs = processor(images=image, return_tensors="pt")
@@ -254,7 +275,7 @@ elif nav == "🥔 Potato (Aloo)":
                 is_healthy = "healthy" in clean_label.lower() or "healty" in clean_label.lower()
 
                 if is_healthy:
-                    bg_color = "#ecfdf5" # Mint Green (Light Blueish Green)
+                    bg_color = "#ecfdf5"
                     border_color = "#059669"
                     status_msg = "✅ Sab Theek Hai (All OK)"
                     clean_label = "Healthy (Sehatmand)"
@@ -312,7 +333,6 @@ elif nav == "🥔 Potato (Aloo)":
                 else:
                     st.info("Is result ke liye filhal koi makhsoos ilaj available nahi hai.")
 
-elif nav in ["🍅 Tomato", "🌽 Corn"]:
-    st.info("🚧 Coming Soon in few days...")
-
+elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
+    st.info("🚧 Coming Soon in few days...") 
     
