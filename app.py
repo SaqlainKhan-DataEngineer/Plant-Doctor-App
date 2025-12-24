@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ULTRA PREMIUM CSS (DIAMOND WIND EFFECT) ---
+# --- 2. ULTRA PREMIUM CSS (ADAPTIVE DIAMOND WIND) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -21,35 +21,40 @@ st.markdown("""
         font-family: 'Outfit', sans-serif;
     }
 
-    /* --- 1. BACKGROUND PARTICLES (DIAMOND WIND) --- */
-    /* Ye poori screen par barik heere (diamonds) banayega */
+    /* --- 1. BACKGROUND PARTICLES (EMERALD WIND) --- */
+    /* Ab hum White ki jagah Greenish shades use karenge jo Light Mode par bhi dikhein */
     .stApp::before {
         content: "";
         position: fixed;
-        top: -50%; /* Start higher to cover movement */
-        left: -50%; /* Start wider */
-        width: 200%; /* Double size for seamless movement */
+        top: -50%;
+        left: -50%;
+        width: 200%;
         height: 200%;
         
-        /* Diamond/Star Textures */
+        /* Emerald & Dark Green Gradients (Visible on White & Black) */
         background-image:
-            radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.7) 50%, rgba(0,0,0,0)),
-            radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.5) 50%, rgba(0,0,0,0)),
-            radial-gradient(2px 2px at 50px 160px, rgba(255, 255, 255, 0.6) 50%, rgba(0,0,0,0)),
-            radial-gradient(2px 2px at 90px 40px, rgba(16, 185, 129, 0.4) 50%, rgba(0,0,0,0)), /* Greenish Tint */
-            radial-gradient(2px 2px at 130px 80px, rgba(255, 255, 255, 0.5) 50%, rgba(0,0,0,0)),
-            radial-gradient(2px 2px at 160px 120px, rgba(16, 185, 129, 0.3) 50%, rgba(0,0,0,0));
+            /* Darker Green (Visible on Light Mode) */
+            radial-gradient(circle at 20px 30px, rgba(4, 120, 87, 0.4) 0px, transparent 3px),
+            /* Bright Emerald (Glowing on Dark Mode) */
+            radial-gradient(circle at 40px 70px, rgba(16, 185, 129, 0.5) 0px, transparent 3px),
+            /* Medium Green */
+            radial-gradient(circle at 50px 160px, rgba(5, 150, 105, 0.4) 0px, transparent 3px),
+            /* Small Sparkle */
+            radial-gradient(circle at 90px 40px, rgba(52, 211, 153, 0.6) 0px, transparent 2px),
+            /* Deep Jungle Green */
+            radial-gradient(circle at 130px 80px, rgba(6, 78, 59, 0.5) 0px, transparent 3px),
+            /* Another Emerald */
+            radial-gradient(circle at 160px 120px, rgba(16, 185, 129, 0.5) 0px, transparent 3px);
             
         background-repeat: repeat;
-        background-size: 200px 200px; /* Dense pattern */
+        background-size: 200px 200px;
         
-        /* Diagonal Movement: Top-Right to Bottom-Left */
-        animation: diamond-wind 20s linear infinite;
+        /* Diagonal Movement */
+        animation: diamond-wind 25s linear infinite;
         pointer-events: none;
         z-index: 99;
     }
 
-    /* Move from Top-Right (-X) to Bottom-Left (+X, +Y) */
     @keyframes diamond-wind {
         0% { transform: translateY(0) translateX(0); }
         100% { transform: translateY(100px) translateX(-100px); } 
@@ -147,7 +152,7 @@ st.markdown("""
 
     /* --- 5. 3D FLOATING CARDS --- */
     .feature-card {
-        background: rgba(255, 255, 255, 0.85); /* Thora aur solid kiya */
+        background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         padding: 30px;
@@ -404,4 +409,5 @@ elif nav == "🥔  Potato (Aloo)":
                     st.info("Is result ke liye filhal koi makhsoos ilaj available nahi hai.")
 
 elif nav in ["🍅  Tomato Check", "🌽  Corn Field"]:
-    st.info("🚧 Coming Soon in few days...")
+    st.info("🚧 Coming Soon in few days...") 
+    
