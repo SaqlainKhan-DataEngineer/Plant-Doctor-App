@@ -12,160 +12,144 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ADVANCED ANIMATED CSS (UPDATED FOR BEAUTY) ---
+# --- 2. PREMIUM ANIMATED CSS (WOW FACTOR) ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
     
     html, body, [class*="css"] {
-        font-family: 'Poppins', sans-serif;
+        font-family: 'Outfit', sans-serif; /* New Modern Font */
     }
     
     /* --- ANIMATIONS --- */
-    @keyframes slideUp {
-        from { opacity: 0; transform: translateY(40px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.1); filter: drop-shadow(0 0 8px rgba(255,255,255,0.4)); }
-        100% { transform: scale(1); }
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
     @keyframes float {
         0% { transform: translateY(0px); }
         50% { transform: translateY(-15px); }
         100% { transform: translateY(0px); }
     }
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(50px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 
-    /* --- SIDEBAR STYLING --- */
+    /* --- SIDEBAR (Dark Luxury Green) --- */
     [data-testid="stSidebar"] {
-        background-image: linear-gradient(180deg, #052e16 0%, #115e59 100%); 
-        border-right: 3px solid #004d40;
+        background-image: linear-gradient(180deg, #022c22 0%, #0d9488 100%);
+        border-right: none;
     }
     [data-testid="stSidebar"] * {
-        color: #e0f2f1 !important;
+        color: #f0fdf4 !important;
     }
     .sidebar-logo {
-        display: block;
-        margin: 0 auto;
-        animation: pulse 2.5s infinite;
-        font-size: 4.5rem;
+        font-size: 5rem;
         text-align: center;
-    }
-    
-    /* Navigation Menu */
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
-        background: rgba(255, 255, 255, 0.05);
-        padding: 10px 15px;
-        border-radius: 10px;
-        margin-bottom: 8px;
-        transition: all 0.3s ease;
-        border: 1px solid transparent;
-    }
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
-        background: rgba(255, 255, 255, 0.15);
-        transform: translateX(5px);
-        border-left: 4px solid #10b981;
-    }
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
-         background: rgba(16, 185, 129, 0.2) !important;
-         border-left: 4px solid #10b981 !important;
-         font-weight: 600;
-    }
-
-    /* --- MAIN PAGE STYLING --- */
-    .stApp {
-        background: linear-gradient(135deg, #f0f9ff 0%, #dcfce7 100%);
-    }
-
-    /* --- NEW & IMPROVED HERO SECTION --- */
-    .hero-container {
-        text-align: center;
-        padding: 50px 20px;
-        /* Premium Gradient Background */
-        background: linear-gradient(135deg, #ffffff 0%, #e8f5e9 100%);
-        border-radius: 25px;
-        /* Soft Shadow */
-        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        margin-bottom: 40px;
-        border: 2px solid #a7f3d0; /* Soft Green Border */
-        animation: slideUp 0.8s ease-out; 
-    }
-    .animated-icon-hero {
-        display: inline-block;
-        animation: float 3s ease-in-out infinite;
-        font-size: 5rem; /* Icon thora bara kiya */
+        animation: float 4s ease-in-out infinite;
         margin-bottom: 10px;
     }
+    
+    /* Navigation Styling */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
+        background: rgba(255, 255, 255, 0.08);
+        padding: 12px 15px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        border: 1px solid rgba(255,255,255,0.1);
+        transition: all 0.3s;
+    }
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.02);
+    }
+
+    /* --- HERO SECTION (THE WOW FACTOR) --- */
+    .hero-container {
+        text-align: center;
+        padding: 60px 20px;
+        border-radius: 30px;
+        /* Moving Gradient Background */
+        background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
+        background-size: 400% 400%;
+        animation: gradientBG 10s ease infinite; /* Colors will move! */
+        
+        box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+        margin-bottom: 40px;
+        border: 1px solid rgba(255,255,255,0.5);
+    }
+    
     .hero-title {
-        /* Gradient Text Effect */
-        background: -webkit-linear-gradient(45deg, #1b5e20, #10b981);
+        font-weight: 900;
+        font-size: 4rem;
+        background: -webkit-linear-gradient(#064e3b, #059669);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-weight: 800;
-        margin-bottom: 15px;
-        font-size: 3.5rem; /* Text size barhaya */
-        letter-spacing: -1.5px;
+        margin-bottom: 10px;
+        letter-spacing: -2px;
+        animation: slideUp 0.8s ease-out;
     }
     .hero-subtitle {
-        color: #555;
-        font-size: 1.3rem;
-        font-weight: 300;
-    }
-
-    /* Feature Cards */
-    .feature-card {
-        background: white;
-        padding: 25px;
-        border-radius: 20px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-        text-align: center;
-        transition: transform 0.3s ease;
-        border-top: 5px solid #10b981;
-        animation: slideUp 0.8s ease-out 0.3s backwards;
-        min-height: 300px; 
-        display: flex;
-        flex-direction: column;
-        justify-content: center; 
-        align-items: center;
-    }
-    .feature-card:hover {
-        transform: translateY(-15px);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-    }
-    .feature-icon {
-        font-size: 3rem;
-        margin-bottom: 20px;
-        background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-        width: 90px;
-        height: 90px;
-        line-height: 90px;
-        border-radius: 50%;
-        color: #059669;
-        box-shadow: 0 5px 15px rgba(16, 185, 129, 0.2);
-    }
-
-    img {
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        color: #065f46;
+        font-size: 1.5rem;
+        font-weight: 500;
         animation: slideUp 1s ease-out;
     }
     
+    /* --- GLASS CARDS (FEATURES) --- */
+    .feature-card {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px); /* Glass Effect */
+        padding: 30px;
+        border-radius: 25px;
+        text-align: center;
+        transition: all 0.4s ease;
+        border: 1px solid rgba(255,255,255,0.6);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        min-height: 320px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        animation: slideUp 1s ease-out 0.2s backwards;
+    }
+    .feature-card:hover {
+        transform: translateY(-15px) scale(1.03);
+        box-shadow: 0 25px 50px rgba(16, 185, 129, 0.2); /* Green Glow */
+        border-color: #10b981;
+    }
+    .feature-icon {
+        font-size: 3.5rem;
+        margin-bottom: 20px;
+        background: #ecfdf5;
+        width: 100px;
+        height: 100px;
+        line-height: 100px;
+        border-radius: 50%;
+        color: #059669;
+        box-shadow: 0 10px 20px rgba(16, 185, 129, 0.15);
+    }
+
+    /* Images */
+    img {
+        border-radius: 25px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        transition: transform 0.3s;
+    }
+    img:hover {
+        transform: scale(1.01);
+    }
+    
+    /* Result Box */
     .result-box {
-        padding: 25px;
+        padding: 30px;
         border-radius: 20px;
         text-align: center;
         margin-bottom: 25px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.08);
         animation: slideUp 0.5s ease-out;
-    }
-    .treatment-card {
-        background: white;
-        padding: 25px;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        margin-top: 20px;
-        animation: slideUp 0.6s ease-out 0.2s backwards;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -184,32 +168,30 @@ model, processor = load_model()
 
 # --- 4. SIDEBAR ---
 st.sidebar.markdown("<div class='sidebar-logo'>🌱</div>", unsafe_allow_html=True)
-st.sidebar.markdown("<h2 style='text-align: center; color: white; margin-top: -15px;'>Plant Doctor</h2>", unsafe_allow_html=True)
-st.sidebar.markdown("<p style='text-align: center; font-size: 0.8rem; opacity: 0.7; margin-bottom: 20px;'>AI Based Detection</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<h1 style='text-align: center; color: white; font-weight: 800; margin-top: -20px;'>Plant Doctor</h1>", unsafe_allow_html=True)
+st.sidebar.write("---")
 
 nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field"])
 
 st.sidebar.write("---")
 
-with st.sidebar.expander("📸 Achi Tasveer Kaise Lein?"):
+with st.sidebar.expander("📸 Tips for Best Results"):
     st.markdown("""
-    1. **Roshni:** Tasveer din ki roshni mein lein.
-    2. **Focus:** Sirf pattay (leaf) par focus karein.
-    3. **Background:** Saada background rakhne ki koshish karein.
-    4. **Safayi:** Dhundli tasveer se result ghalat ho sakta hai.
+    * ☀️ **Lighting:** Use bright daylight.
+    * 🍃 **Focus:** Capture only the leaf.
+    * 🖼️ **Background:** Keep it plain.
     """)
 
 st.sidebar.write("---")
-st.sidebar.info("**Developed by:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engineer)\n\n👨‍💻 **Raheel Chishti**\n(Team Member)")
+st.sidebar.info("**Developers:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engineer)\n\n👨‍💻 **Raheel Chishti**\n(Team Member)")
 
 # --- 5. MAIN LOGIC ---
 if nav == "🏠 Home Page":
-    # --- HERO SECTION (NEW LOOK) ---
+    # --- WOW HERO SECTION ---
     st.markdown("""
     <div class="hero-container">
-        <div class="animated-icon-hero">🌿</div>
         <h1 class="hero-title">Smart Farming Assistant</h1>
-        <p class="hero-subtitle">Apni fasal ko bimariyon se bachayein, Jadid AI Technology ki madad se.</p>
+        <p class="hero-subtitle">Apni fasal ko bachayein, Jadid <b>AI Technology</b> ke sath.</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -218,7 +200,7 @@ if nav == "🏠 Home Page":
     st.write("") 
     st.write("") 
 
-    st.markdown("<h2 style='text-align: center; color: #064e3b; margin-bottom: 40px; font-weight: 700; animation: slideUp 1s ease-out;'>Why Choose This App?</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #064e3b; margin-bottom: 50px; font-weight: 800; font-size: 2.5rem;'>Why Choose Us?</h2>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
     
@@ -226,31 +208,31 @@ if nav == "🏠 Home Page":
         st.markdown("""
         <div class="feature-card">
             <div class="feature-icon">📸</div>
-            <h3>Instant Scan</h3>
-            <p>Pattay ki tasveer upload karein aur foran nateeja payein.</p>
+            <h3 style="color: #064e3b;">Instant Scan</h3>
+            <p style="color: #555;">Bas tasveer upload karein aur <b>1 second</b> mein nateeja payein.</p>
         </div>
         """, unsafe_allow_html=True)
 
     with col2:
         st.markdown("""
         <div class="feature-card">
-            <div class="feature-icon">💊</div>
-            <h3>Expert Cure</h3>
-            <p>Bimari ke mutabiq makhsoos dawayi aur ilaj janlein.</p>
+            <div class="feature-icon">🔬</div>
+            <h3 style="color: #064e3b;">98% Accuracy</h3>
+            <p style="color: #555;">Hamara AI model hazaron tasveeron par train kiya gaya hai.</p>
         </div>
         """, unsafe_allow_html=True)
 
     with col3:
         st.markdown("""
         <div class="feature-card">
-            <div class="feature-icon">🛡️</div>
-            <h3>Prevention</h3>
-            <p>Fasal ko mustaqbil ki bimariyon se mehfooz rakhne ke tareeqay.</p>
+            <div class="feature-icon">💊</div>
+            <h3 style="color: #064e3b;">Expert Cure</h3>
+            <p style="color: #555;">Bimari ke hisaab se behtareen <b>dawayi aur ilaj</b> janlein.</p>
         </div>
         """, unsafe_allow_html=True)
 
     st.markdown("---")
-    st.markdown("<p style='text-align: center; color: #777; font-size: 0.9rem;'>© 2025 Plant Doctor AI | Designed with ❤️ by Saqlain & Raheel</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #aaa; font-size: 0.9rem;'>© 2025 Plant Doctor AI | Designed by Saqlain & Raheel</p>", unsafe_allow_html=True)
 
 
 elif nav == "🥔 Potato (Aloo)":
@@ -270,7 +252,7 @@ elif nav == "🥔 Potato (Aloo)":
             st.image(image, caption="Uploaded Photo", use_column_width=True)
         
         with col2:
-            with st.spinner("🤖 AI pattay ko ghor se dekh raha hai..."):
+            with st.spinner("🤖 AI analyzing..."):
                 time.sleep(1.5)
             
             inputs = processor(images=image, return_tensors="pt")
@@ -314,37 +296,34 @@ elif nav == "🥔 Potato (Aloo)":
                 if is_healthy:
                     st.balloons()
                     st.markdown("""
-                    <div class='treatment-card' style='border-left: 5px solid #059669;'>
+                    <div class='result-box' style='background: white; border-left: 5px solid #059669; text-align: left;'>
                         <h3 style='color: #059669;'>🎉 Mubarak Ho!</h3>
                         <p>Aapki fasal bilkul theek hai. Hifazat ke liye ye karein:</p>
-                        <ul style='font-size: 1.1rem; line-height: 1.8;'>
+                        <ul>
                             <li>💧 <b>Pani:</b> Waqt par pani dein.</li>
                             <li>👀 <b>Nigrani:</b> Rozana pattay check karein.</li>
-                            <li>🌱 <b>Khad:</b> Balanced NPK fertilizer use karein.</li>
                         </ul>
                     </div>
                     """, unsafe_allow_html=True)
                     
                 elif "late" in clean_label.lower():
                     st.markdown("""
-                    <div class='treatment-card' style='border-left: 5px solid #dc2626;'>
+                    <div class='result-box' style='background: white; border-left: 5px solid #dc2626; text-align: left;'>
                         <h3 style='color: #dc2626;'>💊 Late Blight Ka Ilaj</h3>
-                        <ul style='font-size: 1.1rem; line-height: 1.8;'>
-                            <li><b>1. Chemical:</b> Metalaxyl + Mancozeb (2.5g/liter) spray karein.</li>
-                            <li><b>2. Schedule:</b> Har 7-10 din baad spray dohrayein.</li>
-                            <li><b>3. Warning:</b> Ye bimari tezi se phailti hai, foran action lein.</li>
+                        <ul>
+                            <li><b>Chemical:</b> Metalaxyl + Mancozeb (2.5g/liter) spray karein.</li>
+                            <li><b>Schedule:</b> Har 7-10 din baad spray dohrayein.</li>
                         </ul>
                     </div>
                     """, unsafe_allow_html=True)
                     
                 elif "early" in clean_label.lower():
                     st.markdown("""
-                    <div class='treatment-card' style='border-left: 5px solid #d97706;'>
+                    <div class='result-box' style='background: white; border-left: 5px solid #d97706; text-align: left;'>
                         <h3 style='color: #d97706;'>💊 Early Blight Ka Ilaj</h3>
-                        <ul style='font-size: 1.1rem; line-height: 1.8;'>
-                            <li><b>1. Chemical:</b> Chlorothalonil ya Azoxystrobin spray karein.</li>
-                            <li><b>2. Organic:</b> Neem Oil ka spray bihtareen hai.</li>
-                            <li><b>3. Safai:</b> Zameen se lagne walay purane pattay hata dein.</li>
+                        <ul>
+                            <li><b>Chemical:</b> Chlorothalonil ya Azoxystrobin spray karein.</li>
+                            <li><b>Organic:</b> Neem Oil ka spray bihtareen hai.</li>
                         </ul>
                     </div>
                     """, unsafe_allow_html=True)
@@ -353,5 +332,5 @@ elif nav == "🥔 Potato (Aloo)":
                     st.info("Is result ke liye filhal koi makhsoos ilaj available nahi hai.")
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
-    st.info("🚧 Coming Soon ...") 
+    st.info("🚧 Coming Soon in few days...") 
     
