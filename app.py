@@ -22,16 +22,20 @@ st.markdown("""
     }
     
     /* --- ANIMATION KEYFRAMES --- */
-    /* Cheezon ko neechay se upar slide karana */
     @keyframes slideUp {
         from { opacity: 0; transform: translateY(40px); }
         to { opacity: 1; transform: translateY(0); }
     }
-    /* Sidebar Logo ki dhak dhak */
     @keyframes pulse {
         0% { transform: scale(1); }
         50% { transform: scale(1.1); filter: drop-shadow(0 0 8px rgba(255,255,255,0.4)); }
         100% { transform: scale(1); }
+    }
+    /* Floating Animation for Hero Icon */
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
     }
 
     /* --- SIDEBAR STYLING & ANIMATION --- */
@@ -45,41 +49,37 @@ st.markdown("""
     .sidebar-logo {
         display: block;
         margin: 0 auto;
-        animation: pulse 2.5s infinite; /* Zinda Logo Animation */
+        animation: pulse 2.5s infinite;
         font-size: 4.5rem;
         text-align: center;
     }
     
-    /* --- NAVIGATION MENU STYLING (The tricky part!) --- */
-    /* Radio buttons ko modern menu banana */
+    /* Navigation Menu Styling */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
         background: rgba(255, 255, 255, 0.05);
         padding: 10px 15px;
         border-radius: 10px;
         margin-bottom: 8px;
-        transition: all 0.3s ease; /* Smooth animation on hover */
+        transition: all 0.3s ease;
         border: 1px solid transparent;
     }
-    /* Jab mouse upar jaye (Hover Effect) */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
         background: rgba(255, 255, 255, 0.15);
-        transform: translateX(5px); /* Thora sa right move karega */
-        border-left: 4px solid #10b981; /* Green accent border */
+        transform: translateX(5px);
+        border-left: 4px solid #10b981;
     }
-    /* Jo option select ho */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
          background: rgba(16, 185, 129, 0.2) !important;
          border-left: 4px solid #10b981 !important;
          font-weight: 600;
     }
 
-
     /* --- MAIN PAGE STYLING --- */
     .stApp {
         background: linear-gradient(135deg, #f0f9ff 0%, #dcfce7 100%);
     }
 
-    /* Hero Section with Entrance Animation */
+    /* Hero Section */
     .hero-container {
         text-align: center;
         padding: 30px;
@@ -88,8 +88,12 @@ st.markdown("""
         box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         margin-bottom: 30px;
         border-bottom: 5px solid #10b981;
-        /* Animation yahan lagayi hai */
         animation: slideUp 0.8s ease-out; 
+    }
+    .animated-icon-hero { /* New class for hero icon */
+        display: inline-block;
+        animation: float 3s ease-in-out infinite;
+        font-size: 3rem;
     }
     .hero-title {
         color: #064e3b;
@@ -102,17 +106,23 @@ st.markdown("""
         font-size: 1.2rem;
     }
 
-    /* Feature Cards with Staggered Animation */
+    /* Feature Cards - FIXED HEIGHT ISSUE */
     .feature-card {
         background: white;
-        padding: 25px;
+        padding: 20px;
         border-radius: 15px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         text-align: center;
         transition: transform 0.3s ease;
         border-top: 5px solid #10b981;
-        /* Cards thori dair baad ayenge (Delay) */
-        animation: slideUp 0.8s ease-out 0.3s backwards; 
+        animation: slideUp 0.8s ease-out 0.3s backwards;
+        
+        /* --- MAGIC LINES FOR EQUAL HEIGHT --- */
+        min-height: 280px; /* Cards kam az kam itne baray honge */
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* Content ko beech mein rakhega */
+        /* ------------------------------------ */
     }
     .feature-card:hover {
         transform: translateY(-10px);
@@ -133,10 +143,10 @@ st.markdown("""
     img {
         border-radius: 15px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        animation: slideUp 1s ease-out; /* Image bhi slide hogi */
+        animation: slideUp 1s ease-out;
     }
     
-    /* Potato Result Section */
+    /* Result Section Styling */
     .result-box {
         padding: 20px;
         border-radius: 15px;
@@ -168,12 +178,11 @@ def load_model():
 
 model, processor = load_model()
 
-# --- 4. SIDEBAR (Animated) ---
+# --- 4. SIDEBAR ---
 st.sidebar.markdown("<div class='sidebar-logo'>🌱</div>", unsafe_allow_html=True)
 st.sidebar.markdown("<h2 style='text-align: center; color: white; margin-top: -15px;'>Plant Doctor</h2>", unsafe_allow_html=True)
 st.sidebar.markdown("<p style='text-align: center; font-size: 0.8rem; opacity: 0.7; margin-bottom: 20px;'>AI Based Detection</p>", unsafe_allow_html=True)
 
-# Navigation with added Icons for beauty
 nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field"])
 
 st.sidebar.write("---")
@@ -181,10 +190,10 @@ st.sidebar.info("**Developed by:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engine
 
 # --- 5. MAIN LOGIC ---
 if nav == "🏠 Home Page":
-    # --- HERO SECTION ---
+    # --- HERO SECTION (Leaf Wapis Aa Gaya!) ---
     st.markdown("""
     <div class="hero-container">
-        <h1 class="hero-title">Smart Farming Assistant</h1>
+        <div class="animated-icon-hero">🌿</div> <h1 class="hero-title">Smart Farming Assistant</h1>
         <p class="hero-subtitle">Apni fasal ko bimariyon se bachayein, Jadid AI Technology ki madad se.</p>
     </div>
     """, unsafe_allow_html=True)
@@ -200,12 +209,13 @@ if nav == "🏠 Home Page":
     
     col1, col2, col3 = st.columns(3)
     
+    # Maine text ko thora balance kiya hai taake looks aur achi ayein
     with col1:
         st.markdown("""
         <div class="feature-card">
             <div class="feature-icon">📸</div>
             <h3>Instant Scan</h3>
-            <p>Pattay ki tasveer upload karein aur seconds mein nateeja payein.</p>
+            <p>Pattay ki tasveer upload karein aur foran nateeja payein.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -223,7 +233,7 @@ if nav == "🏠 Home Page":
         <div class="feature-card">
             <div class="feature-icon">🛡️</div>
             <h3>Prevention</h3>
-            <p>Apni fasal ko aanay wali bimariyon se mehfooz rakhne ke tareeqay.</p>
+            <p>Fasal ko mustaqbil ki bimariyon se mehfooz rakhne ke tareeqay.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -250,7 +260,7 @@ elif nav == "🥔 Potato (Aloo)":
         
         with col2:
             with st.spinner("🔍 Analyzing image with AI..."):
-                time.sleep(1) # Thora suspense
+                time.sleep(1)
             
             # Prediction
             inputs = processor(images=image, return_tensors="pt")
@@ -334,5 +344,5 @@ elif nav == "🥔 Potato (Aloo)":
                     st.info("Is result ke liye filhal koi makhsoos ilaj available nahi hai.")
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
-    st.info("🚧 Coming Soon in few days...") 
+    st.info("🚧 Coming Soon in few days...")
     
