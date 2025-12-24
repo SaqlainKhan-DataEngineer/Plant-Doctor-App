@@ -72,7 +72,7 @@ if nav == "🏠 Home":
     with col1:
         st.markdown("### 🚀 Features\n- 📸 **Instant Scan**\n- 💊 **Detailed Treatment**\n- 🛡️ **Prevention Tips**")
     with col2:
-        st.image("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800", use_container_width=True)
+        st.image("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800", use_column_width=True)
 
 elif nav == "🥔 Potato (Aloo)":
     st.header("🥔 Aloo Ki Bimari Check Karein")
@@ -88,13 +88,13 @@ elif nav == "🥔 Potato (Aloo)":
         
         with col1:
             image = Image.open(uploaded_file).convert('RGB')
-            st.image(image, caption="Uploaded Photo", use_container_width=True)
+            st.image(image, caption="Uploaded Photo", use_column_width=True)
         
         with col2:
             st.info("🔍 Analyzing image...")
             time.sleep(1) 
             
-            # Prediction
+            # Prediction Logic
             inputs = processor(images=image, return_tensors="pt")
             with torch.no_grad():
                 outputs = model(**inputs)
@@ -105,72 +105,81 @@ elif nav == "🥔 Potato (Aloo)":
             clean_label = label.replace("_", " ").title()
             conf = torch.softmax(logits, dim=1)[0][idx].item() * 100
             
-            # --- FIXED LOGIC FOR STATUS ---
-            if "healthy" in clean_label.lower():
-                # Healthy Case
-                bg_color = "#e8f5e9" # Light Green
-                border_color = "#2e7d32"
-                status_msg = "✅ Fasal Sehatmand Hai"
-                alert_type = "success"
-            else:
-                # Disease Case
-                bg_color = "#ffebee" # Light Red
-                border_color = "#c62828"
-                status_msg = "⚠️ Bimari Detected (Action Needed)"
-                alert_type = "error"
-
-            # Display Result Box
-            st.markdown(f"""
-                <div class='result-box' style='background: {bg_color}; border: 2px solid {border_color};'>
-                    <h2 style='color: {border_color}; margin:0;'>{clean_label}</h2>
-                    <h4 style='color: {border_color}; margin-top: 10px;'>{status_msg}</h4>
-                    <p style='margin-top: 5px; color: #555;'>Confidence: {conf:.1f}%</p>
-                </div>
-            """, unsafe_allow_html=True)
-
-            # --- FIXED LOGIC FOR TREATMENTS (Correct if/elif) ---
-            
-            if "healthy" in clean_label.lower():
-                st.balloons()
-                st.markdown("""
-                <div class='treatment-card' style='border-left: 5px solid #4caf50;'>
-                    <h3 style='color: #2e7d32;'>🎉 Mubarak Ho!</h3>
-                    <p>Aapki fasal bilkul theek hai. Hifazat ke liye ye karein:</p>
-                    <ul style='font-size: 1.1rem; line-height: 1.8;'>
-                        <li>💧 <b>Pani:</b> Waqt par pani dein.</li>
-                        <li>👀 <b>Nigrani:</b> Rozana pattay check karein.</li>
-                        <li>🌱 <b>Khad:</b> Balanced NPK fertilizer use karein.</li>
-                    </ul>
-                </div>
-                """, unsafe_allow_html=True)
+            # --- GUARDRAIL CHECK (Yahan change kiya hai) ---
+            if conf < 90:
+                # Agar confidence 90% se kam hai to ye Error dikhao
+                st.error("⚠️ **Tasveer Pehchani Nahi Ja Rahi!**")
+                st.warning(f"""
+                **AI Confuse hai (Confidence: {conf:.1f}%):**
+                1. Lagta hai ye **Aloo (Potato)** ka patta nahi hai.
+                2. Ya tasveer bohat dhundli (blurry) hai.
                 
-            elif "late" in clean_label.lower():
-                st.markdown("""
-                <div class='treatment-card' style='border-left: 5px solid #d32f2f;'>
-                    <h3 style='color: #d32f2f;'>💊 Late Blight Ka Ilaj</h3>
-                    <ul style='font-size: 1.1rem; line-height: 1.8;'>
-                        <li><b>1. Chemical:</b> Metalaxyl + Mancozeb (2.5g/liter) spray karein.</li>
-                        <li><b>2. Schedule:</b> Har 7-10 din baad spray dohrayein.</li>
-                        <li><b>3. Warning:</b> Ye bimari tezi se phailti hai, foran action lein.</li>
-                    </ul>
-                </div>
-                """, unsafe_allow_html=True)
-                
-            elif "early" in clean_label.lower():
-                st.markdown("""
-                <div class='treatment-card' style='border-left: 5px solid #ff9800;'>
-                    <h3 style='color: #e65100;'>💊 Early Blight Ka Ilaj</h3>
-                    <ul style='font-size: 1.1rem; line-height: 1.8;'>
-                        <li><b>1. Chemical:</b> Chlorothalonil ya Azoxystrobin spray karein.</li>
-                        <li><b>2. Organic:</b> Neem Oil ka spray bihtareen hai.</li>
-                        <li><b>3. Safai:</b> Zameen se lagne walay purane pattay hata dein.</li>
-                    </ul>
-                </div>
-                """, unsafe_allow_html=True)
-            
+                Meherbani kar ke saaf tasveer upload karein jo sirf Potato Leaf ki ho.
+                """)
             else:
-                # Fallback for other classes if any
-                st.info("Is result ke liye filhal koi makhsoos ilaj available nahi hai.")
+                # --- Agar confidence 90% se zyada hai tabhi Result dikhao ---
+                
+                # Logic for Status Colors
+                if "healthy" in clean_label.lower():
+                    bg_color = "#e8f5e9" # Light Green
+                    border_color = "#2e7d32"
+                    status_msg = "✅ Fasal Sehatmand Hai"
+                else:
+                    bg_color = "#ffebee" # Light Red
+                    border_color = "#c62828"
+                    status_msg = "⚠️ Bimari Detected (Action Needed)"
+
+                # Display Result Box
+                st.markdown(f"""
+                    <div class='result-box' style='background: {bg_color}; border: 2px solid {border_color};'>
+                        <h2 style='color: {border_color}; margin:0;'>{clean_label}</h2>
+                        <h4 style='color: {border_color}; margin-top: 10px;'>{status_msg}</h4>
+                        <p style='margin-top: 5px; color: #555;'>Confidence: {conf:.1f}%</p>
+                    </div>
+                """, unsafe_allow_html=True)
+
+                # Display Treatments
+                if "healthy" in clean_label.lower():
+                    st.balloons()
+                    st.markdown("""
+                    <div class='treatment-card' style='border-left: 5px solid #4caf50;'>
+                        <h3 style='color: #2e7d32;'>🎉 Mubarak Ho!</h3>
+                        <p>Aapki fasal bilkul theek hai. Hifazat ke liye ye karein:</p>
+                        <ul style='font-size: 1.1rem; line-height: 1.8;'>
+                            <li>💧 <b>Pani:</b> Waqt par pani dein.</li>
+                            <li>👀 <b>Nigrani:</b> Rozana pattay check karein.</li>
+                            <li>🌱 <b>Khad:</b> Balanced NPK fertilizer use karein.</li>
+                        </ul>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                elif "late" in clean_label.lower():
+                    st.markdown("""
+                    <div class='treatment-card' style='border-left: 5px solid #d32f2f;'>
+                        <h3 style='color: #d32f2f;'>💊 Late Blight Ka Ilaj</h3>
+                        <ul style='font-size: 1.1rem; line-height: 1.8;'>
+                            <li><b>1. Chemical:</b> Metalaxyl + Mancozeb (2.5g/liter) spray karein.</li>
+                            <li><b>2. Schedule:</b> Har 7-10 din baad spray dohrayein.</li>
+                            <li><b>3. Warning:</b> Ye bimari tezi se phailti hai, foran action lein.</li>
+                        </ul>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                elif "early" in clean_label.lower():
+                    st.markdown("""
+                    <div class='treatment-card' style='border-left: 5px solid #ff9800;'>
+                        <h3 style='color: #e65100;'>💊 Early Blight Ka Ilaj</h3>
+                        <ul style='font-size: 1.1rem; line-height: 1.8;'>
+                            <li><b>1. Chemical:</b> Chlorothalonil ya Azoxystrobin spray karein.</li>
+                            <li><b>2. Organic:</b> Neem Oil ka spray bihtareen hai.</li>
+                            <li><b>3. Safai:</b> Zameen se lagne walay purane pattay hata dein.</li>
+                        </ul>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                else:
+                    st.info("Is result ke liye filhal koi makhsoos ilaj available nahi hai.")
 
 elif nav in ["🍅 Tomato", "🌽 Corn"]:
-    st.info("🚧 Coming Soon...")
+    st.info("🚧 Coming Soon in few days...")
+    
