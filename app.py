@@ -11,25 +11,65 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- 2. CSS STYLING ---
+# --- 2. PROFESSIONAL CSS STYLING ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+    
     html, body, [class*="css"] {
         font-family: 'Poppins', sans-serif;
     }
+    
     .stApp {
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     }
-    img {
-        border-radius: 15px;
-    }
+
+    /* Sidebar Styling */
     [data-testid="stSidebar"] {
-        background-color: #2e7d32;
+        background-color: #1b5e20;
         background-image: linear-gradient(180deg, #1b5e20 0%, #43a047 100%);
     }
     [data-testid="stSidebar"] * {
         color: white !important;
+    }
+
+    /* Home Page Cards */
+    .hero-title {
+        color: #1b5e20;
+        text-align: center;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+    .hero-subtitle {
+        color: #555;
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 1.2rem;
+    }
+    .feature-card {
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        text-align: center;
+        transition: transform 0.3s ease;
+        margin-bottom: 20px;
+    }
+    .feature-card:hover {
+        transform: translateY(-5px);
+    }
+    .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+    }
+
+    /* Potato Result Styling */
+    .result-box {
+        padding: 20px;
+        border-radius: 15px;
+        text-align: center;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     }
     .treatment-card {
         background: white;
@@ -38,13 +78,6 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         margin-top: 15px;
         border-left: 5px solid #2e7d32;
-    }
-    .result-box {
-        padding: 20px;
-        border-radius: 15px;
-        text-align: center;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     }
     </style>
     """, unsafe_allow_html=True)
@@ -62,17 +95,61 @@ def load_model():
 model, processor = load_model()
 
 # --- 4. SIDEBAR ---
-st.sidebar.title("🌿 Plant Doctor")
+st.sidebar.image("https://cdn-icons-png.flaticon.com/512/628/628283.png", width=80)
+st.sidebar.title("Plant Doctor AI")
+st.sidebar.write("---")
 nav = st.sidebar.radio("Navigation", ["🏠 Home", "🥔 Potato (Aloo)", "🍅 Tomato", "🌽 Corn"])
+st.sidebar.write("---")
+st.sidebar.info("Developed by:\n**Saqlain Khan**\nData Engineer")
 
 # --- 5. MAIN LOGIC ---
 if nav == "🏠 Home":
-    st.markdown("<h1 style='text-align: center; color: #1b5e20;'>🌱 Smart Farming Assistant</h1>", unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
+    # --- HERO SECTION ---
+    st.markdown("<h1 class='hero-title'>🌿 Smart Farming Assistant</h1>", unsafe_allow_html=True)
+    st.markdown("<p class='hero-subtitle'>Apni fasal ko bimariyon se bachayein, AI ki madad se.</p>", unsafe_allow_html=True)
+    
+    # --- COVER IMAGE ---
+    st.image("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200", use_column_width=True, style="border-radius: 20px;")
+    
+    st.write("") # Spacer
+    st.write("") # Spacer
+
+    # --- FEATURES SECTION (Cards) ---
+    st.markdown("<h3 style='text-align: center; color: #1b5e20;'>Why Choose Us?</h3>", unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns(3)
+    
     with col1:
-        st.markdown("### 🚀 Features\n- 📸 **Instant Scan**\n- 💊 **Detailed Treatment**\n- 🛡️ **Prevention Tips**")
+        st.markdown("""
+        <div class="feature-card">
+            <div class="feature-icon">📸</div>
+            <h3>Instant Scan</h3>
+            <p>Tasveer upload karein aur foran nateeja payein.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
     with col2:
-        st.image("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800", use_column_width=True)
+        st.markdown("""
+        <div class="feature-card">
+            <div class="feature-icon">💊</div>
+            <h3>Expert Cure</h3>
+            <p>Har bimari ka makhsoos ilaj aur dawayi.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col3:
+        st.markdown("""
+        <div class="feature-card">
+            <div class="feature-icon">🛡️</div>
+            <h3>Prevention</h3>
+            <p>Fasal ko mustaqbil mein mehfooz rakhne ke tareeqay.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # --- FOOTER ---
+    st.markdown("---")
+    st.markdown("<p style='text-align: center; color: #777;'>© 2025 Plant Doctor AI | Powered by Hugging Face & Streamlit</p>", unsafe_allow_html=True)
+
 
 elif nav == "🥔 Potato (Aloo)":
     st.header("🥔 Aloo Ki Bimari Check Karein")
@@ -115,14 +192,13 @@ elif nav == "🥔 Potato (Aloo)":
                 """)
             else:
                 # --- LOGIC FIX HERE (Typo Handle kiya hai) ---
-                # Hum check kar rahe hain ke agar label mein "healthy" YA "healty" (ghalat spelling) ho
                 is_healthy = "healthy" in clean_label.lower() or "healty" in clean_label.lower()
 
                 if is_healthy:
                     bg_color = "#e8f5e9" # Light Green
                     border_color = "#2e7d32"
                     status_msg = "✅ Sab Theek Hai (All OK)"
-                    clean_label = "Healthy (Sehatmand)" # Label ko bhi theek dikhayein
+                    clean_label = "Healthy (Sehatmand)"
                 else:
                     bg_color = "#ffebee" # Light Red
                     border_color = "#c62828"
@@ -181,4 +257,5 @@ elif nav == "🥔 Potato (Aloo)":
 
 elif nav in ["🍅 Tomato", "🌽 Corn"]:
     st.info("🚧 Coming Soon in few days...")
+
     
