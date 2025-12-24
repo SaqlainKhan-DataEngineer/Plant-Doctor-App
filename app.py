@@ -33,6 +33,11 @@ st.markdown("""
         color: white !important;
     }
 
+    /* Global Image Styling */
+    img {
+        border-radius: 15px;
+    }
+
     /* Home Page Cards */
     .hero-title {
         color: #1b5e20;
@@ -108,8 +113,8 @@ if nav == "🏠 Home":
     st.markdown("<h1 class='hero-title'>🌿 Smart Farming Assistant</h1>", unsafe_allow_html=True)
     st.markdown("<p class='hero-subtitle'>Apni fasal ko bimariyon se bachayein, AI ki madad se.</p>", unsafe_allow_html=True)
     
-    # --- COVER IMAGE ---
-    st.image("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200", use_column_width=True, style="border-radius: 20px;")
+    # --- COVER IMAGE (Fixed Error Here) ---
+    st.image("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200", use_column_width=True)
     
     st.write("") # Spacer
     st.write("") # Spacer
@@ -191,7 +196,7 @@ elif nav == "🥔 Potato (Aloo)":
                 2. Ya tasveer bohat dhundli (blurry) hai.
                 """)
             else:
-                # --- LOGIC FIX HERE (Typo Handle kiya hai) ---
+                # --- LOGIC FIX (Healthy Case) ---
                 is_healthy = "healthy" in clean_label.lower() or "healty" in clean_label.lower()
 
                 if is_healthy:
