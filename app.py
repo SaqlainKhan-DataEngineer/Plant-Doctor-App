@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ULTRA PREMIUM CSS (PARTICLES ON TOP) ---
+# --- 2. ULTRA PREMIUM CSS (SOLID PARTICLES) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -21,7 +21,7 @@ st.markdown("""
         font-family: 'Outfit', sans-serif;
     }
 
-    /* --- 1. BACKGROUND PARTICLES (NOW VISIBLE ON TOP) --- */
+    /* --- 1. BACKGROUND PARTICLES (SOLID & DARKER) --- */
     .stApp::before {
         content: "";
         position: fixed;
@@ -29,23 +29,20 @@ st.markdown("""
         left: 0;
         width: 100vw;
         height: 100vh;
-        /* Darker Green Circles for Visibility */
+        /* Ab Solid Colors use kiye hain taake saaf nazar ayen */
         background-image:
-            radial-gradient(circle at 20% 80%, rgba(6, 78, 59, 0.15) 0%, transparent 20%),
-            radial-gradient(circle at 80% 20%, rgba(6, 78, 59, 0.15) 0%, transparent 20%),
-            radial-gradient(circle at 40% 40%, rgba(16, 185, 129, 0.15) 0%, transparent 20%),
-            radial-gradient(circle at 90% 90%, rgba(5, 150, 105, 0.15) 0%, transparent 20%);
+            radial-gradient(circle at 15% 50%, rgba(16, 185, 129, 0.4) 0px, transparent 50px),
+            radial-gradient(circle at 85% 30%, rgba(6, 78, 59, 0.4) 0px, transparent 60px),
+            radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.4) 0px, transparent 40px);
         background-size: 100% 100%;
-        animation: drift 20s linear infinite;
-        pointer-events: none; /* Clicks will pass through */
-        z-index: 99; /* Brings particles on TOP of everything */
+        animation: drift 10s linear infinite; /* Speed aur tez */
+        pointer-events: none;
+        z-index: 99; 
     }
     @keyframes drift {
-        0% { transform: translate(0,0) scale(1); }
-        25% { transform: translate(-30px, 30px) scale(1.1); }
-        50% { transform: translate(30px, -30px) scale(0.9); }
-        75% { transform: translate(-20px, -10px) scale(1.05); }
-        100% { transform: translate(0,0) scale(1); }
+        0% { transform: translateY(0) translateX(0); }
+        50% { transform: translateY(-20px) translateX(20px); }
+        100% { transform: translateY(0) translateX(0); }
     }
 
     /* --- 2. ANIMATIONS --- */
@@ -95,7 +92,7 @@ st.markdown("""
         text-align: left;
         font-weight: 600;
         letter-spacing: 0.5px;
-        z-index: 100; /* Sidebar buttons above particles */
+        z-index: 100;
         position: relative;
     }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
@@ -123,7 +120,7 @@ st.markdown("""
         margin-bottom: 40px;
         border: 1px solid rgba(255,255,255,0.6);
         position: relative;
-        z-index: 10; /* Content above particles */
+        z-index: 10;
     }
     .hero-title {
         font-weight: 900;
@@ -134,10 +131,13 @@ st.markdown("""
         margin-bottom: 10px;
         letter-spacing: -2px;
     }
-    
+    @media (min-width: 1400px) {
+        .hero-title { font-size: 5rem; letter-spacing: -3px; }
+    }
+
     /* --- 5. 3D FLOATING CARDS --- */
     .feature-card {
-        background: rgba(255, 255, 255, 0.8); /* Higher opacity */
+        background: rgba(255, 255, 255, 0.8);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         padding: 30px;
