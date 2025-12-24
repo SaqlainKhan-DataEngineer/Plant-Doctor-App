@@ -12,17 +12,56 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. THE ULTIMATE CSS (CLAUDE VISUALS + KIMI SMOOTHNESS + CHATGPT LAYOUT) ---
+# --- 2. ULTRA PREMIUM CSS (SLIDESHOW + DIAMOND WIND) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Outfit', sans-serif;
-        scroll-behavior: smooth; /* Kimi's Smooth Scroll */
+        scroll-behavior: smooth;
     }
 
-    /* --- 1. BACKGROUND PARTICLES (ADAPTIVE DIAMOND WIND) --- */
+    /* --- 1. SLIDESHOW ANIMATION (New Feature) --- */
+    .slider-frame {
+        overflow: hidden;
+        width: 100%;
+        max-width: 1200px;
+        margin: 20px auto;
+        border-radius: 25px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        border: 1px solid rgba(255,255,255,0.5);
+    }
+    
+    .slide-images {
+        width: 300%; /* 3 Images = 300% width */
+        display: flex;
+        animation: slide_animation 15s infinite ease-in-out;
+    }
+    
+    .img-container {
+        width: 100%;
+        height: 500px; /* Fixed Height for professional look */
+    }
+    
+    .img-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Ensures image fills box without stretching */
+    }
+
+    /* Keyframes for sliding 3 images */
+    @keyframes slide_animation {
+        0% { margin-left: 0%; }
+        30% { margin-left: 0%; }       /* Pause on Image 1 */
+        33% { margin-left: -100%; }    /* Slide to Image 2 */
+        63% { margin-left: -100%; }    /* Pause on Image 2 */
+        66% { margin-left: -200%; }    /* Slide to Image 3 */
+        96% { margin-left: -200%; }    /* Pause on Image 3 */
+        100% { margin-left: 0%; }      /* Back to Start */
+    }
+
+    /* --- 2. BACKGROUND PARTICLES --- */
     .stApp::before {
         content: "";
         position: fixed;
@@ -30,7 +69,6 @@ st.markdown("""
         left: -50%;
         width: 200%;
         height: 200%;
-        /* Greenish sparkles visible on both Light & Dark modes */
         background-image:
             radial-gradient(circle at 20px 30px, rgba(4, 120, 87, 0.4) 0px, transparent 3px),
             radial-gradient(circle at 40px 70px, rgba(16, 185, 129, 0.5) 0px, transparent 3px),
@@ -49,8 +87,7 @@ st.markdown("""
         100% { transform: translateY(100px) translateX(-100px); } 
     }
 
-    /* --- 2. KIMI'S SMOOTH FADE-IN ANIMATION --- */
-    /* Elements will fade in smoothly instead of popping up */
+    /* --- 3. ANIMATIONS & GENERAL STYLING --- */
     .stApp > div > div > div > div > div[class*="stMarkdown"],
     .stApp > div > div > div > div > div[data-testid="stImage"] {
         animation: fadeInUp 0.8s ease-out backwards;
@@ -60,7 +97,6 @@ st.markdown("""
         to { opacity: 1; transform: translateY(0); }
     }
 
-    /* --- 3. HERO & CARDS STYLING --- */
     .hero-container {
         text-align: center;
         padding: 60px 20px;
@@ -74,14 +110,12 @@ st.markdown("""
         position: relative;
         z-index: 1;
     }
-    
     @keyframes gradientBG {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
     }
 
-    /* 3D Floating Cards */
     .feature-card {
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(20px);
@@ -105,8 +139,7 @@ st.markdown("""
         box-shadow: 0 25px 50px rgba(16, 185, 129, 0.25);
         border-color: #34d399;
     }
-    
-    /* CTA Button (Start Diagnosis) */
+
     .cta-button {
         display: inline-block;
         background: linear-gradient(90deg, #059669, #10b981);
@@ -124,7 +157,6 @@ st.markdown("""
         box-shadow: 0 15px 35px rgba(16,185,129,0.6);
     }
 
-    /* --- 4. SIDEBAR STYLING --- */
     [data-testid="stSidebar"] {
         background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%);
         border-right: none;
@@ -133,14 +165,12 @@ st.markdown("""
         color: #ecfdf5 !important;
     }
     
-    /* Sidebar Logo Animation */
     @keyframes float-and-glow {
         0% { transform: translateY(0px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
         50% { transform: translateY(-10px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); }
         100% { transform: translateY(0px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
     }
 
-    /* Navigation Buttons */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
         background: rgba(255, 255, 255, 0.05);
         padding: 12px 15px;
@@ -161,14 +191,9 @@ st.markdown("""
          transform: translateX(5px);
     }
     
-    /* Image Styling (Fixes the Python Error) */
     img {
         border-radius: 20px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        transition: transform 0.3s;
-    }
-    img:hover {
-        transform: scale(1.01);
     }
     
     .result-box {
@@ -194,7 +219,6 @@ def load_model():
 model, processor = load_model()
 
 # --- 4. SIDEBAR ---
-# Super Animated Logo
 st.sidebar.markdown("""
     <div style="display: flex; justify-content: center; margin-bottom: 20px; margin-top: 10px;">
         <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png" 
@@ -224,7 +248,7 @@ st.sidebar.info("**Developers:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engineer
 
 # --- 5. MAIN LOGIC ---
 if nav == "🏠  Home Page":
-    # --- HERO SECTION (ChatGPT Content) ---
+    # --- HERO SECTION ---
     st.markdown("""
     <div class="hero-container">
         <h1 style="font-size: 4rem; font-weight: 900; background: -webkit-linear-gradient(#064e3b, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Plant Doctor AI</h1>
@@ -240,10 +264,25 @@ if nav == "🏠  Home Page":
     </div>
     """, unsafe_allow_html=True)
     
-    # Corrected: Removed 'style' argument. CSS 'img' tag handles styling now.
-    st.image("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200", use_column_width=True)
+    # --- SLIDESHOW SECTION (New!) ---
+    # Replacing single st.image with this HTML slider
+    st.markdown("""
+    <div class="slider-frame">
+        <div class="slide-images">
+            <div class="img-container">
+                <img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200">
+            </div>
+            <div class="img-container">
+                <img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=1200">
+            </div>
+            <div class="img-container">
+                <img src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=1200">
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # --- TRUST INDICATORS (ChatGPT Stats) ---
+    # --- TRUST INDICATORS ---
     st.markdown("<br><br>", unsafe_allow_html=True)
     col1, col2, col3, col4 = st.columns(4)
     stats = [
@@ -262,7 +301,7 @@ if nav == "🏠  Home Page":
             </div>
             """, unsafe_allow_html=True)
 
-    # --- HOW IT WORKS (ChatGPT Steps) ---
+    # --- HOW IT WORKS ---
     st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:80px; font-size:3rem;'>How It Works</h2>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
@@ -281,7 +320,7 @@ if nav == "🏠  Home Page":
             </div>
             """, unsafe_allow_html=True)
 
-    # --- SUPPORTED CROPS (Roadmap) ---
+    # --- SUPPORTED CROPS ---
     st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:80px; font-size:3rem;'>Supported Crops</h2>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
@@ -325,7 +364,6 @@ elif nav == "🥔  Potato (Aloo)":
         
         with col1:
             image = Image.open(uploaded_file).convert('RGB')
-            # Corrected: Removed 'style' argument here too.
             st.image(image, caption="Uploaded Photo", use_column_width=True)
         
         with col2:
