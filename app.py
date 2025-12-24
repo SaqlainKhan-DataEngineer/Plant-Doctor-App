@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. PROFESSIONAL CSS STYLING ---
+# --- 2. ANIMATED & PROFESSIONAL CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
@@ -21,11 +21,19 @@ st.markdown("""
         font-family: 'Poppins', sans-serif;
     }
     
-    /* Animation Keyframes */
+    /* --- 1. ANIMATIONS --- */
+    /* Floating Animation (Main Page) */
     @keyframes float {
         0% { transform: translateY(0px); }
         50% { transform: translateY(-10px); }
         100% { transform: translateY(0px); }
+    }
+    
+    /* Pulse Animation (Sidebar Logo) - Dhak Dhak */
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); filter: drop-shadow(0 0 10px rgba(255,255,255,0.3)); }
+        100% { transform: scale(1); }
     }
     
     .animated-icon {
@@ -33,43 +41,53 @@ st.markdown("""
         animation: float 3s ease-in-out infinite;
         font-size: 3rem;
     }
+    
+    .sidebar-logo {
+        display: block;
+        margin: 0 auto;
+        animation: pulse 2s infinite; /* Ye sidebar wale ko zinda karega */
+        font-size: 4rem;
+        text-align: center;
+    }
 
-    /* Sidebar Styling (Deep Jungle Theme) */
+    /* --- 2. SIDEBAR STYLING (Deep Jungle + Sky Touch) --- */
     [data-testid="stSidebar"] {
-        background-image: linear-gradient(180deg, #093028 0%, #237A57 100%);
+        /* Green gradient with a hint of blue at bottom */
+        background-image: linear-gradient(180deg, #052e16 0%, #115e59 100%); 
         border-right: 2px solid #004d40;
     }
     [data-testid="stSidebar"] * {
-        color: white !important;
+        color: #e0f2f1 !important; /* Thora sa safed-blueish text taake parha jaye */
     }
     [data-testid="stSidebarNav"] {
         padding-top: 20px;
     }
 
-    /* Global Image Styling */
-    img {
-        border-radius: 15px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    /* --- 3. MAIN PAGE STYLING --- */
+    /* Background: Halka sa Sky Blue touch */
+    .stApp {
+        background: linear-gradient(135deg, #f0f9ff 0%, #dcfce7 100%);
     }
 
-    /* Home Page Styling */
+    /* Hero Section */
     .hero-container {
         text-align: center;
-        padding: 20px;
+        padding: 30px;
         background: white;
         border-radius: 20px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         margin-bottom: 30px;
+        border-bottom: 5px solid #10b981; /* Bright Green Border */
     }
     .hero-title {
-        color: #1b5e20;
+        color: #064e3b;
         font-weight: 700;
         margin-bottom: 5px;
-        font-size: 2.5rem;
+        font-size: 2.8rem;
     }
     .hero-subtitle {
         color: #555;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
     }
 
     /* Feature Cards */
@@ -80,37 +98,37 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         text-align: center;
         transition: transform 0.3s ease;
-        border-top: 5px solid #237A57;
+        border-top: 5px solid #10b981;
     }
     .feature-card:hover {
         transform: translateY(-8px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     }
     .feature-icon {
         font-size: 2.5rem;
         margin-bottom: 15px;
-        background: #e8f5e9;
-        width: 60px;
-        height: 60px;
-        line-height: 60px;
+        background: #ecfdf5;
+        width: 70px;
+        height: 70px;
+        line-height: 70px;
         border-radius: 50%;
         margin: 0 auto 15px auto;
+        color: #059669;
     }
 
-    /* Result & Treatment Styling */
+    /* Image Styling */
+    img {
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    /* Result Box */
     .result-box {
         padding: 20px;
         border-radius: 15px;
         text-align: center;
         margin-bottom: 20px;
         box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    }
-    .treatment-card {
-        background: white;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        margin-top: 15px;
-        border-left: 5px solid #2e7d32;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -127,21 +145,21 @@ def load_model():
 
 model, processor = load_model()
 
-# --- 4. SIDEBAR ---
-# Sidebar Logo (Optional URL or Icon)
-st.sidebar.markdown("<div style='text-align: center; font-size: 3rem;'>🌱</div>", unsafe_allow_html=True)
-st.sidebar.markdown("<h2 style='text-align: center;'>Plant Doctor</h2>", unsafe_allow_html=True)
+# --- 4. SIDEBAR (Animated) ---
+# Yahan humne Animation Class lagayi hai
+st.sidebar.markdown("<div class='sidebar-logo'>🌱</div>", unsafe_allow_html=True)
+st.sidebar.markdown("<h2 style='text-align: center; color: white;'>Plant Doctor</h2>", unsafe_allow_html=True)
+st.sidebar.markdown("<p style='text-align: center; font-size: 0.9rem; opacity: 0.8;'>AI Based Detection</p>", unsafe_allow_html=True)
 st.sidebar.write("---")
 
 nav = st.sidebar.radio("Navigation", ["🏠 Home", "🥔 Potato (Aloo)", "🍅 Tomato", "🌽 Corn"])
 
 st.sidebar.write("---")
-# Updated Developer Info
 st.sidebar.info("**Developed by:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engineer)\n\n👨‍💻 **Raheel Chishti**\n(Team Member)")
 
 # --- 5. MAIN LOGIC ---
 if nav == "🏠 Home":
-    # --- ANIMATED HERO SECTION ---
+    # --- HERO SECTION ---
     st.markdown("""
     <div class="hero-container">
         <div class="animated-icon">🌿</div>
@@ -157,7 +175,7 @@ if nav == "🏠 Home":
     st.write("") 
 
     # --- FEATURES SECTION ---
-    st.markdown("<h3 style='text-align: center; color: #1b5e20; margin-bottom: 30px;'>Why Choose This App?</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: #064e3b; margin-bottom: 30px;'>Why Choose This App?</h3>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
     
@@ -213,6 +231,7 @@ elif nav == "🥔 Potato (Aloo)":
             st.info("🔍 Analyzing image...")
             time.sleep(1) 
             
+            # Prediction
             inputs = processor(images=image, return_tensors="pt")
             with torch.no_grad():
                 outputs = model(**inputs)
@@ -223,6 +242,7 @@ elif nav == "🥔 Potato (Aloo)":
             clean_label = label.replace("_", " ").title()
             conf = torch.softmax(logits, dim=1)[0][idx].item() * 100
             
+            # Guardrail
             if conf < 90:
                 st.error("⚠️ **Tasveer Pehchani Nahi Ja Rahi!**")
                 st.warning(f"""
@@ -234,13 +254,13 @@ elif nav == "🥔 Potato (Aloo)":
                 is_healthy = "healthy" in clean_label.lower() or "healty" in clean_label.lower()
 
                 if is_healthy:
-                    bg_color = "#e8f5e9"
-                    border_color = "#2e7d32"
+                    bg_color = "#ecfdf5" # Mint Green (Light Blueish Green)
+                    border_color = "#059669"
                     status_msg = "✅ Sab Theek Hai (All OK)"
                     clean_label = "Healthy (Sehatmand)"
                 else:
-                    bg_color = "#ffebee"
-                    border_color = "#c62828"
+                    bg_color = "#fef2f2"
+                    border_color = "#dc2626"
                     status_msg = "⚠️ Bimari Detected (Action Needed)"
 
                 st.markdown(f"""
@@ -254,8 +274,8 @@ elif nav == "🥔 Potato (Aloo)":
                 if is_healthy:
                     st.balloons()
                     st.markdown("""
-                    <div class='treatment-card' style='border-left: 5px solid #4caf50;'>
-                        <h3 style='color: #2e7d32;'>🎉 Mubarak Ho!</h3>
+                    <div class='treatment-card' style='border-left: 5px solid #059669;'>
+                        <h3 style='color: #059669;'>🎉 Mubarak Ho!</h3>
                         <p>Aapki fasal bilkul theek hai. Hifazat ke liye ye karein:</p>
                         <ul style='font-size: 1.1rem; line-height: 1.8;'>
                             <li>💧 <b>Pani:</b> Waqt par pani dein.</li>
@@ -267,8 +287,8 @@ elif nav == "🥔 Potato (Aloo)":
                     
                 elif "late" in clean_label.lower():
                     st.markdown("""
-                    <div class='treatment-card' style='border-left: 5px solid #d32f2f;'>
-                        <h3 style='color: #d32f2f;'>💊 Late Blight Ka Ilaj</h3>
+                    <div class='treatment-card' style='border-left: 5px solid #dc2626;'>
+                        <h3 style='color: #dc2626;'>💊 Late Blight Ka Ilaj</h3>
                         <ul style='font-size: 1.1rem; line-height: 1.8;'>
                             <li><b>1. Chemical:</b> Metalaxyl + Mancozeb (2.5g/liter) spray karein.</li>
                             <li><b>2. Schedule:</b> Har 7-10 din baad spray dohrayein.</li>
@@ -279,8 +299,8 @@ elif nav == "🥔 Potato (Aloo)":
                     
                 elif "early" in clean_label.lower():
                     st.markdown("""
-                    <div class='treatment-card' style='border-left: 5px solid #ff9800;'>
-                        <h3 style='color: #e65100;'>💊 Early Blight Ka Ilaj</h3>
+                    <div class='treatment-card' style='border-left: 5px solid #d97706;'>
+                        <h3 style='color: #d97706;'>💊 Early Blight Ka Ilaj</h3>
                         <ul style='font-size: 1.1rem; line-height: 1.8;'>
                             <li><b>1. Chemical:</b> Chlorothalonil ya Azoxystrobin spray karein.</li>
                             <li><b>2. Organic:</b> Neem Oil ka spray bihtareen hai.</li>
