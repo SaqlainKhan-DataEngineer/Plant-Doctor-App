@@ -31,9 +31,19 @@ st.markdown("""
         from { opacity: 0; transform: translateY(50px); }
         to { opacity: 1; transform: translateY(0); }
     }
+    # Moves the logo up and down
     @keyframes logo-bounce {
         0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-5px); }
+        50% { transform: translateY(-10px); }
+    }
+    # NEW: Creates the intense glowing light effect from behind
+    @keyframes intense-glow {
+        0%, 100% { box-shadow: 0 0 10px rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.2); }
+        50% { 
+            # Big white glow + subtle green outer glow
+            box-shadow: 0 0 30px rgba(255,255,255,0.9), 0 0 60px rgba(16, 185, 129, 0.5); 
+            border-color: rgba(255,255,255,0.8);
+        }
     }
 
     /* --- SIDEBAR STYLING --- */
@@ -163,12 +173,14 @@ def load_model():
 
 model, processor = load_model()
 
-# --- 4. SIDEBAR (Updated for Centering) ---
-# Hum yahan HTML use kar rahe hain taake image bilkul CENTER mein aye
+# --- 4. SIDEBAR (Updated with Glowing Effect) ---
+# Humne yahan 2 animations aik sath lagayi hain (bounce aur glow)
 st.sidebar.markdown("""
     <div style="display: flex; justify-content: center; margin-bottom: 20px;">
         <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png" 
-             style="width: 140px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); padding: 10px; background: rgba(255,255,255,0.1); animation: logo-bounce 3s infinite ease-in-out;">
+             style="width: 140px; border-radius: 50%; padding: 10px; background: rgba(255,255,255,0.1); 
+             border: 2px solid rgba(255,255,255,0.2); 
+             animation: logo-bounce 3s infinite ease-in-out, intense-glow 3s infinite ease-in-out;">
     </div>
     """, unsafe_allow_html=True)
 
