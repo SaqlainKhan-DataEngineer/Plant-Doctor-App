@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ULTRA PREMIUM CSS (FULLY ANIMATED + 5 SLIDES) ---
+# --- 2. ULTRA PREMIUM CSS (FIXED SLIDESHOW) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -22,7 +22,7 @@ st.markdown("""
         scroll-behavior: smooth;
     }
 
-    /* --- 1. NEW 5-IMAGE SLIDESHOW (FASTER) --- */
+    /* --- 1. SLIDESHOW ANIMATION --- */
     .slider-frame {
         overflow: hidden;
         width: 100%;
@@ -36,9 +36,9 @@ st.markdown("""
     }
     
     .slide-images {
-        width: 500%; /* 5 Images = 500% width */
+        width: 500%;
         display: flex;
-        animation: slide_animation 12s infinite ease-in-out; 
+        animation: slide_animation 16s infinite ease-in-out; /* Time increased slightly for better view */
     }
     
     .img-container {
@@ -52,22 +52,21 @@ st.markdown("""
         object-fit: cover;
     }
 
-    /* Keyframes for 5 Images */
     @keyframes slide_animation {
         0% { margin-left: 0%; }
-        15% { margin-left: 0%; }        /* Img 1 */
-        20% { margin-left: -100%; }     /* Slide to Img 2 */
-        35% { margin-left: -100%; }     /* Img 2 */
-        40% { margin-left: -200%; }     /* Slide to Img 3 */
-        55% { margin-left: -200%; }     /* Img 3 */
-        60% { margin-left: -300%; }     /* Slide to Img 4 */
-        75% { margin-left: -300%; }     /* Img 4 */
-        80% { margin-left: -400%; }     /* Slide to Img 5 */
-        95% { margin-left: -400%; }     /* Img 5 */
-        100% { margin-left: 0%; }       /* Back to Start */
+        15% { margin-left: 0%; }
+        20% { margin-left: -100%; }
+        35% { margin-left: -100%; }
+        40% { margin-left: -200%; }
+        55% { margin-left: -200%; }
+        60% { margin-left: -300%; }
+        75% { margin-left: -300%; }
+        80% { margin-left: -400%; }
+        95% { margin-left: -400%; }
+        100% { margin-left: 0%; }
     }
 
-    /* --- 2. GLOBAL TEXT & EMOJI ANIMATIONS --- */
+    /* --- 2. ANIMATIONS --- */
     h1, h2, h3, p, span, a {
         animation: fadeInUp 0.8s ease-out backwards;
     }
@@ -87,7 +86,7 @@ st.markdown("""
         100% { transform: scale(1); }
     }
 
-    /* --- 3. BACKGROUND PARTICLES (DIAMOND WIND) --- */
+    /* --- 3. BACKGROUND PARTICLES --- */
     .stApp::before {
         content: "";
         position: fixed;
@@ -112,7 +111,7 @@ st.markdown("""
         100% { transform: translateY(100px) translateX(-100px); } 
     }
 
-    /* --- 4. HERO & CARDS STYLING --- */
+    /* --- 4. HERO & CARDS --- */
     .hero-container {
         text-align: center;
         padding: 60px 20px;
@@ -297,7 +296,7 @@ if nav == "🏠  Home Page":
     </div>
     """, unsafe_allow_html=True)
     
-    # --- SLIDESHOW SECTION (UPDATED - 4th Image Changed) ---
+    # --- SLIDESHOW SECTION (Fixed 4th Image) ---
     st.markdown("""
     <div class="slider-frame">
         <div class="slide-images">
@@ -311,7 +310,7 @@ if nav == "🏠  Home Page":
                 <img src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=1200">
             </div>
             <div class="img-container">
-                <img src="https://images.unsplash.com/photo-1615811361269-202620376903?w=1200">
+                <img src="https://images.unsplash.com/photo-1587334274328-64186a80aeee?w=1200">
             </div>
              <div class="img-container">
                 <img src="https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=1200">
@@ -405,7 +404,6 @@ elif nav == "🥔  Potato (Aloo)":
             st.image(image, caption="Uploaded Photo", use_column_width=True)
         
         with col2:
-            # Scanning Animation
             my_bar = st.progress(0, text="Starting engine...")
             status_text = st.empty()
             
@@ -419,7 +417,6 @@ elif nav == "🥔  Potato (Aloo)":
             status_text.empty()
             my_bar.empty()
             
-            # AI Logic
             inputs = processor(images=image, return_tensors="pt")
             with torch.no_grad():
                 outputs = model(**inputs)
@@ -457,7 +454,6 @@ elif nav == "🥔  Potato (Aloo)":
                     </div>
                 """, unsafe_allow_html=True)
                 
-                # Confidence Progress Bar
                 st.write(f"**Confidence Score:** {conf:.1f}%")
                 st.progress(int(conf))
 
@@ -500,5 +496,4 @@ elif nav == "🥔  Potato (Aloo)":
                     st.info("Is result ke liye filhal koi makhsoos ilaj available nahi hai.")
 
 elif nav in ["🍅  Tomato Check", "🌽  Corn Field"]:
-    st.info("🚧 Coming Soon in few days...") 
-    
+    st.info("🚧 Coming Soon in few days...")
