@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ULTRA PREMIUM CSS (SLIDESHOW + DIAMOND WIND) ---
+# --- 2. ULTRA PREMIUM CSS (FULLY ANIMATED + 5 SLIDES) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -22,7 +22,7 @@ st.markdown("""
         scroll-behavior: smooth;
     }
 
-    /* --- 1. SLIDESHOW ANIMATION (New Feature) --- */
+    /* --- 1. NEW 5-IMAGE SLIDESHOW (FASTER) --- */
     .slider-frame {
         overflow: hidden;
         width: 100%;
@@ -31,37 +31,66 @@ st.markdown("""
         border-radius: 25px;
         box-shadow: 0 15px 40px rgba(0,0,0,0.15);
         border: 1px solid rgba(255,255,255,0.5);
+        position: relative;
+        z-index: 1;
     }
     
     .slide-images {
-        width: 300%; /* 3 Images = 300% width */
+        width: 500%; /* 5 Images = 500% width */
         display: flex;
-        animation: slide_animation 15s infinite ease-in-out;
+        /* Speed tez kar di hai: 12s total loop */
+        animation: slide_animation 12s infinite ease-in-out; 
     }
     
     .img-container {
         width: 100%;
-        height: 500px; /* Fixed Height for professional look */
+        height: 500px;
     }
     
     .img-container img {
         width: 100%;
         height: 100%;
-        object-fit: cover; /* Ensures image fills box without stretching */
+        object-fit: cover;
     }
 
-    /* Keyframes for sliding 3 images */
+    /* Keyframes for 5 Images */
     @keyframes slide_animation {
         0% { margin-left: 0%; }
-        30% { margin-left: 0%; }       /* Pause on Image 1 */
-        33% { margin-left: -100%; }    /* Slide to Image 2 */
-        63% { margin-left: -100%; }    /* Pause on Image 2 */
-        66% { margin-left: -200%; }    /* Slide to Image 3 */
-        96% { margin-left: -200%; }    /* Pause on Image 3 */
-        100% { margin-left: 0%; }      /* Back to Start */
+        15% { margin-left: 0%; }        /* Img 1 Ruka rahega */
+        20% { margin-left: -100%; }     /* Slide to Img 2 */
+        35% { margin-left: -100%; }     /* Img 2 Ruka rahega */
+        40% { margin-left: -200%; }     /* Slide to Img 3 */
+        55% { margin-left: -200%; }     /* Img 3 Ruka rahega */
+        60% { margin-left: -300%; }     /* Slide to Img 4 */
+        75% { margin-left: -300%; }     /* Img 4 Ruka rahega */
+        80% { margin-left: -400%; }     /* Slide to Img 5 */
+        95% { margin-left: -400%; }     /* Img 5 Ruka rahega */
+        100% { margin-left: 0%; }       /* Back to Start */
     }
 
-    /* --- 2. BACKGROUND PARTICLES --- */
+    /* --- 2. GLOBAL TEXT & EMOJI ANIMATIONS --- */
+    /* Har Heading, Paragraph aur Image Load hote waqt animate karegi */
+    h1, h2, h3, p, span, a {
+        animation: fadeInUp 0.8s ease-out backwards;
+    }
+    
+    /* Feature Icons (Emojis) ko BOUNCE effect diya hai */
+    .feature-icon, .stMarkdown div[data-testid="stMetricValue"] {
+        animation: popIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) both;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes popIn {
+        0% { transform: scale(0); opacity: 0; }
+        80% { transform: scale(1.1); opacity: 1; }
+        100% { transform: scale(1); }
+    }
+
+    /* --- 3. BACKGROUND PARTICLES (DIAMOND WIND) --- */
     .stApp::before {
         content: "";
         position: fixed;
@@ -81,41 +110,33 @@ st.markdown("""
         pointer-events: none;
         z-index: 0;
     }
-
     @keyframes diamond-wind {
         0% { transform: translateY(0) translateX(0); }
         100% { transform: translateY(100px) translateX(-100px); } 
     }
 
-    /* --- 3. ANIMATIONS & GENERAL STYLING --- */
-    .stApp > div > div > div > div > div[class*="stMarkdown"],
-    .stApp > div > div > div > div > div[data-testid="stImage"] {
-        animation: fadeInUp 0.8s ease-out backwards;
-    }
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
+    /* --- 4. HERO & CARDS STYLING --- */
     .hero-container {
         text-align: center;
         padding: 60px 20px;
         border-radius: 30px;
         background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
         background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite;
+        animation: gradientBG 15s ease infinite, popIn 1s ease-out; /* PopIn Animation Added */
         box-shadow: 0 20px 50px rgba(0,0,0,0.1);
         margin-bottom: 40px;
         border: 1px solid rgba(255,255,255,0.6);
         position: relative;
         z-index: 1;
     }
+    
     @keyframes gradientBG {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
     }
 
+    /* 3D Floating Cards */
     .feature-card {
         background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(20px);
@@ -133,11 +154,24 @@ st.markdown("""
         transition: transform 0.4s ease, box-shadow 0.4s ease;
         position: relative;
         z-index: 1;
+        animation: fadeInUp 1s ease-out; /* Slide Up Added */
     }
     .feature-card:hover {
         transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateY(-10px);
         box-shadow: 0 25px 50px rgba(16, 185, 129, 0.25);
         border-color: #34d399;
+    }
+    
+    .feature-icon {
+        font-size: 3.5rem;
+        margin-bottom: 20px;
+        background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+        width: 100px;
+        height: 100px;
+        line-height: 100px;
+        border-radius: 50%;
+        color: #059669;
+        box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
     }
 
     .cta-button {
@@ -151,12 +185,14 @@ st.markdown("""
         box-shadow: 0 10px 25px rgba(16,185,129,0.4);
         transition: all 0.3s;
         margin-top: 20px;
+        animation: popIn 1.2s ease-out; /* Pop In */
     }
     .cta-button:hover {
         transform: scale(1.05);
         box-shadow: 0 15px 35px rgba(16,185,129,0.6);
     }
 
+    /* --- 5. SIDEBAR STYLING --- */
     [data-testid="stSidebar"] {
         background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%);
         border-right: none;
@@ -202,6 +238,7 @@ st.markdown("""
         text-align: center;
         background: rgba(255,255,255,0.9);
         box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+        animation: popIn 0.5s ease-out;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -264,8 +301,7 @@ if nav == "🏠  Home Page":
     </div>
     """, unsafe_allow_html=True)
     
-    # --- SLIDESHOW SECTION (New!) ---
-    # Replacing single st.image with this HTML slider
+    # --- SLIDESHOW SECTION (UPDATED - 5 IMAGES & FASTER) ---
     st.markdown("""
     <div class="slider-frame">
         <div class="slide-images">
@@ -277,6 +313,12 @@ if nav == "🏠  Home Page":
             </div>
             <div class="img-container">
                 <img src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=1200">
+            </div>
+            <div class="img-container">
+                <img src="https://images.unsplash.com/photo-1595841696677-6489ff3f8cd1?w=1200">
+            </div>
+             <div class="img-container">
+                <img src="https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=1200">
             </div>
         </div>
     </div>
@@ -295,7 +337,7 @@ if nav == "🏠  Home Page":
         with col:
             st.markdown(f"""
             <div class="feature-card" style="min-height:180px; padding:20px;">
-                <div style="font-size:3rem; margin-bottom:10px;">{icon}</div>
+                <div class="feature-icon" style="font-size:3rem; margin-bottom:10px; width:auto; height:auto; background:none; box-shadow:none;">{icon}</div>
                 <h2 style="margin:0; color:#064e3b; font-weight:800; font-size:2rem;">{value}</h2>
                 <p style="font-weight:600; color:#555; margin:0;">{label}</p>
             </div>
@@ -314,7 +356,7 @@ if nav == "🏠  Home Page":
         with col:
             st.markdown(f"""
             <div class="feature-card">
-                <div style="font-size:3.5rem; margin-bottom:15px; background: #ecfdf5; width:80px; height:80px; line-height:80px; border-radius:50%; margin: 0 auto 15px auto;">{icon}</div>
+                <div class="feature-icon">{icon}</div>
                 <h3 style="color:#064e3b; font-weight:700;">{title}</h3>
                 <p style="color:#555;">{desc}</p>
             </div>
@@ -333,7 +375,7 @@ if nav == "🏠  Home Page":
         with col:
             st.markdown(f"""
             <div class="feature-card" style="min-height:220px;">
-                <div style="font-size:4.5rem; margin-bottom:15px;">{icon}</div>
+                <div style="font-size:4.5rem; margin-bottom:15px;" class="feature-icon">{icon}</div>
                 <h3 style="color:#064e3b; font-weight:800;">{name}</h3>
                 <p style="font-weight:600; color:#059669;">{status}</p>
             </div>
@@ -463,4 +505,3 @@ elif nav == "🥔  Potato (Aloo)":
 
 elif nav in ["🍅  Tomato Check", "🌽  Corn Field"]:
     st.info("🚧 Coming Soon in few days...") 
-    
