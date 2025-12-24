@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. PREMIUM ANIMATED CSS (ULTRA-POLISHED) ---
+# --- 2. ULTRA PREMIUM CSS (KIMI + SAQLAIN MIX) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -20,10 +20,31 @@ st.markdown("""
     html, body, [class*="css"] {
         font-family: 'Outfit', sans-serif;
     }
-    
-    /* --- ANIMATIONS --- */
+
+    /* --- 1. BACKGROUND PARTICLES (Subtle Moving Background) --- */
+    .stApp::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+            radial-gradient(circle at 20% 80%, rgba(16,185,129,.08) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(6,78,59,.06) 0%, transparent 50%),
+            radial-gradient(circle at 40% 40%, rgba(52,211,153,.05) 0%, transparent 50%);
+        animation: drift 20s linear infinite;
+        pointer-events: none;
+        z-index: -1;
+    }
+    @keyframes drift {
+        0% { transform: translate(0,0); }
+        25% { transform: translate(-5%, 5%); }
+        50% { transform: translate(5%, -5%); }
+        75% { transform: translate(-3%, -3%); }
+        100% { transform: translate(0,0); }
+    }
+
+    /* --- 2. ANIMATIONS --- */
     @keyframes slideUp {
-        from { opacity: 0; transform: translateY(50px); }
+        from { opacity: 0; transform: translateY(40px); }
         to { opacity: 1; transform: translateY(0); }
     }
     @keyframes float-and-glow {
@@ -31,8 +52,17 @@ st.markdown("""
         50% { transform: translateY(-12px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); }
         100% { transform: translateY(0px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
     }
+    @keyframes subtlePulse {
+        0%, 100% { filter: brightness(1); }
+        50% { filter: brightness(1.05); }
+    }
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
 
-    /* --- SIDEBAR STYLING --- */
+    /* --- 3. SIDEBAR STYLING --- */
     [data-testid="stSidebar"] {
         background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%);
         border-right: none;
@@ -73,19 +103,15 @@ st.markdown("""
          box-shadow: -5px 0 20px rgba(52, 211, 153, 0.2);
     }
 
-    /* --- MAIN BACKGROUND (Subtle Mesh) --- */
-    .stApp {
-        background: radial-gradient(circle at 10% 20%, rgb(236, 253, 245) 0%, rgb(255, 255, 255) 90%);
-    }
-
-    /* --- HERO SECTION --- */
+    /* --- 4. HERO SECTION (With Pulse) --- */
     .hero-container {
         text-align: center;
         padding: 60px 20px;
         border-radius: 30px;
         background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
         background-size: 400% 400%;
-        animation: gradientBG 10s ease infinite;
+        /* Double animation: Gradient Move + Subtle Pulse */
+        animation: gradientBG 15s ease infinite, subtlePulse 8s ease-in-out infinite, slideUp 0.8s ease-out;
         box-shadow: 0 20px 50px rgba(0,0,0,0.1);
         margin-bottom: 40px;
         border: 1px solid rgba(255,255,255,0.6);
@@ -98,33 +124,35 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
         margin-bottom: 10px;
         letter-spacing: -2px;
-        animation: slideUp 0.8s ease-out;
     }
-    @keyframes gradientBG {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+    @media (min-width: 1400px) {
+        .hero-title { font-size: 5rem; letter-spacing: -3px; }
     }
-    
-    /* --- GLASS CARDS --- */
+
+    /* --- 5. 3D FLOATING CARDS --- */
     .feature-card {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(15px);
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(20px); /* Frosted Glass */
+        -webkit-backdrop-filter: blur(20px);
         padding: 30px;
         border-radius: 25px;
         text-align: center;
-        transition: all 0.4s ease;
         border: 1px solid rgba(255,255,255,0.5);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.07);
         min-height: 320px;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        
+        /* 3D Properties */
+        transform-style: preserve-3d;
+        transition: transform 0.4s ease, box-shadow 0.4s ease;
         animation: slideUp 1s ease-out 0.2s backwards;
     }
     .feature-card:hover {
-        transform: translateY(-15px);
+        /* The 3D Tilt Effect */
+        transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateY(-15px);
         box-shadow: 0 25px 50px rgba(16, 185, 129, 0.25);
         border-color: #34d399;
     }
@@ -144,14 +172,16 @@ st.markdown("""
         border-radius: 25px;
         box-shadow: 0 15px 40px rgba(0,0,0,0.15);
         transition: transform 0.3s;
+        animation: slideUp 1s ease-out;
     }
     
-    /* Result Box & Treatment */
+    /* Result Box */
     .result-box {
         padding: 30px;
         border-radius: 25px;
         text-align: center;
         margin-bottom: 25px;
+        backdrop-filter: blur(20px);
         box-shadow: 0 15px 30px rgba(0,0,0,0.08);
         animation: slideUp 0.5s ease-out;
     }
@@ -171,6 +201,7 @@ def load_model():
 model, processor = load_model()
 
 # --- 4. SIDEBAR ---
+# Super Animated Logo
 st.sidebar.markdown("""
     <div style="display: flex; justify-content: center; margin-bottom: 20px; margin-top: 10px;">
         <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png" 
@@ -264,10 +295,8 @@ elif nav == "🥔  Potato (Aloo)":
             st.image(image, caption="Uploaded Photo", use_column_width=True)
         
         with col2:
-            # --- IMPROVEMENT: FAKE LOADING ANIMATION ---
-            # Ye user ko dikhane ke liye ke AI bohot kaam kar raha hai
+            # Scanning Animation
             my_bar = st.progress(0, text="Starting engine...")
-            
             status_text = st.empty()
             
             steps = ["🔍 Scanning image...", "🧬 Extracting features...", "📂 Comparing with database...", "✅ Finalizing result..."]
@@ -275,12 +304,12 @@ elif nav == "🥔  Potato (Aloo)":
             for i, step in enumerate(steps):
                 status_text.text(step)
                 my_bar.progress((i + 1) * 25)
-                time.sleep(0.4) # Artificial delay for effect
+                time.sleep(0.4)
                 
             status_text.empty()
             my_bar.empty()
             
-            # Prediction Logic
+            # AI Logic
             inputs = processor(images=image, return_tensors="pt")
             with torch.no_grad():
                 outputs = model(**inputs)
@@ -318,9 +347,9 @@ elif nav == "🥔  Potato (Aloo)":
                     </div>
                 """, unsafe_allow_html=True)
                 
-                # --- IMPROVEMENT: VISUAL PROGRESS BAR ---
+                # Confidence Progress Bar
                 st.write(f"**Confidence Score:** {conf:.1f}%")
-                st.progress(int(conf)) # Green bar dikhayega
+                st.progress(int(conf))
 
                 if is_healthy:
                     st.balloons()
@@ -361,5 +390,5 @@ elif nav == "🥔  Potato (Aloo)":
                     st.info("Is result ke liye filhal koi makhsoos ilaj available nahi hai.")
 
 elif nav in ["🍅  Tomato Check", "🌽  Corn Field"]:
-    st.info("🚧 Coming Soon in few days...") 
+    st.info("🚧 Coming Soon in few days...")
     
