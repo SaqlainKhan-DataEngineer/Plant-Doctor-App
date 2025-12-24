@@ -12,7 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ULTRA PREMIUM CSS (KIMI + SAQLAIN MIX) ---
+# --- 2. ULTRA PREMIUM CSS (PARTICLES VISIBLE NOW) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -21,25 +21,27 @@ st.markdown("""
         font-family: 'Outfit', sans-serif;
     }
 
-    /* --- 1. BACKGROUND PARTICLES (Subtle Moving Background) --- */
+    /* --- 1. BACKGROUND PARTICLES (High Visibility Fix) --- */
     .stApp::before {
         content: "";
         position: fixed;
         inset: 0;
+        /* Opacity barha di hai (0.08 se 0.3 kar di) taake nazar ayen */
         background-image:
-            radial-gradient(circle at 20% 80%, rgba(16,185,129,.08) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(6,78,59,.06) 0%, transparent 50%),
-            radial-gradient(circle at 40% 40%, rgba(52,211,153,.05) 0%, transparent 50%);
-        animation: drift 20s linear infinite;
+            radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.4) 0%, transparent 40%),
+            radial-gradient(circle at 80% 20%, rgba(6, 78, 59, 0.3) 0%, transparent 40%),
+            radial-gradient(circle at 40% 40%, rgba(52, 211, 153, 0.3) 0%, transparent 40%);
+        background-size: 100% 100%; /* Ensure it covers full screen */
+        animation: drift 15s linear infinite; /* Speed tez ki */
         pointer-events: none;
         z-index: -1;
     }
     @keyframes drift {
-        0% { transform: translate(0,0); }
-        25% { transform: translate(-5%, 5%); }
-        50% { transform: translate(5%, -5%); }
-        75% { transform: translate(-3%, -3%); }
-        100% { transform: translate(0,0); }
+        0% { transform: translate(0,0) scale(1); }
+        25% { transform: translate(-20px, 20px) scale(1.1); }
+        50% { transform: translate(20px, -20px) scale(1); }
+        75% { transform: translate(-10px, -10px) scale(0.9); }
+        100% { transform: translate(0,0) scale(1); }
     }
 
     /* --- 2. ANIMATIONS --- */
@@ -103,14 +105,13 @@ st.markdown("""
          box-shadow: -5px 0 20px rgba(52, 211, 153, 0.2);
     }
 
-    /* --- 4. HERO SECTION (With Pulse) --- */
+    /* --- 4. HERO SECTION --- */
     .hero-container {
         text-align: center;
         padding: 60px 20px;
         border-radius: 30px;
         background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
         background-size: 400% 400%;
-        /* Double animation: Gradient Move + Subtle Pulse */
         animation: gradientBG 15s ease infinite, subtlePulse 8s ease-in-out infinite, slideUp 0.8s ease-out;
         box-shadow: 0 20px 50px rgba(0,0,0,0.1);
         margin-bottom: 40px;
@@ -131,8 +132,8 @@ st.markdown("""
 
     /* --- 5. 3D FLOATING CARDS --- */
     .feature-card {
-        background: rgba(255, 255, 255, 0.6);
-        backdrop-filter: blur(20px); /* Frosted Glass */
+        background: rgba(255, 255, 255, 0.7); /* Thora safed kiya taake particles ke upar saaf dikhay */
+        backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         padding: 30px;
         border-radius: 25px;
@@ -144,14 +145,11 @@ st.markdown("""
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        
-        /* 3D Properties */
         transform-style: preserve-3d;
         transition: transform 0.4s ease, box-shadow 0.4s ease;
         animation: slideUp 1s ease-out 0.2s backwards;
     }
     .feature-card:hover {
-        /* The 3D Tilt Effect */
         transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateY(-15px);
         box-shadow: 0 25px 50px rgba(16, 185, 129, 0.25);
         border-color: #34d399;
@@ -175,7 +173,6 @@ st.markdown("""
         animation: slideUp 1s ease-out;
     }
     
-    /* Result Box */
     .result-box {
         padding: 30px;
         border-radius: 25px;
