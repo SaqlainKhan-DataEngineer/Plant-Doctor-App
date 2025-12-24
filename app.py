@@ -12,13 +12,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. PREMIUM ANIMATED CSS (WOW FACTOR) ---
+# --- 2. PREMIUM ANIMATED CSS (ALIGNMENT FIXED) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
     
     html, body, [class*="css"] {
-        font-family: 'Outfit', sans-serif; /* New Modern Font */
+        font-family: 'Outfit', sans-serif;
     }
     
     /* --- ANIMATIONS --- */
@@ -27,17 +27,18 @@ st.markdown("""
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
     }
-    @keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-15px); }
-        100% { transform: translateY(0px); }
-    }
     @keyframes slideUp {
         from { opacity: 0; transform: translateY(50px); }
         to { opacity: 1; transform: translateY(0); }
     }
+    /* New Pulse for Image Icon */
+    @keyframes pulse-img {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); filter: brightness(1.2); }
+        100% { transform: scale(1); }
+    }
 
-    /* --- SIDEBAR (Dark Luxury Green) --- */
+    /* --- SIDEBAR STYLING --- */
     [data-testid="stSidebar"] {
         background-image: linear-gradient(180deg, #022c22 0%, #0d9488 100%);
         border-right: none;
@@ -45,37 +46,58 @@ st.markdown("""
     [data-testid="stSidebar"] * {
         color: #f0fdf4 !important;
     }
-    .sidebar-logo {
-        font-size: 5rem;
-        text-align: center;
-        animation: float 4s ease-in-out infinite;
-        margin-bottom: 10px;
+
+    /* New Professional Sidebar Logo Styling */
+    [data-testid="stSidebar"] img {
+        margin-bottom: 20px;
+        animation: pulse-img 3s infinite ease-in-out;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        width: 120px !important; /* Fixed width for logo */
     }
     
-    /* Navigation Styling */
+    /* --- NAVIGATION BUTTONS ALIGNMENT FIX --- */
+    /* This forces the radio options to be perfectly aligned */
+    [data-testid="stSidebar"] .stRadio > div[role="radiogroup"] {
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Styling the individual buttons */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
+        display: flex; /* Makes content align in a row */
+        align-items: center; /* Vertical center */
+        width: 100%; /* Take full width */
         background: rgba(255, 255, 255, 0.08);
         padding: 12px 15px;
         border-radius: 12px;
-        margin-bottom: 10px;
+        margin-bottom: 10px !important;
         border: 1px solid rgba(255,255,255,0.1);
         transition: all 0.3s;
+        text-align: left; /* Ensures text starts from left */
     }
+    /* Hover Effect */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
         background: rgba(255, 255, 255, 0.2);
-        transform: scale(1.02);
+        transform: translateX(5px);
+    }
+    /* Selected Button Effect */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
+         background: rgba(16, 185, 129, 0.3) !important; /* Brighter Green */
+         border: 1px solid #10b981 !important;
+         font-weight: 700;
+         transform: translateX(5px);
     }
 
-    /* --- HERO SECTION (THE WOW FACTOR) --- */
+    /* --- HERO SECTION --- */
     .hero-container {
         text-align: center;
         padding: 60px 20px;
         border-radius: 30px;
-        /* Moving Gradient Background */
         background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
         background-size: 400% 400%;
-        animation: gradientBG 10s ease infinite; /* Colors will move! */
-        
+        animation: gradientBG 10s ease infinite;
         box-shadow: 0 20px 50px rgba(0,0,0,0.1);
         margin-bottom: 40px;
         border: 1px solid rgba(255,255,255,0.5);
@@ -98,10 +120,10 @@ st.markdown("""
         animation: slideUp 1s ease-out;
     }
     
-    /* --- GLASS CARDS (FEATURES) --- */
+    /* --- GLASS CARDS --- */
     .feature-card {
         background: rgba(255, 255, 255, 0.8);
-        backdrop-filter: blur(10px); /* Glass Effect */
+        backdrop-filter: blur(10px);
         padding: 30px;
         border-radius: 25px;
         text-align: center;
@@ -117,7 +139,7 @@ st.markdown("""
     }
     .feature-card:hover {
         transform: translateY(-15px) scale(1.03);
-        box-shadow: 0 25px 50px rgba(16, 185, 129, 0.2); /* Green Glow */
+        box-shadow: 0 25px 50px rgba(16, 185, 129, 0.2);
         border-color: #10b981;
     }
     .feature-icon {
@@ -132,17 +154,11 @@ st.markdown("""
         box-shadow: 0 10px 20px rgba(16, 185, 129, 0.15);
     }
 
-    /* Images */
     img {
         border-radius: 25px;
         box-shadow: 0 15px 40px rgba(0,0,0,0.15);
-        transition: transform 0.3s;
-    }
-    img:hover {
-        transform: scale(1.01);
     }
     
-    /* Result Box */
     .result-box {
         padding: 30px;
         border-radius: 20px;
@@ -167,11 +183,13 @@ def load_model():
 model, processor = load_model()
 
 # --- 4. SIDEBAR ---
-st.sidebar.markdown("<div class='sidebar-logo'>🌱</div>", unsafe_allow_html=True)
-st.sidebar.markdown("<h1 style='text-align: center; color: white; font-weight: 800; margin-top: -20px;'>Plant Doctor</h1>", unsafe_allow_html=True)
+# New Professional Image Icon
+st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3022/3022938.png", use_column_width=False)
+st.sidebar.markdown("<h1 style='text-align: center; color: white; font-weight: 800; margin-top: 10px; font-size: 2rem;'>Plant Doctor</h1>", unsafe_allow_html=True)
 st.sidebar.write("---")
 
-nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field"])
+# Navigation - Icons removed from text to improve alignment
+nav = st.sidebar.radio("", ["🏠  Home Page", "🥔  Potato (Aloo)", "🍅  Tomato Check", "🌽  Corn Field"])
 
 st.sidebar.write("---")
 
@@ -186,8 +204,7 @@ st.sidebar.write("---")
 st.sidebar.info("**Developers:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engineer)\n\n👨‍💻 **Raheel Chishti**\n(Team Member)")
 
 # --- 5. MAIN LOGIC ---
-if nav == "🏠 Home Page":
-    # --- WOW HERO SECTION ---
+if nav == "🏠  Home Page":
     st.markdown("""
     <div class="hero-container">
         <h1 class="hero-title">Smart Farming Assistant</h1>
@@ -235,7 +252,7 @@ if nav == "🏠 Home Page":
     st.markdown("<p style='text-align: center; color: #aaa; font-size: 0.9rem;'>© 2025 Plant Doctor AI | Designed by Saqlain & Raheel</p>", unsafe_allow_html=True)
 
 
-elif nav == "🥔 Potato (Aloo)":
+elif nav == "🥔  Potato (Aloo)":
     st.header("🥔 Aloo Ki Bimari Check Karein")
     
     if not model:
@@ -331,6 +348,5 @@ elif nav == "🥔 Potato (Aloo)":
                 else:
                     st.info("Is result ke liye filhal koi makhsoos ilaj available nahi hai.")
 
-elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
-    st.info("🚧 Coming Soon in few days...") 
-    
+elif nav in ["🍅  Tomato Check", "🌽  Corn Field"]:
+    st.info("🚧 Coming Soon in few days...")
