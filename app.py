@@ -21,7 +21,7 @@ st.markdown("""
         font-family: 'Poppins', sans-serif;
     }
     
-    /* --- ANIMATION KEYFRAMES --- */
+    /* --- ANIMATIONS --- */
     @keyframes slideUp {
         from { opacity: 0; transform: translateY(40px); }
         to { opacity: 1; transform: translateY(0); }
@@ -31,14 +31,13 @@ st.markdown("""
         50% { transform: scale(1.1); filter: drop-shadow(0 0 8px rgba(255,255,255,0.4)); }
         100% { transform: scale(1); }
     }
-    /* Floating Animation for Hero Icon */
     @keyframes float {
         0% { transform: translateY(0px); }
         50% { transform: translateY(-10px); }
         100% { transform: translateY(0px); }
     }
 
-    /* --- SIDEBAR STYLING & ANIMATION --- */
+    /* --- SIDEBAR STYLING --- */
     [data-testid="stSidebar"] {
         background-image: linear-gradient(180deg, #052e16 0%, #115e59 100%); 
         border-right: 3px solid #004d40;
@@ -54,7 +53,7 @@ st.markdown("""
         text-align: center;
     }
     
-    /* Navigation Menu Styling */
+    /* Navigation Menu */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
         background: rgba(255, 255, 255, 0.05);
         padding: 10px 15px;
@@ -73,6 +72,17 @@ st.markdown("""
          border-left: 4px solid #10b981 !important;
          font-weight: 600;
     }
+    
+    /* Links in Sidebar */
+    .dev-link {
+        color: #10b981 !important;
+        text-decoration: none;
+        font-weight: bold;
+    }
+    .dev-link:hover {
+        text-decoration: underline;
+        color: white !important;
+    }
 
     /* --- MAIN PAGE STYLING --- */
     .stApp {
@@ -90,7 +100,7 @@ st.markdown("""
         border-bottom: 5px solid #10b981;
         animation: slideUp 0.8s ease-out; 
     }
-    .animated-icon-hero { /* New class for hero icon */
+    .animated-icon-hero {
         display: inline-block;
         animation: float 3s ease-in-out infinite;
         font-size: 3rem;
@@ -106,7 +116,7 @@ st.markdown("""
         font-size: 1.2rem;
     }
 
-    /* Feature Cards - FIXED HEIGHT ISSUE */
+    /* Feature Cards - Equal Height Fix */
     .feature-card {
         background: white;
         padding: 20px;
@@ -116,13 +126,10 @@ st.markdown("""
         transition: transform 0.3s ease;
         border-top: 5px solid #10b981;
         animation: slideUp 0.8s ease-out 0.3s backwards;
-        
-        /* --- MAGIC LINES FOR EQUAL HEIGHT --- */
-        min-height: 280px; /* Cards kam az kam itne baray honge */
+        min-height: 280px; 
         display: flex;
         flex-direction: column;
-        justify-content: center; /* Content ko beech mein rakhega */
-        /* ------------------------------------ */
+        justify-content: center; 
     }
     .feature-card:hover {
         transform: translateY(-10px);
@@ -146,7 +153,6 @@ st.markdown("""
         animation: slideUp 1s ease-out;
     }
     
-    /* Result Section Styling */
     .result-box {
         padding: 20px;
         border-radius: 15px;
@@ -186,30 +192,42 @@ st.sidebar.markdown("<p style='text-align: center; font-size: 0.8rem; opacity: 0
 nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field"])
 
 st.sidebar.write("---")
+
+# --- IMPROVEMENT 1: Help Guide in Sidebar ---
+with st.sidebar.expander("📸 Achi Tasveer Kaise Lein?"):
+    st.markdown("""
+    1. **Roshni:** Tasveer din ki roshni mein lein.
+    2. **Focus:** Sirf pattay (leaf) par focus karein.
+    3. **Background:** Saada background rakhne ki koshish karein.
+    4. **Safayi:** Dhundli tasveer se result ghalat ho sakta hai.
+    """)
+
+st.sidebar.write("---")
+
+# --- IMPROVEMENT 2: Developer Links ---
 st.sidebar.info("**Developed by:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engineer)\n\n👨‍💻 **Raheel Chishti**\n(Team Member)")
+# Aap chahein to neeche wali line uncomment kar ke link laga sakte hain
+# st.sidebar.markdown("[🌐 Visit Portfolio](https://github.com)", unsafe_allow_html=True)
 
 # --- 5. MAIN LOGIC ---
 if nav == "🏠 Home Page":
-    # --- HERO SECTION (Leaf Wapis Aa Gaya!) ---
     st.markdown("""
     <div class="hero-container">
-        <div class="animated-icon-hero">🌿</div> <h1 class="hero-title">Smart Farming Assistant</h1>
+        <div class="animated-icon-hero">🌿</div>
+        <h1 class="hero-title">Smart Farming Assistant</h1>
         <p class="hero-subtitle">Apni fasal ko bimariyon se bachayein, Jadid AI Technology ki madad se.</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # --- COVER IMAGE ---
     st.image("https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200", use_column_width=True)
     
     st.write("") 
     st.write("") 
 
-    # --- FEATURES SECTION ---
     st.markdown("<h3 style='text-align: center; color: #064e3b; margin-bottom: 30px; animation: slideUp 1s ease-out;'>Why Choose This App?</h3>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
     
-    # Maine text ko thora balance kiya hai taake looks aur achi ayein
     with col1:
         st.markdown("""
         <div class="feature-card">
@@ -237,7 +255,6 @@ if nav == "🏠 Home Page":
         </div>
         """, unsafe_allow_html=True)
 
-    # --- FOOTER ---
     st.markdown("---")
     st.markdown("<p style='text-align: center; color: #777; font-size: 0.9rem;'>© 2025 Plant Doctor AI | Designed with ❤️ by Saqlain & Raheel</p>", unsafe_allow_html=True)
 
@@ -259,10 +276,10 @@ elif nav == "🥔 Potato (Aloo)":
             st.image(image, caption="Uploaded Photo", use_column_width=True)
         
         with col2:
-            with st.spinner("🔍 Analyzing image with AI..."):
-                time.sleep(1)
+            # Added a better loading text
+            with st.spinner("🤖 AI pattay ko ghor se dekh raha hai..."):
+                time.sleep(1.5)
             
-            # Prediction
             inputs = processor(images=image, return_tensors="pt")
             with torch.no_grad():
                 outputs = model(**inputs)
@@ -273,7 +290,6 @@ elif nav == "🥔 Potato (Aloo)":
             clean_label = label.replace("_", " ").title()
             conf = torch.softmax(logits, dim=1)[0][idx].item() * 100
             
-            # Guardrail
             if conf < 90:
                 st.error("⚠️ **Tasveer Pehchani Nahi Ja Rahi!**")
                 st.warning(f"""
