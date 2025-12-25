@@ -440,4 +440,4 @@ elif nav == "🥔 Potato (Aloo)":
                 """, unsafe_allow_html=True)
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
-    st.info("🚧 Coming Soon...") 
+    st.info("🚧 Coming Soon...")  
