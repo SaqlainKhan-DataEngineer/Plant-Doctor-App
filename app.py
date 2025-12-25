@@ -28,7 +28,7 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS (SMALLER PARTICLES + PREMIUM NAV) ---
+# --- 3. ULTRA PREMIUM CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -41,100 +41,82 @@ st.markdown("""
     /* --- 1. ANIMATIONS --- */
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-    @keyframes float-and-glow {
-        0% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
-        50% { transform: translateY(-12px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.8); }
-        100% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
-    }
-    @keyframes diamond-wind {
-        0% { transform: translateY(0) translateX(0); }
-        100% { transform: translateY(100px) translateX(-100px); } 
-    }
-    @keyframes gradientBG {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
+    @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+    @keyframes float-and-glow { 0% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } 50% { transform: translateY(-12px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.8); } 100% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } }
+    @keyframes diamond-wind { 0% { transform: translateY(0) translateX(0); } 100% { transform: translateY(100px) translateX(-100px); } }
+    @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
-    /* Apply Animations */
     h1, h2, h3, p, span, a, div.stMarkdown { animation: fadeInUp 0.8s ease-out both; }
-    .feature-icon { animation: popIn 0.6s ease-out both 0.3s; }
 
-    /* --- 2. BACKGROUND PARTICLES (SMALLER & SUBTLE) --- */
-    /* Size ko 4px se kam kar ke 2px kar diya taake barik lagein */
+    /* --- 2. BACKGROUND PARTICLES --- */
     .stApp::before {
-        content: "";
-        position: fixed;
-        top: -50%; left: -50%; width: 200%; height: 200%;
+        content: ""; position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
         background-image:
             radial-gradient(circle at 20px 30px, rgba(4, 120, 87, 0.5) 0px, transparent 2px),
             radial-gradient(circle at 40px 70px, rgba(16, 185, 129, 0.6) 0px, transparent 2px),
             radial-gradient(circle at 50px 160px, rgba(5, 150, 105, 0.5) 0px, transparent 2px),
             radial-gradient(circle at 90px 40px, rgba(52, 211, 153, 0.7) 0px, transparent 3px),
             radial-gradient(circle at 130px 80px, rgba(6, 78, 59, 0.6) 0px, transparent 2px);
-        background-repeat: repeat;
-        background-size: 200px 200px;
-        animation: diamond-wind 25s linear infinite;
-        pointer-events: none;
-        z-index: 0;
+        background-repeat: repeat; background-size: 200px 200px; animation: diamond-wind 25s linear infinite;
+        pointer-events: none; z-index: 0;
     }
 
-    /* --- 3. PREMIUM SIDEBAR NAVIGATION (FIXED BLACK BOX) --- */
+    /* --- 3. PREMIUM SIDEBAR BUTTONS (DARK MODE FIX) --- */
     [data-testid="stSidebar"] { background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%); border-right: none; }
     [data-testid="stSidebar"] * { color: #ecfdf5 !important; }
     
-    /* Navigation Buttons - Glassmorphism Style */
+    /* The Container for Buttons */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
-        background: rgba(255, 255, 255, 0.08); 
-        padding: 12px 15px; 
-        border-radius: 12px; 
-        margin-bottom: 8px !important;
+        background: rgba(0, 0, 0, 0.25); /* Darker background for card effect */
+        padding: 15px 20px; 
+        border-radius: 15px; 
+        margin-bottom: 12px !important;
         border: 1px solid rgba(255,255,255,0.1); 
         width: 100%; 
         display: flex; 
         align-items: center;
         transition: all 0.3s ease;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        cursor: pointer;
     }
     
     /* Hover Effect */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
-        background: rgba(255, 255, 255, 0.2); 
-        transform: translateX(5px);
+        background: rgba(255, 255, 255, 0.15); 
+        transform: scale(1.02);
         border-color: #34d399;
     }
     
-    /* Selected Item - Neon Glow (No Black Box) */
+    /* Selected Item (FULL GLOW) */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
-         background: linear-gradient(90deg, rgba(16, 185, 129, 0.4), transparent) !important;
-         border-left: 5px solid #34d399 !important; 
+         background: linear-gradient(90deg, #059669, #10b981) !important; /* Full Green Gradient */
+         border: 1px solid #a7f3d0 !important;
          font-weight: 800; 
-         transform: translateX(5px);
-         box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+         transform: scale(1.03);
+         box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); /* Neon Glow */
          color: white !important;
+    }
+    /* Hide the default radio circle to make it look like a button */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[role="radio"] {
+        display: none; 
     }
 
     /* --- 4. HERO & CARDS --- */
     .hero-container {
         text-align: center; padding: 60px 20px; border-radius: 35px;
         background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
-        background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite, popIn 1s ease-out;
+        background-size: 400% 400%; animation: gradientBG 15s ease infinite, popIn 1s ease-out;
         box-shadow: 0 20px 60px rgba(0,0,0,0.15); margin-bottom: 40px; 
-        border: 2px solid rgba(255,255,255,0.8);
-        position: relative; z-index: 1;
+        border: 2px solid rgba(255,255,255,0.8); position: relative; z-index: 1;
     }
 
     .feature-card {
         background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(25px);
         padding: 30px; border-radius: 30px; text-align: center;
-        border: 1px solid rgba(255,255,255,0.6); 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;
-        transform-style: preserve-3d; 
-        transition: transform 0.4s ease, box-shadow 0.4s ease;
-        position: relative; z-index: 1; 
-        animation: fadeInUp 1s ease-out;
+        transform-style: preserve-3d; transition: transform 0.4s ease, box-shadow 0.4s ease;
+        position: relative; z-index: 1; animation: fadeInUp 1s ease-out;
     }
     .feature-card:hover { 
         transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateY(-15px); 
@@ -171,17 +153,30 @@ st.markdown("""
     }
     .weather-icon-big { font-size: 5rem; margin-bottom: 10px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.8)); animation: float-and-glow 4s ease-in-out infinite; }
     .temp-text { font-size: 4.5rem; font-weight: 800; margin: 0; line-height: 1; text-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-    .weather-grid { display: flex; gap: 15px; margin-top: 15px; justify-content: center; }
-    .stat-badge { background: rgba(0, 0, 0, 0.2); padding: 8px 15px; border-radius: 50px; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.1); }
-
-    .result-box { 
-        padding: 30px; border-radius: 25px; text-align: center; 
-        background: rgba(255,255,255,0.95); 
-        box-shadow: 0 20px 50px rgba(0,0,0,0.1); 
-        animation: popIn 0.6s ease-out;
-        border: 2px solid white;
-    }
     
+    /* VIP LIVE BADGE FOR WEATHER */
+    .live-badge {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 8px 20px;
+        border-radius: 50px;
+        border: 1px solid rgba(255,255,255,0.3);
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        letter-spacing: 1.5px;
+        margin-bottom: 15px;
+        backdrop-filter: blur(10px);
+    }
+    .live-dot {
+        width: 10px; height: 10px; background: #ef4444; border-radius: 50%;
+        box-shadow: 0 0 10px #ef4444;
+        animation: pulse-red 1.5s infinite;
+    }
+
+    .stat-badge { background: rgba(0, 0, 0, 0.2); padding: 8px 15px; border-radius: 50px; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.1); }
+    .result-box { padding: 30px; border-radius: 25px; text-align: center; background: rgba(255,255,255,0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.1); animation: popIn 0.6s ease-out; border: 2px solid white; }
     img { border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: transform 0.3s; }
     </style>
     """, unsafe_allow_html=True)
@@ -256,7 +251,7 @@ if nav == "🏠 Home Page":
         """, unsafe_allow_html=True)
         
     with col2:
-        # WEATHER
+        # WEATHER WITH VIP BADGE
         bg_gradient = "linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)"
         weather_icon = "⛅"
         if temp > 30:
@@ -268,7 +263,9 @@ if nav == "🏠 Home Page":
 
         st.markdown(f"""
         <div class="weather-container" style="background: {bg_gradient};">
-            <div style="font-size:1.1rem; font-weight:600; margin-bottom:10px; letter-spacing:1px; color:#e0f2fe;">📍 LIVE FARM WEATHER</div>
+            <div class="live-badge">
+                <div class="live-dot"></div> LIVE WEATHER
+            </div>
             <div class="weather-icon-big">{weather_icon}</div>
             <div class="temp-text">{temp}°C</div>
             <div class="weather-grid">
@@ -321,7 +318,7 @@ if nav == "🏠 Home Page":
             </div>
             """, unsafe_allow_html=True)
 
-    # FOOTER (TECH STACK RESTORED)
+    # FOOTER
     st.markdown("""
     <hr style="border-top: 2px solid #a7f3d0; margin-top: 80px;">
     <div style="text-align:center; padding:30px; color:#555;">
@@ -427,3 +424,4 @@ elif nav == "🥔 Potato (Aloo)":
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
     st.info("🚧 Coming Soon...") 
+    
