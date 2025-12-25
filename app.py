@@ -14,9 +14,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. WEATHER FUNCTION ---
+# --- 2. ROBUST WEATHER FUNCTION (Optimized) ---
 def get_real_weather():
     try:
+        # Timeout added to prevent crashing
         url = "https://api.open-meteo.com/v1/forecast?latitude=31.5204&longitude=74.3587&current_weather=true"
         response = requests.get(url, timeout=3) 
         data = response.json()
@@ -28,7 +29,7 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS (EQUAL HEIGHTS FIXED) ---
+# --- 3. ULTRA PREMIUM CSS (SAME AS BEFORE) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -62,7 +63,7 @@ st.markdown("""
         pointer-events: none; z-index: 0;
     }
 
-    /* SIDEBAR */
+    /* SIDEBAR NAVIGATION */
     [data-testid="stSidebar"] { background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%); border-right: none; }
     [data-testid="stSidebar"] * { color: #ecfdf5 !important; }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
@@ -105,79 +106,54 @@ st.markdown("""
     }
     .cta-button:hover { transform: scale(1.1) translateY(-5px); }
 
-    /* --- SLIDER (HEIGHT MATCHED 400px) --- */
+    /* SLIDER & WEATHER */
     .slider-container { width: 100%; overflow: hidden; border-radius: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.7); background: #000; animation: popIn 1s ease-out; }
     .slide-track { display: flex; width: calc(1000px * 10); animation: scroll 45s linear infinite; }
     .slide-track:hover { animation-play-state: paused; }
-    
-    /* FIX: Force height to 400px to match weather */
-    .slide { width: 600px; height: 400px; flex-shrink: 0; padding: 0 5px; }
+    .slide { width: 600px; height: 350px; flex-shrink: 0; padding: 0 5px; }
     .slide img { width: 100%; height: 100%; object-fit: cover; border-radius: 15px; transition: transform 0.4s; }
-    
     .slide img:hover { transform: scale(1.08); filter: brightness(1.1); cursor: grab; }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
-    /* --- WEATHER CONTAINER (HEIGHT MATCHED 400px) --- */
     .weather-container {
-        background: rgba(255, 255, 255, 0.15); 
-        backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-        border-radius: 25px; 
-        padding: 25px; 
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); 
-        color: white; 
-        text-align: center;
-        
-        /* FIX: Force height to 400px to match slider */
-        height: 400px; 
-        
-        display: flex; flex-direction: column; justify-content: center; align-items: center;
-        position: relative;
-        animation: popIn 1s ease-out 0.2s backwards;
+        background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px);
+        border-radius: 25px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); color: white; text-align: center;
+        height: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+        animation: popIn 1s ease-out 0.2s backwards; position: relative;
     }
-    
-    .weather-icon-big { font-size: 5rem; margin-bottom: 5px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.8)); animation: float-weather 4s ease-in-out infinite; }
-    .temp-text { font-size: 4rem; font-weight: 800; margin: 0; line-height: 1; text-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+    .weather-icon-big { font-size: 5rem; margin-bottom: 10px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.8)); animation: float-weather 4s ease-in-out infinite; }
+    .temp-text { font-size: 4.5rem; font-weight: 800; margin: 0; line-height: 1; text-shadow: 0 5px 15px rgba(0,0,0,0.2); }
     
     .live-badge {
-        position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
         background: rgba(0, 0, 0, 0.3); padding: 5px 15px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.2);
-        display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        z-index: 5;
+        display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
     .live-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 10px #ef4444; animation: pulse-red 1.5s infinite; }
     
     .region-pill {
-        position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.2); padding: 8px 20px; border-radius: 50px;
+        margin-top: 20px; background: rgba(0, 0, 0, 0.2); padding: 8px 20px; border-radius: 50px;
         font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; border: 1px solid rgba(255,255,255,0.15);
         box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase; color: rgba(255,255,255,0.9);
-        z-index: 5;
     }
 
     .stat-badge { background: rgba(0, 0, 0, 0.2); padding: 8px 15px; border-radius: 50px; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.1); }
-    .result-box { padding: 30px; border-radius: 25px; text-align: center; background: rgba(255,255,255,0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.1); animation: popIn 0.6s ease-out; border: 2px solid white; margin-top:20px; }
+    .result-box { padding: 30px; border-radius: 25px; text-align: center; background: rgba(255,255,255,0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.1); animation: popIn 0.6s ease-out; border: 2px solid white; }
     img { border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: transform 0.3s; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. MODEL LOADING (FIX: USES PUBLIC MODEL, NO FOLDER NEEDED) ---
+# --- 4. OPTIMIZED MODEL LOADING ---
 @st.cache_resource
 def load_model():
     try:
+        # GPU Check added (Kimi's Suggestion)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        
-        # --- FIX: DIRECT HUGGING FACE LINK ---
-        # Ye line internet se model uthayegi, folder ki zaroorat nahi paregi.
-        model_name = "dima806/potato_diseases_image_detection"
-        
-        model = AutoModelForImageClassification.from_pretrained(model_name).to(device)
-        processor = AutoImageProcessor.from_pretrained(model_name)
-        model.eval() 
+        model = AutoModelForImageClassification.from_pretrained("mera_potato_model").to(device)
+        processor = AutoImageProcessor.from_pretrained("mera_potato_model")
+        model.eval() # Eval mode for speed
         return model, processor, device
-    except Exception as e:
-        # Agar error aaye to user ko dikhayein
-        st.sidebar.error(f"Error Loading Model: {e}")
+    except:
         return None, None, "cpu"
 
 model, processor, device = load_model()
@@ -254,7 +230,7 @@ if nav == "🏠 Home Page":
             </div>
             <div class="weather-icon-big">{weather_icon}</div>
             <div class="temp-text">{temp}°C</div>
-            <div class="weather-grid" style="display:flex; gap:10px; justify-content:center; margin-top:10px;">
+            <div class="weather-grid">
                 <div class="stat-badge">💨 {wind} km/h</div>
                 <div class="stat-badge">💧 65% Hum</div>
             </div>
@@ -317,14 +293,11 @@ if nav == "🏠 Home Page":
 
 elif nav == "🥔 Potato (Aloo)":
     st.header("🥔 Aloo Ki Bimari Check Karein", anchor="alookibimaricheckkarein")
-    
-    # Check if model loaded correctly from Cloud
-    if not model: 
-        st.error("⚠️ Model Loading Failed! Sidebar check karein error ke liye.")
-        st.stop()
+    if not model: st.error("⚠️ Model folder nahi mila!"); st.stop()
     
     uploaded_file = st.file_uploader("Upload Leaf Photo", type=["jpg", "png", "jpeg"])
     
+    # 5MB Check (Added for Security)
     if uploaded_file is not None and uploaded_file.size > 5*1024*1024:
         st.error("⚠️ File size too large! Please upload image under 5MB.")
     elif uploaded_file:
@@ -335,9 +308,10 @@ elif nav == "🥔 Potato (Aloo)":
         with col2:
             my_bar = st.progress(0, text="Starting engine...")
             
+            # Optimization: Resize for model only (Kimi's Tip)
             model_image = display_image.resize((224, 224)) 
             
-            inputs = processor(images=model_image, return_tensors="pt").to(device)
+            inputs = processor(images=model_image, return_tensors="pt").to(device) # Move to device
             
             with torch.no_grad():
                 outputs = model(**inputs)
@@ -350,7 +324,7 @@ elif nav == "🥔 Potato (Aloo)":
                 labels = [model.config.id2label[i].replace("_", " ").title() for i in range(len(probs))]
                 prob_dict = {l: p*100 for l, p in zip(labels, probs)}
             
-            my_bar.empty()
+            my_bar.empty() # Remove progress bar after done
 
             is_healthy = "healthy" in label.lower() or "healty" in label.lower()
             bg_color = "#ecfdf5" if is_healthy else "#fef2f2"
@@ -414,4 +388,12 @@ elif nav == "🥔 Potato (Aloo)":
                  st.info("⚠️ Bimari detect hui hai, lekin iska specific ilaj database mein nahi hai. Kisi maahir se rabta karein.")
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
-    st.info("🚧 Coming Soon...")
+    st.info("🚧 Coming Soon...") 
+
+
+
+
+
+
+
+
