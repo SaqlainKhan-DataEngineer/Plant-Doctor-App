@@ -28,7 +28,7 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS ---
+# --- 3. ULTRA PREMIUM CSS (FIXED WEATHER & SIDEBAR) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -40,98 +40,127 @@ st.markdown("""
 
     /* --- 1. ANIMATIONS --- */
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-    @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-    @keyframes float-and-glow { 0% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } 50% { transform: translateY(-12px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.8); } 100% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } }
+    @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 50, 50, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0); } }
+    @keyframes float-weather { 0% { transform: translateY(0px); } 50% { transform: translateY(-8px); } 100% { transform: translateY(0px); } }
     @keyframes diamond-wind { 0% { transform: translateY(0) translateX(0); } 100% { transform: translateY(100px) translateX(-100px); } }
     @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 
+    /* Apply FadeIn */
     h1, h2, h3, p, span, a, div.stMarkdown { animation: fadeInUp 0.8s ease-out both; }
 
-    /* --- 2. BACKGROUND PARTICLES --- */
+    /* --- 2. BACKGROUND PARTICLES (EMERALD) --- */
     .stApp::before {
         content: ""; position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
         background-image:
-            radial-gradient(circle at 20px 30px, rgba(4, 120, 87, 0.5) 0px, transparent 2px),
-            radial-gradient(circle at 40px 70px, rgba(16, 185, 129, 0.6) 0px, transparent 2px),
-            radial-gradient(circle at 50px 160px, rgba(5, 150, 105, 0.5) 0px, transparent 2px),
-            radial-gradient(circle at 90px 40px, rgba(52, 211, 153, 0.7) 0px, transparent 3px),
-            radial-gradient(circle at 130px 80px, rgba(6, 78, 59, 0.6) 0px, transparent 2px);
+            radial-gradient(circle at 20px 30px, rgba(4, 120, 87, 0.5) 0px, transparent 3px),
+            radial-gradient(circle at 40px 70px, rgba(16, 185, 129, 0.6) 0px, transparent 3px),
+            radial-gradient(circle at 50px 160px, rgba(5, 150, 105, 0.5) 0px, transparent 3px),
+            radial-gradient(circle at 90px 40px, rgba(52, 211, 153, 0.7) 0px, transparent 2px),
+            radial-gradient(circle at 130px 80px, rgba(6, 78, 59, 0.6) 0px, transparent 3px);
         background-repeat: repeat; background-size: 200px 200px; animation: diamond-wind 25s linear infinite;
         pointer-events: none; z-index: 0;
     }
 
-    /* --- 3. PREMIUM SIDEBAR BUTTONS (DARK MODE FIX) --- */
+    /* --- 3. SIDEBAR NAVIGATION (FIXED DARK MODE & ANIMATION) --- */
     [data-testid="stSidebar"] { background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%); border-right: none; }
     [data-testid="stSidebar"] * { color: #ecfdf5 !important; }
     
-    /* The Container for Buttons */
+    /* Radio Group Container */
+    [data-testid="stSidebar"] .stRadio { background: transparent !important; }
+
+    /* The Buttons (Unselected) */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
-        background: rgba(0, 0, 0, 0.25); /* Darker background for card effect */
-        padding: 15px 20px; 
-        border-radius: 15px; 
-        margin-bottom: 12px !important;
-        border: 1px solid rgba(255,255,255,0.1); 
-        width: 100%; 
-        display: flex; 
-        align-items: center;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        background: rgba(255, 255, 255, 0.1) !important;
+        padding: 15px 20px !important;
+        border-radius: 15px !important;
+        margin-bottom: 10px !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+        transition: all 0.3s ease !important;
+        color: white !important;
+    }
+
+    /* Hover Animation */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
+        background: rgba(255, 255, 255, 0.2) !important;
+        transform: translateX(5px) scale(1.02) !important;
+        border-color: #34d399 !important;
         cursor: pointer;
     }
-    
-    /* Hover Effect */
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
-        background: rgba(255, 255, 255, 0.15); 
-        transform: scale(1.02);
-        border-color: #34d399;
-    }
-    
-    /* Selected Item (FULL GLOW) */
+
+    /* Selected Button (Active State) */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
-         background: linear-gradient(90deg, #059669, #10b981) !important; /* Full Green Gradient */
+         background: linear-gradient(90deg, #059669, #10b981) !important;
          border: 1px solid #a7f3d0 !important;
-         font-weight: 800; 
-         transform: scale(1.03);
-         box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); /* Neon Glow */
-         color: white !important;
-    }
-    /* Hide the default radio circle to make it look like a button */
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[role="radio"] {
-        display: none; 
-    }
-
-    /* --- 4. HERO & CARDS --- */
-    .hero-container {
-        text-align: center; padding: 60px 20px; border-radius: 35px;
-        background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
-        background-size: 400% 400%; animation: gradientBG 15s ease infinite, popIn 1s ease-out;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.15); margin-bottom: 40px; 
-        border: 2px solid rgba(255,255,255,0.8); position: relative; z-index: 1;
-    }
-
-    .feature-card {
-        background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(25px);
-        padding: 30px; border-radius: 30px; text-align: center;
-        border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;
-        transform-style: preserve-3d; transition: transform 0.4s ease, box-shadow 0.4s ease;
-        position: relative; z-index: 1; animation: fadeInUp 1s ease-out;
-    }
-    .feature-card:hover { 
-        transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateY(-15px); 
-        box-shadow: 0 30px 60px rgba(16, 185, 129, 0.3); border-color: #34d399;
+         font-weight: 800 !important;
+         transform: scale(1.03) !important;
+         box-shadow: 0 0 20px rgba(16, 185, 129, 0.6) !important;
     }
     
-    .cta-button {
-        display: inline-block; background: linear-gradient(90deg, #059669, #10b981); color: white !important;
-        padding: 18px 45px; border-radius: 50px; font-weight: 800; font-size: 1.1rem; text-decoration: none;
-        box-shadow: 0 10px 30px rgba(16,185,129,0.5); transition: all 0.3s; margin-top: 25px; border: 2px solid #a7f3d0;
-        animation: popIn 1.2s ease-out;
+    /* Hide Default Radio Circles */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[role="radio"] {
+        display: none !important;
     }
-    .cta-button:hover { transform: scale(1.1) translateY(-5px); }
 
-    /* --- 5. SLIDER & WEATHER --- */
+    /* --- 4. WEATHER WIDGET (PREMIUM CARD) --- */
+    .weather-card {
+        position: relative;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 30px;
+        padding: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        color: white;
+        text-align: center;
+        height: 350px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
+    
+    /* Live Badge (Inside Card, Top Right) */
+    .live-indicator {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    .blink-dot {
+        width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
+        box-shadow: 0 0 10px #ef4444;
+        animation: pulse-red 1.5s infinite;
+    }
+
+    /* Region Pill (Bottom) */
+    .region-pill {
+        margin-top: 15px;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 6px 15px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        border: 1px solid rgba(255,255,255,0.1);
+        display: inline-block;
+    }
+
+    .weather-icon-big { font-size: 5rem; margin: 10px 0; filter: drop-shadow(0 0 15px rgba(255,255,255,0.7)); animation: float-weather 4s ease-in-out infinite; }
+    .temp-text { font-size: 4rem; font-weight: 800; line-height: 1; text-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+    .weather-grid { display: flex; gap: 15px; margin-top: 10px; width: 100%; justify-content: center; }
+    .stat-badge { background: rgba(0, 0, 0, 0.25); padding: 8px 15px; border-radius: 12px; font-size: 0.9rem; font-weight: 600; border: 1px solid rgba(255,255,255,0.15); }
+
+    /* --- 5. SLIDER --- */
     .slider-container {
         width: 100%; overflow: hidden; border-radius: 25px;
         box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.7);
@@ -144,40 +173,35 @@ st.markdown("""
     .slide img:hover { transform: scale(1.08); filter: brightness(1.1); cursor: grab; }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
-    .weather-container {
-        background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px);
-        border-radius: 25px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); color: white; text-align: center;
-        height: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center;
-        animation: popIn 1s ease-out 0.2s backwards;
+    /* --- 6. HERO & CARDS --- */
+    .hero-container {
+        text-align: center; padding: 60px 20px; border-radius: 35px;
+        background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
+        background-size: 400% 400%; animation: gradientBG 15s ease infinite;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.15); margin-bottom: 40px; 
+        border: 2px solid rgba(255,255,255,0.8); position: relative; z-index: 1;
     }
-    .weather-icon-big { font-size: 5rem; margin-bottom: 10px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.8)); animation: float-and-glow 4s ease-in-out infinite; }
-    .temp-text { font-size: 4.5rem; font-weight: 800; margin: 0; line-height: 1; text-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+    .feature-card {
+        background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(25px);
+        padding: 30px; border-radius: 30px; text-align: center;
+        border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;
+        transition: transform 0.3s;
+    }
+    .feature-card:hover { transform: translateY(-10px); border-color: #34d399; }
     
-    /* VIP LIVE BADGE FOR WEATHER */
-    .live-badge {
-        background: rgba(255, 255, 255, 0.2);
-        padding: 8px 20px;
-        border-radius: 50px;
-        border: 1px solid rgba(255,255,255,0.3);
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        font-weight: 700;
-        font-size: 0.9rem;
-        letter-spacing: 1.5px;
-        margin-bottom: 15px;
-        backdrop-filter: blur(10px);
+    .cta-button {
+        display: inline-block; background: linear-gradient(90deg, #059669, #10b981); color: white !important;
+        padding: 18px 45px; border-radius: 50px; font-weight: 800; font-size: 1.1rem; text-decoration: none;
+        box-shadow: 0 10px 30px rgba(16,185,129,0.5); transition: all 0.3s; margin-top: 25px; border: 2px solid #a7f3d0;
     }
-    .live-dot {
-        width: 10px; height: 10px; background: #ef4444; border-radius: 50%;
-        box-shadow: 0 0 10px #ef4444;
-        animation: pulse-red 1.5s infinite;
-    }
-
-    .stat-badge { background: rgba(0, 0, 0, 0.2); padding: 8px 15px; border-radius: 50px; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.1); }
-    .result-box { padding: 30px; border-radius: 25px; text-align: center; background: rgba(255,255,255,0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.1); animation: popIn 0.6s ease-out; border: 2px solid white; }
-    img { border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: transform 0.3s; }
+    .cta-button:hover { transform: scale(1.1); }
+    
+    .result-box { padding: 30px; border-radius: 25px; text-align: center; background: rgba(255,255,255,0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.1); border: 2px solid white; }
+    img { border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+    
+    /* Logo Animation */
+    @keyframes float-logo { 0% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } 50% { transform: translateY(-8px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.7); } 100% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } }
     </style>
     """, unsafe_allow_html=True)
 
@@ -193,13 +217,13 @@ def load_model():
 
 model, processor = load_model()
 
-# --- 4. SIDEBAR (ANIMATED LOGO) ---
+# --- 4. SIDEBAR ---
 st.sidebar.markdown("""
     <div style="display: flex; justify-content: center; margin-bottom: 25px; margin-top: 10px;">
         <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png" 
              style="width: 150px; border-radius: 50%; padding: 10px; background: rgba(255,255,255,0.15); 
              border: 3px solid rgba(255,255,255,0.4); 
-             animation: float-and-glow 3s ease-in-out infinite;"> 
+             animation: float-logo 3s ease-in-out infinite;"> 
     </div>
     """, unsafe_allow_html=True)
 
@@ -251,7 +275,7 @@ if nav == "🏠 Home Page":
         """, unsafe_allow_html=True)
         
     with col2:
-        # WEATHER WITH VIP BADGE
+        # PREMIUM WEATHER CARD (FIXED)
         bg_gradient = "linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)"
         weather_icon = "⛅"
         if temp > 30:
@@ -262,17 +286,20 @@ if nav == "🏠 Home Page":
             weather_icon = "❄️"
 
         st.markdown(f"""
-        <div class="weather-container" style="background: {bg_gradient};">
-            <div class="live-badge">
-                <div class="live-dot"></div> LIVE WEATHER
+        <div class="weather-card" style="background: {bg_gradient};">
+            <div class="live-indicator">
+                <div class="blink-dot"></div> LIVE
             </div>
+            
             <div class="weather-icon-big">{weather_icon}</div>
             <div class="temp-text">{temp}°C</div>
+            
             <div class="weather-grid">
                 <div class="stat-badge">💨 {wind} km/h</div>
                 <div class="stat-badge">💧 65% Hum</div>
             </div>
-            <div style="margin-top:20px; font-size:0.8rem; opacity:0.8;">Punjab Region Data</div>
+            
+            <div class="region-pill">📍 Punjab Region Data</div>
         </div>
         """, unsafe_allow_html=True)
 
