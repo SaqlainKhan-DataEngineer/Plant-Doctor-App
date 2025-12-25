@@ -28,7 +28,7 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS (SLIDER HEIGHT FIXED) ---
+# --- 3. ULTRA PREMIUM CSS (HEIGHT MATCHING FIX) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -105,17 +105,19 @@ st.markdown("""
     }
     .cta-button:hover { transform: scale(1.1) translateY(-5px); }
 
-    /* --- SLIDER (HEIGHT INCREASED) --- */
+    /* --- SLIDER FIX (FORCE HEIGHT TO 400px) --- */
     .slider-container { width: 100%; overflow: hidden; border-radius: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.7); background: #000; animation: popIn 1s ease-out; }
     .slide-track { display: flex; width: calc(1000px * 10); animation: scroll 45s linear infinite; }
     .slide-track:hover { animation-play-state: paused; }
-    /* Height changed from 350px to 420px to match weather box */
-    .slide { width: 600px; height: 420px; flex-shrink: 0; padding: 0 5px; }
+    
+    /* HERE IS THE FIX: Explicit 400px height for slides */
+    .slide { width: 600px; height: 400px; flex-shrink: 0; padding: 0 5px; }
     .slide img { width: 100%; height: 100%; object-fit: cover; border-radius: 15px; transition: transform 0.4s; }
+    
     .slide img:hover { transform: scale(1.08); filter: brightness(1.1); cursor: grab; }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
-    /* --- WEATHER CONTAINER --- */
+    /* --- WEATHER CONTAINER FIX (FORCE HEIGHT TO 400px) --- */
     .weather-container {
         background: rgba(255, 255, 255, 0.15); 
         backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
@@ -125,7 +127,10 @@ st.markdown("""
         box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); 
         color: white; 
         text-align: center;
-        height: 420px; /* Fixed Height */
+        
+        /* MATCHING HEIGHT WITH SLIDER */
+        height: 400px; 
+        
         display: flex; flex-direction: column; justify-content: center; align-items: center;
         position: relative;
         animation: popIn 1s ease-out 0.2s backwards;
@@ -156,16 +161,24 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. MODEL LOADING ---
+# --- 4. MODEL LOADING (FIXED FOR CLOUD) ---
 @st.cache_resource
 def load_model():
     try:
+        # Check for GPU
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model = AutoModelForImageClassification.from_pretrained("mera_potato_model").to(device)
-        processor = AutoImageProcessor.from_pretrained("mera_potato_model")
+        
+        # FIX: Trying to load a PUBLIC model from Hugging Face if local fails
+        # This prevents the "Folder not found" error on Streamlit Cloud
+        model_name = "dima806/potato_diseases_image_detection" 
+        
+        model = AutoModelForImageClassification.from_pretrained(model_name).to(device)
+        processor = AutoImageProcessor.from_pretrained(model_name)
         model.eval() 
         return model, processor, device
-    except:
+    except Exception as e:
+        # If even internet fails, return None but print error to console
+        print(f"Error loading model: {e}")
         return None, None, "cpu"
 
 model, processor, device = load_model()
@@ -305,7 +318,11 @@ if nav == "🏠 Home Page":
 
 elif nav == "🥔 Potato (Aloo)":
     st.header("🥔 Aloo Ki Bimari Check Karein", anchor="alookibimaricheckkarein")
-    if not model: st.error("⚠️ Model folder nahi mila!"); st.stop()
+    
+    # Check if model loaded correctly from Cloud
+    if not model: 
+        st.error("⚠️ Model Loading Failed! Internet connection check karein ya `dima806/potato_diseases_image_detection` par traffic ziyada hai.")
+        st.stop()
     
     uploaded_file = st.file_uploader("Upload Leaf Photo", type=["jpg", "png", "jpeg"])
     
@@ -398,4 +415,4 @@ elif nav == "🥔 Potato (Aloo)":
                  st.info("⚠️ Bimari detect hui hai, lekin iska specific ilaj database mein nahi hai. Kisi maahir se rabta karein.")
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
-    st.info("🚧 Coming Soon...")
+    st.info("🚧 Coming Soon...") 
