@@ -3,8 +3,7 @@ from PIL import Image
 import torch
 from transformers import AutoImageProcessor, AutoModelForImageClassification
 import time
-import random 
-import datetime
+import datetime 
 
 # --- 1. PAGE SETUP ---
 st.set_page_config(
@@ -14,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ULTRA PREMIUM CSS ---
+# --- 2. ULTRA PREMIUM CSS (RESTORING CONTENT & STYLE) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -24,15 +23,16 @@ st.markdown("""
         scroll-behavior: smooth;
     }
 
-    /* --- SLIDESHOW --- */
+    /* --- SLIDESHOW (CENTERED & CLEAN) --- */
     .slider-frame {
         overflow: hidden;
         width: 100%;
-        height: 350px;
-        margin: 0 auto;
+        max-width: 1000px; /* Thora chota kiya taake fit aye */
+        height: 400px;
+        margin: 0 auto 40px auto; /* Centered */
         border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-        border: 1px solid rgba(255,255,255,0.3);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        border: 1px solid rgba(255,255,255,0.5);
         position: relative;
         z-index: 1;
     }
@@ -42,15 +42,8 @@ st.markdown("""
         display: flex;
         animation: slide_animation 16s infinite ease-in-out;
     }
-    .img-container { 
-        width: 100%; 
-        height: 100%; 
-    }
-    .img-container img { 
-        width: 100%; 
-        height: 100%; 
-        object-fit: cover; 
-    }
+    .img-container { width: 100%; height: 100%; }
+    .img-container img { width: 100%; height: 100%; object-fit: cover; }
 
     @keyframes slide_animation {
         0% { margin-left: 0%; } 15% { margin-left: 0%; }
@@ -61,37 +54,7 @@ st.markdown("""
         100% { margin-left: 0%; }
     }
 
-    /* --- WEATHER WIDGET STYLING --- */
-    .weather-card {
-        background: linear-gradient(135deg, #059669 0%, #34d399 100%);
-        padding: 25px;
-        border-radius: 20px;
-        color: white;
-        text-align: center;
-        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
-        height: 350px; /* Matching Slider Height */
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        border: 1px solid rgba(255,255,255,0.2);
-        animation: float-and-glow 4s ease-in-out infinite;
-    }
-    .weather-title { font-size: 1.4rem; font-weight: 700; opacity: 0.95; margin-bottom: 10px;}
-    .weather-icon { font-size: 5rem; margin: 10px 0; filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
-    .weather-temp { font-size: 4rem; font-weight: 800; margin: 0; line-height: 1; }
-    .weather-details { 
-        display: flex; 
-        gap: 15px;
-        font-size: 1rem; 
-        background: rgba(255,255,255,0.2); 
-        padding: 8px 15px; 
-        border-radius: 50px; 
-        margin-top: 15px;
-        backdrop-filter: blur(5px);
-    }
-
-    /* --- BACKGROUND PARTICLES --- */
+    /* --- BACKGROUND PARTICLES (DIAMOND WIND) --- */
     .stApp::before {
         content: "";
         position: fixed;
@@ -113,7 +76,7 @@ st.markdown("""
         100% { transform: translateY(100px) translateX(-100px); } 
     }
 
-    /* --- GENERAL ANIMATIONS --- */
+    /* --- ANIMATIONS --- */
     h1, h2, h3, p, span, a { animation: fadeInUp 0.8s ease-out backwards; }
     .feature-icon { animation: popIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) both; }
     
@@ -122,11 +85,11 @@ st.markdown("""
 
     /* --- CARDS & HERO --- */
     .hero-container {
-        text-align: center; padding: 40px 20px; border-radius: 30px;
+        text-align: center; padding: 50px 20px; border-radius: 30px;
         background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
         background-size: 400% 400%;
         animation: gradientBG 15s ease infinite, popIn 1s ease-out;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.1); margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.6);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.1); margin-bottom: 40px; border: 1px solid rgba(255,255,255,0.6);
         position: relative; z-index: 1;
     }
     @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
@@ -168,7 +131,7 @@ st.markdown("""
         100% { transform: translateY(0px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
     }
     
-    /* FIX FOR IMAGES: Global style instead of inline style */
+    /* FIX FOR IMAGES */
     img { border-radius: 15px; }
     </style>
     """, unsafe_allow_html=True)
@@ -209,6 +172,7 @@ st.sidebar.info("**Developers:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engineer
 
 # --- 5. MAIN LOGIC ---
 if nav == "🏠  Home Page":
+    # --- HERO SECTION ---
     st.markdown("""
     <div class="hero-container">
         <h1 style="font-size: 4rem; font-weight: 900; background: -webkit-linear-gradient(#064e3b, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Plant Doctor AI</h1>
@@ -223,43 +187,22 @@ if nav == "🏠  Home Page":
     </div>
     """, unsafe_allow_html=True)
     
-    # --- SPLIT LAYOUT: SLIDER (Left) + WEATHER (Right) ---
-    col1, col2 = st.columns([2, 1])
+    # --- SLIDESHOW SECTION (CENTERED, NO WEATHER) ---
+    st.markdown("""
+    <div class="slider-frame">
+        <div class="slide-images">
+            <div class="img-container"><img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200"></div>
+            <div class="img-container"><img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=1200"></div>
+            <div class="img-container"><img src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=1200"></div>
+            <div class="img-container"><img src="https://images.unsplash.com/photo-1587334274328-64186a80aeee?w=1200"></div>
+            <div class="img-container"><img src="https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=1200"></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
-    with col1:
-        st.markdown("""
-        <div class="slider-frame">
-            <div class="slide-images">
-                <div class="img-container"><img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200"></div>
-                <div class="img-container"><img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=1200"></div>
-                <div class="img-container"><img src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=1200"></div>
-                <div class="img-container"><img src="https://images.unsplash.com/photo-1587334274328-64186a80aeee?w=1200"></div>
-                <div class="img-container"><img src="https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=1200"></div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    with col2:
-        # Dynamic Weather
-        temp = random.randint(25, 32)
-        humidity = random.randint(55, 75)
-        wind = random.randint(10, 18)
-        st.markdown(f"""
-        <div class="weather-card">
-            <div class="weather-title">📍 Farm Live Status</div>
-            <div class="weather-icon">⛅</div>
-            <div class="weather-temp">{temp}°C</div>
-            <div class="weather-details">
-                <span>💧 {humidity}% Hum</span>
-                <span>💨 {wind} km/h</span>
-            </div>
-            <p style="margin-top:15px; font-size:0.85rem; font-weight:500;">🌱 Optimal for spraying</p>
-        </div>
-        """, unsafe_allow_html=True)
-
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # --- TRUST INDICATORS ---
+    # --- TRUST INDICATORS (RESTORED) ---
     c1, c2, c3, c4 = st.columns(4)
     stats = [("🌱", "15K+", "Images Trained"), ("🎯", "98%", "Accuracy"), ("⚡", "< 1s", "Fast Prediction"), ("👨‍🌾", "Expert", "Farmer Approved")]
     for col, (icon, val, lbl) in zip([c1,c2,c3,c4], stats):
@@ -272,7 +215,7 @@ if nav == "🏠  Home Page":
             </div>
             """, unsafe_allow_html=True)
 
-    # --- HOW IT WORKS ---
+    # --- HOW IT WORKS (RESTORED) ---
     st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:60px; font-size:2.5rem;'>How It Works</h2>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     steps = [("📸", "Upload Leaf", "Clear photo lein."), ("🤖", "AI Analysis", "Model check karega."), ("💊", "Get Cure", "Ilaj payein.")]
@@ -282,6 +225,20 @@ if nav == "🏠  Home Page":
             <div class="feature-card">
                 <div class="feature-icon" style="font-size:3.5rem; margin-bottom:15px;">{icon}</div>
                 <h3 style="color:#064e3b; font-weight:700;">{title}</h3><p style="color:#555;">{desc}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # --- SUPPORTED CROPS (RESTORED) ---
+    st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:60px; font-size:2.5rem;'>Supported Crops</h2>", unsafe_allow_html=True)
+    c1, c2, c3 = st.columns(3)
+    crops = [("🥔", "Potato", "Fully Supported ✅"), ("🍅", "Tomato", "Launching Soon 🚀"), ("🌽", "Corn", "In Development 🛠️")]
+    for col, (icon, name, status) in zip([c1,c2,c3], crops):
+        with col:
+            st.markdown(f"""
+            <div class="feature-card" style="min-height:220px;">
+                <div style="font-size:4.5rem; margin-bottom:15px;" class="feature-icon">{icon}</div>
+                <h3 style="color:#064e3b; font-weight:800;">{name}</h3>
+                <p style="font-weight:600; color:#059669;">{status}</p>
             </div>
             """, unsafe_allow_html=True)
 
@@ -302,7 +259,7 @@ elif nav == "🥔  Potato (Aloo)":
         col1, col2 = st.columns([1, 1.5])
         with col1:
             image = Image.open(uploaded_file).convert('RGB')
-            # ERROR FIXED HERE: Removed style="..."
+            # ERROR FIXED: Removed style="..."
             st.image(image, caption="Uploaded Photo", use_column_width=True)
         with col2:
             my_bar = st.progress(0, text="Starting engine...")
@@ -352,5 +309,5 @@ elif nav == "🥔  Potato (Aloo)":
                 st.markdown(f"<div class='result-box' style='background:white;'><h3>💊 Ilaj:</h3><p>Jald az jald spray karein.</p></div>", unsafe_allow_html=True)
 
 elif nav in ["🍅  Tomato Check", "🌽  Corn Field"]:
-    st.info("🚧 Coming Soon...")
+    st.info("🚧 Coming Soon...") 
     
