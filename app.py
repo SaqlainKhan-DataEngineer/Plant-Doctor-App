@@ -4,7 +4,7 @@ import torch
 from transformers import AutoImageProcessor, AutoModelForImageClassification
 import time
 import random 
-import datetime # For Report
+import datetime
 
 # --- 1. PAGE SETUP ---
 st.set_page_config(
@@ -28,21 +28,29 @@ st.markdown("""
     .slider-frame {
         overflow: hidden;
         width: 100%;
-        max-width: 1200px;
-        margin: 20px auto;
-        border-radius: 25px;
-        box-shadow: 0 15px 40px rgba(0,0,0,0.15);
-        border: 1px solid rgba(255,255,255,0.5);
+        height: 350px;
+        margin: 0 auto;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        border: 1px solid rgba(255,255,255,0.3);
         position: relative;
         z-index: 1;
     }
     .slide-images {
         width: 500%;
+        height: 100%;
         display: flex;
         animation: slide_animation 16s infinite ease-in-out;
     }
-    .img-container { width: 100%; height: 500px; }
-    .img-container img { width: 100%; height: 100%; object-fit: cover; }
+    .img-container { 
+        width: 100%; 
+        height: 100%; 
+    }
+    .img-container img { 
+        width: 100%; 
+        height: 100%; 
+        object-fit: cover; 
+    }
 
     @keyframes slide_animation {
         0% { margin-left: 0%; } 15% { margin-left: 0%; }
@@ -56,18 +64,32 @@ st.markdown("""
     /* --- WEATHER WIDGET STYLING --- */
     .weather-card {
         background: linear-gradient(135deg, #059669 0%, #34d399 100%);
-        padding: 20px;
+        padding: 25px;
         border-radius: 20px;
         color: white;
         text-align: center;
         box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
-        margin-bottom: 30px;
-        border: 2px solid rgba(255,255,255,0.2);
+        height: 350px; /* Matching Slider Height */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border: 1px solid rgba(255,255,255,0.2);
         animation: float-and-glow 4s ease-in-out infinite;
     }
-    .weather-title { font-size: 1.2rem; font-weight: 600; opacity: 0.9; }
-    .weather-temp { font-size: 3.5rem; font-weight: 800; margin: 10px 0; }
-    .weather-details { display: flex; justify-content: space-around; font-size: 0.9rem; background: rgba(255,255,255,0.2); padding: 10px; border-radius: 15px; }
+    .weather-title { font-size: 1.4rem; font-weight: 700; opacity: 0.95; margin-bottom: 10px;}
+    .weather-icon { font-size: 5rem; margin: 10px 0; filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
+    .weather-temp { font-size: 4rem; font-weight: 800; margin: 0; line-height: 1; }
+    .weather-details { 
+        display: flex; 
+        gap: 15px;
+        font-size: 1rem; 
+        background: rgba(255,255,255,0.2); 
+        padding: 8px 15px; 
+        border-radius: 50px; 
+        margin-top: 15px;
+        backdrop-filter: blur(5px);
+    }
 
     /* --- BACKGROUND PARTICLES --- */
     .stApp::before {
@@ -100,11 +122,11 @@ st.markdown("""
 
     /* --- CARDS & HERO --- */
     .hero-container {
-        text-align: center; padding: 60px 20px; border-radius: 30px;
+        text-align: center; padding: 40px 20px; border-radius: 30px;
         background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
         background-size: 400% 400%;
         animation: gradientBG 15s ease infinite, popIn 1s ease-out;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.1); margin-bottom: 40px; border: 1px solid rgba(255,255,255,0.6);
+        box-shadow: 0 20px 50px rgba(0,0,0,0.1); margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.6);
         position: relative; z-index: 1;
     }
     @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
@@ -145,6 +167,9 @@ st.markdown("""
         50% { transform: translateY(-5px); box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
         100% { transform: translateY(0px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
     }
+    
+    /* FIX FOR IMAGES: Global style instead of inline style */
+    img { border-radius: 15px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -194,77 +219,82 @@ if nav == "🏠  Home Page":
             Upload a leaf image and get instant disease diagnosis with treatment guidance.
         </p>
         <br>
-        <a class="cta-button" href="#">🌿 Start Diagnosis</a>
+        <a class="cta-button" href="#alookibimaricheckkarein">🌿 Start Diagnosis</a>
     </div>
     """, unsafe_allow_html=True)
     
+    # --- SPLIT LAYOUT: SLIDER (Left) + WEATHER (Right) ---
     col1, col2 = st.columns([2, 1])
     
     with col1:
         st.markdown("""
-        <div class="slider-frame" style="height: 350px; margin: 0;">
+        <div class="slider-frame">
             <div class="slide-images">
-                <div class="img-container" style="height: 350px;"><img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200"></div>
-                <div class="img-container" style="height: 350px;"><img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=1200"></div>
-                <div class="img-container" style="height: 350px;"><img src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=1200"></div>
-                <div class="img-container" style="height: 350px;"><img src="https://images.unsplash.com/photo-1587334274328-64186a80aeee?w=1200"></div>
-                <div class="img-container" style="height: 350px;"><img src="https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=1200"></div>
+                <div class="img-container"><img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200"></div>
+                <div class="img-container"><img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=1200"></div>
+                <div class="img-container"><img src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=1200"></div>
+                <div class="img-container"><img src="https://images.unsplash.com/photo-1587334274328-64186a80aeee?w=1200"></div>
+                <div class="img-container"><img src="https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=1200"></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
         
     with col2:
-        # Dynamic Weather (Randomized for effect)
+        # Dynamic Weather
         temp = random.randint(25, 32)
         humidity = random.randint(55, 75)
         wind = random.randint(10, 18)
         st.markdown(f"""
         <div class="weather-card">
-            <div class="weather-title">📍 Farm Weather (Live)</div>
-            <div style="font-size: 4rem;">⛅</div>
+            <div class="weather-title">📍 Farm Live Status</div>
+            <div class="weather-icon">⛅</div>
             <div class="weather-temp">{temp}°C</div>
             <div class="weather-details">
                 <span>💧 {humidity}% Hum</span>
                 <span>💨 {wind} km/h</span>
             </div>
-            <p style="margin-top:10px; font-size:0.8rem;">Monitoring optimal conditions...</p>
+            <p style="margin-top:15px; font-size:0.85rem; font-weight:500;">🌱 Optimal for spraying</p>
         </div>
         """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
+    
+    # --- TRUST INDICATORS ---
     c1, c2, c3, c4 = st.columns(4)
     stats = [("🌱", "15K+", "Images Trained"), ("🎯", "98%", "Accuracy"), ("⚡", "< 1s", "Fast Prediction"), ("👨‍🌾", "Expert", "Farmer Approved")]
     for col, (icon, val, lbl) in zip([c1,c2,c3,c4], stats):
         with col:
             st.markdown(f"""
-            <div class="feature-card" style="padding:20px;">
-                <div style="font-size:2.5rem; margin-bottom:5px;">{icon}</div>
+            <div class="feature-card" style="padding:20px; min-height:180px;">
+                <div style="font-size:3rem; margin-bottom:10px;">{icon}</div>
                 <h2 style="margin:0; color:#064e3b; font-weight:800;">{val}</h2>
                 <p style="color:#555; margin:0;">{lbl}</p>
             </div>
             """, unsafe_allow_html=True)
 
-    st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:50px; font-size:2.5rem;'>How It Works</h2>", unsafe_allow_html=True)
+    # --- HOW IT WORKS ---
+    st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:60px; font-size:2.5rem;'>How It Works</h2>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     steps = [("📸", "Upload Leaf", "Clear photo lein."), ("🤖", "AI Analysis", "Model check karega."), ("💊", "Get Cure", "Ilaj payein.")]
     for col, (icon, title, desc) in zip([c1,c2,c3], steps):
         with col:
             st.markdown(f"""
             <div class="feature-card">
-                <div class="feature-icon" style="font-size:3rem; margin-bottom:10px;">{icon}</div>
-                <h3 style="color:#064e3b;">{title}</h3><p style="color:#555;">{desc}</p>
+                <div class="feature-icon" style="font-size:3.5rem; margin-bottom:15px;">{icon}</div>
+                <h3 style="color:#064e3b; font-weight:700;">{title}</h3><p style="color:#555;">{desc}</p>
             </div>
             """, unsafe_allow_html=True)
 
+    # --- FOOTER ---
     st.markdown("""
-    <hr style="border-top: 2px solid #a7f3d0; margin-top: 50px;">
-    <div style="text-align:center; padding:20px; color:#555;">
+    <hr style="border-top: 2px solid #a7f3d0; margin-top: 80px;">
+    <div style="text-align:center; padding:30px; color:#555;">
         <p style="font-weight:600;">© 2025 Plant Doctor AI | Built with ❤️ by Saqlain & Raheel</p>
     </div>
     """, unsafe_allow_html=True)
 
 elif nav == "🥔  Potato (Aloo)":
-    st.header("🥔 Aloo Ki Bimari Check Karein")
+    st.header("🥔 Aloo Ki Bimari Check Karein", anchor="alookibimaricheckkarein")
     if not model: st.error("⚠️ Model folder nahi mila!"); st.stop()
     
     uploaded_file = st.file_uploader("Upload Leaf Photo", type=["jpg", "png", "jpeg"])
@@ -272,7 +302,8 @@ elif nav == "🥔  Potato (Aloo)":
         col1, col2 = st.columns([1, 1.5])
         with col1:
             image = Image.open(uploaded_file).convert('RGB')
-            st.image(image, caption="Uploaded Photo", use_column_width=True, style="border-radius:15px;")
+            # ERROR FIXED HERE: Removed style="..."
+            st.image(image, caption="Uploaded Photo", use_column_width=True)
         with col2:
             my_bar = st.progress(0, text="Starting engine...")
             for i in range(100): time.sleep(0.01); my_bar.progress(i+1)
@@ -286,7 +317,6 @@ elif nav == "🥔  Potato (Aloo)":
                 conf = torch.softmax(logits, dim=1)[0][idx].item() * 100
                 label = model.config.id2label[idx].replace("_", " ").title()
                 
-                # Get All Probabilities for Chart
                 probs = torch.softmax(logits, dim=1)[0].tolist()
                 labels = [model.config.id2label[i].replace("_", " ").title() for i in range(len(probs))]
                 prob_dict = {l: p*100 for l, p in zip(labels, probs)}
@@ -302,13 +332,11 @@ elif nav == "🥔  Potato (Aloo)":
                 </div>
             """, unsafe_allow_html=True)
             
-            # --- IMPROVEMENT: Detailed Probability Chart ---
             st.write("### 📊 Analysis Breakdown")
             for l, p in prob_dict.items():
                 st.write(f"**{l}**")
                 st.progress(int(p))
             
-            # --- IMPROVEMENT: Download Report ---
             report_text = f"Plant Doctor AI Report\nDate: {datetime.datetime.now()}\n\nDiagnosis: {label}\nConfidence: {conf:.1f}%\n\nStatus: {'Healthy' if is_healthy else 'Action Needed'}"
             st.download_button(
                 label="📄 Download Report",
@@ -324,5 +352,5 @@ elif nav == "🥔  Potato (Aloo)":
                 st.markdown(f"<div class='result-box' style='background:white;'><h3>💊 Ilaj:</h3><p>Jald az jald spray karein.</p></div>", unsafe_allow_html=True)
 
 elif nav in ["🍅  Tomato Check", "🌽  Corn Field"]:
-    st.info("🚧 Coming Soon...") 
+    st.info("🚧 Coming Soon...")
     
