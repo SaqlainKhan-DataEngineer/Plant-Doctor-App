@@ -277,7 +277,7 @@ if nav == "🏠 Home Page":
         st.markdown(f"""
         <div class="weather-container" style="background: {bg_gradient};">
             <div class="live-badge">
-                <div class="live-dot"></div> LIVE WEATHER
+                <div class="live-dot"></div> LIVE
             </div>
             
             <div class="weather-icon-big">{weather_icon}</div>
@@ -441,4 +441,5 @@ elif nav == "🥔 Potato (Aloo)":
                  st.info("⚠️ Bimari detect hui hai, lekin iska specific ilaj database mein nahi hai. Kisi maahir se rabta karein.")
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
-    st.info("🚧 Coming Soon...") 
+    st.info("🚧 Coming Soon...")
+    
