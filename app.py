@@ -5,7 +5,7 @@ from transformers import AutoImageProcessor, AutoModelForImageClassification
 import time
 import datetime
 import requests
-import os 
+import os  # <--- Ye add kiya hai path check karne ke liye
 
 # --- 1. PAGE SETUP ---
 st.set_page_config(
@@ -15,9 +15,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ROBUST WEATHER FUNCTION ---
+# --- 2. ROBUST WEATHER FUNCTION (Optimized) ---
 def get_real_weather():
     try:
+        # Timeout added to prevent crashing
         url = "https://api.open-meteo.com/v1/forecast?latitude=31.5204&longitude=74.3587&current_weather=true"
         response = requests.get(url, timeout=3) 
         data = response.json()
@@ -29,7 +30,7 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS (Height Match Fix Here) ---
+# --- 3. ULTRA PREMIUM CSS (Weather Widget Height Fixed Here) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -106,23 +107,20 @@ st.markdown("""
     }
     .cta-button:hover { transform: scale(1.1) translateY(-5px); }
 
-    /* SLIDER (UPDATED HEIGHT TO MATCH WIDGET) */
+    /* SLIDER */
     .slider-container { width: 100%; overflow: hidden; border-radius: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.7); background: #000; animation: popIn 1s ease-out; }
     .slide-track { display: flex; width: calc(1000px * 10); animation: scroll 45s linear infinite; }
     .slide-track:hover { animation-play-state: paused; }
-    
-    /* --- CHANGE HERE: Height 350px -> 420px --- */
-    .slide { width: 600px; height: 420px; flex-shrink: 0; padding: 0 5px; }
-    
+    .slide { width: 600px; height: 350px; flex-shrink: 0; padding: 0 5px; }
     .slide img { width: 100%; height: 100%; object-fit: cover; border-radius: 15px; transition: transform 0.4s; }
     .slide img:hover { transform: scale(1.08); filter: brightness(1.1); cursor: grab; }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
-    /* WEATHER WIDGET (UPDATED HEIGHT) */
+    /* NEW PREMIUM WEATHER WIDGET */
     .weather-container {
         position: relative;
         background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(25px); 
+        backdrop-filter: blur(25px); /* Strong Blur */
         -webkit-backdrop-filter: blur(25px);
         border-radius: 30px;
         padding: 25px;
@@ -130,11 +128,9 @@ st.markdown("""
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
         overflow: hidden;
         transition: transform 0.3s ease;
+        /* --- CHANGED HERE: Height Auto kar di hai taake cut na ho --- */
         height: auto; 
-        
-        /* --- CHANGE HERE: Min-Height set to 420px to match slider --- */
-        min-height: 420px;
-        
+        min-height: 380px;
         display: flex; flex-direction: column; justify-content: space-between;
     }
     .weather-container:hover { transform: translateY(-5px); box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.35); }
@@ -177,15 +173,17 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. MODEL LOADING ---
+# --- 4. OPTIMIZED MODEL LOADING (WITH PATH FIX) ---
 @st.cache_resource
 def load_model():
     try:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        
+        # --- PATH FIX: Check karega files kahan hain ---
         if os.path.exists("config.json") and (os.path.exists("model.safetensors") or os.path.exists("pytorch_model.bin")):
-            model_path = "." 
+            model_path = "." # Current directory
         else:
-            model_path = "mera_potato_model" 
+            model_path = "mera_potato_model" # Subfolder
             
         model = AutoModelForImageClassification.from_pretrained(model_path).to(device)
         processor = AutoImageProcessor.from_pretrained(model_path)
@@ -346,6 +344,7 @@ if nav == "🏠 Home Page":
 elif nav == "🥔 Potato (Aloo)":
     st.header("🥔 Aloo Ki Bimari Check Karein", anchor="alookibimaricheckkarein")
     
+    # --- MODEL CHECK (SAFE) ---
     if not model:
         st.error("⚠️ **Model Folder Missing!**")
         st.info("Ensure `config.json` and `model.safetensors` are in the same folder as `app.py` or in `mera_potato_model` folder.")
@@ -365,6 +364,7 @@ elif nav == "🥔 Potato (Aloo)":
             with st.spinner("Analyzing..."):
                 time.sleep(1) 
                 
+                # PREDICTION LOGIC
                 import torch
                 model_image = display_image.resize((224, 224)) 
                 inputs = processor(images=model_image, return_tensors="pt").to(device)
@@ -379,11 +379,13 @@ elif nav == "🥔 Potato (Aloo)":
                     labels = [model.config.id2label[i].replace("_", " ").title() for i in range(len(probs))]
                     prob_dict = {l: p*100 for l, p in zip(labels, probs)}
                 
+                # --- 90% CHECK ---
                 if conf < 90:
                     st.error("⚠️ **Photo Clear Nahi Hai!**")
                     st.warning(f"Confidence: {conf:.1f}% (Low)\n\nYe Aloo ka patta nahi lag raha. Saaf photo upload karein.")
                     st.stop()
 
+            # DISPLAY RESULT
             is_healthy = "healthy" in label.lower() or "healty" in label.lower()
             
             bg_color = "#ecfdf5" if is_healthy else "#fef2f2"
