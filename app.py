@@ -28,30 +28,31 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. MODEL LOADING (SMART PATH CHECK) ---
+# --- 3. SMART MODEL LOADING ---
 @st.cache_resource
 def load_model():
     try:
         from transformers import AutoImageProcessor, AutoModelForImageClassification
+        import torch
         
-        # Check 1: Current Directory
-        if os.path.exists("config.json") and (os.path.exists("model.safetensors") or os.path.exists("pytorch_model.bin")):
-            path = "."
-        # Check 2: Subfolder
-        elif os.path.exists("mera_potato_model/config.json"):
-            path = "mera_potato_model"
-        else:
-            return None, None # Model nahi mila
+        # Determine device (CPU for safety unless GPU configured)
+        device = torch.device("cpu") 
 
-        model = AutoModelForImageClassification.from_pretrained(path)
-        processor = AutoImageProcessor.from_pretrained(path)
+        # PATH LOGIC: Check current directory first (GitHub structure fix)
+        if os.path.exists("config.json") and (os.path.exists("model.safetensors") or os.path.exists("pytorch_model.bin")):
+            model_path = "."
+        else:
+            model_path = "mera_potato_model"
+
+        model = AutoModelForImageClassification.from_pretrained(model_path).to(device)
+        processor = AutoImageProcessor.from_pretrained(model_path)
         return model, processor
     except:
         return None, None
 
 model, processor = load_model()
 
-# --- 4. ULTRA PREMIUM CSS (WEATHER FIXED) ---
+# --- 4. ULTRA PREMIUM CSS (Fixed Layout) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -65,6 +66,9 @@ st.markdown("""
     @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 50, 50, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0); } }
     @keyframes float-weather { 0% { transform: translateY(0px); } 50% { transform: translateY(-6px); } 100% { transform: translateY(0px); } }
     @keyframes float-logo { 0% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } 50% { transform: translateY(-5px); box-shadow: 0 0 25px rgba(16, 185, 129, 0.6); } 100% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } }
+
+    /* GLOBAL ANIMATION */
+    h1, h2, h3, p, span, a, div.stMarkdown { animation: fadeInUp 0.6s ease-out both; }
 
     /* BACKGROUND PARTICLES */
     .stApp::before {
@@ -95,7 +99,8 @@ st.markdown("""
     .weather-card-container {
         position: relative;
         border-radius: 25px; padding: 20px;
-        color: white; text-align: center; height: 380px; /* Thora bara kiya */
+        color: white; text-align: center; 
+        height: 380px; /* Increased Height */
         display: flex; flex-direction: column; justify-content: space-between; align-items: center;
         box-shadow: 0 15px 35px rgba(0,0,0,0.15);
         overflow: hidden;
@@ -232,7 +237,7 @@ elif nav == "🥔 Potato (Aloo)":
                     
                     # PREDICTION LOGIC
                     import torch
-                    model_image = display_image = image.resize((224, 224)) 
+                    model_image = image.resize((224, 224)) 
                     inputs = processor(images=model_image, return_tensors="pt")
                     
                     with torch.no_grad():
@@ -256,7 +261,7 @@ elif nav == "🥔 Potato (Aloo)":
                 bg = "#ecfdf5" if is_healthy else "#fef2f2"
                 
                 st.markdown(f"""
-                <div class='result-box' style='background: {bg}; border: 2px solid {color};'>
+                <div class='result-box' style='background: {bg}; border: 2px solid {color}; padding: 25px; border-radius: 20px; text-align: center;'>
                     <h2 style='color: {color}; margin:0; font-weight: 800;'>{clean_label}</h2>
                     <h4 style='color: {color}; margin-top: 10px; font-weight: 600;'>Confidence: {conf:.1f}%</h4>
                 </div>
@@ -279,4 +284,4 @@ elif nav == "🥔 Potato (Aloo)":
                     """, unsafe_allow_html=True)
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
-    st.info("🚧 Coming Soon...")
+    st.info("🚧 Coming Soon...") 
