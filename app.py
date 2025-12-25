@@ -29,7 +29,7 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS (UPDATED FOR FIX) ---
+# --- 3. ULTRA PREMIUM CSS (UPDATED WEATHER WIDGET) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -115,71 +115,107 @@ st.markdown("""
     .slide img:hover { transform: scale(1.08); filter: brightness(1.1); cursor: grab; }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
-    /* --- WEATHER CONTAINER FIX --- */
+    /* --- PREMIUM WEATHER CONTAINER START --- */
     .weather-container {
-        background: rgba(255, 255, 255, 0.15); 
-        backdrop-filter: blur(20px);
-        border-radius: 25px; 
-        padding: 25px; 
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); 
+        background: rgba(255, 255, 255, 0.1); 
+        backdrop-filter: blur(25px);         
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 30px; 
+        padding: 20px; 
+        border: 1px solid rgba(255, 255, 255, 0.4); 
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15); 
         color: white; 
         text-align: center;
-        height: 350px; 
+        height: 400px; /* Increased Height */
         display: flex; 
         flex-direction: column; 
         justify-content: center; 
         align-items: center;
-        position: relative; /* Fixed: Keeps elements inside */
+        position: relative; 
+        overflow: hidden;
         animation: popIn 1s ease-out 0.2s backwards;
     }
     
-    .weather-icon-big { font-size: 5rem; margin-bottom: 10px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.8)); animation: float-weather 4s ease-in-out infinite; }
-    .temp-text { font-size: 4.5rem; font-weight: 800; margin: 0; line-height: 1; text-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+    .weather-container::before {
+        content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%);
+        transform: rotate(45deg); pointer-events: none;
+    }
+
+    .weather-icon-big { 
+        font-size: 5.5rem; 
+        margin-top: 20px;
+        margin-bottom: 5px; 
+        filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2)); 
+        animation: float-weather 4s ease-in-out infinite; 
+        z-index: 1;
+    }
     
-    /* --- BADGES FIX --- */
+    .temp-text { 
+        font-size: 4rem; 
+        font-weight: 800; 
+        margin: 5px 0; 
+        line-height: 1; 
+        text-shadow: 0 5px 20px rgba(0,0,0,0.2); 
+        z-index: 1;
+    }
+
+    .weather-grid {
+        display: flex; gap: 15px; margin-top: 10px; z-index: 1; margin-bottom: 30px;
+    }
+    
+    /* --- FLOATING BADGES --- */
     .live-badge {
-        position: absolute; /* Fixed */
+        position: absolute;
         top: 20px;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.3); 
-        padding: 5px 15px; 
-        border-radius: 50px; 
-        border: 1px solid rgba(255,255,255,0.2);
-        display: inline-flex; 
-        align-items: center; 
-        gap: 8px; 
-        font-weight: 700; 
-        font-size: 0.8rem; 
-        letter-spacing: 1px; 
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        z-index: 2;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 8px 20px;
+        border-radius: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        display: inline-flex; align-items: center; gap: 8px;
+        font-weight: 700; font-size: 0.75rem; letter-spacing: 1.5px;
+        text-transform: uppercase;
+        z-index: 10;
+        transition: all 0.3s ease;
     }
-    .live-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 10px #ef4444; animation: pulse-red 1.5s infinite; }
+    .live-badge:hover { background: rgba(255, 255, 255, 0.3); transform: translateX(-50%) scale(1.05); }
+
+    .live-dot { 
+        width: 8px; height: 8px; background: #ff4d4d; border-radius: 50%; 
+        box-shadow: 0 0 10px #ff4d4d; animation: pulse-red 1.5s infinite; 
+    }
     
     .region-pill {
-        position: absolute; /* Fixed */
+        position: absolute;
         bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.2); 
-        padding: 8px 20px; 
-        border-radius: 50px;
-        font-size: 0.8rem; 
-        font-weight: 700; 
-        letter-spacing: 1px; 
-        border: 1px solid rgba(255,255,255,0.15);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
-        display: inline-flex; 
-        align-items: center; 
-        gap: 8px; 
-        text-transform: uppercase; 
-        color: rgba(255,255,255,0.9);
-        margin-top: 0;
+        background: rgba(0, 0, 0, 0.25);
+        backdrop-filter: blur(10px);
+        padding: 10px 25px;
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        font-size: 0.85rem; font-weight: 700; letter-spacing: 1px;
+        display: inline-flex; align-items: center; gap: 8px;
+        text-transform: uppercase; color: rgba(255,255,255,0.95);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        z-index: 10;
     }
+    /* --- PREMIUM WEATHER CONTAINER END --- */
 
-    .stat-badge { background: rgba(0, 0, 0, 0.2); padding: 8px 15px; border-radius: 50px; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.1); }
+    .stat-badge { 
+        background: rgba(255, 255, 255, 0.2); 
+        padding: 8px 15px; 
+        border-radius: 12px; 
+        font-size: 0.9rem; font-weight: 600;
+        border: 1px solid rgba(255,255,255,0.2); 
+        display: flex; align-items: center; gap: 5px;
+    }
     .result-box { padding: 30px; border-radius: 25px; text-align: center; background: rgba(255,255,255,0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.1); animation: popIn 0.6s ease-out; border: 2px solid white; }
     img { border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: transform 0.3s; }
     </style>
@@ -255,17 +291,22 @@ if nav == "🏠 Home Page":
         """, unsafe_allow_html=True)
         
     with col2:
-        bg_gradient = "linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)"
+        # Gradient Logic based on Temperature (Updated for new CSS)
+        bg_style = "background: linear-gradient(135deg, rgba(59,130,246,0.8) 0%, rgba(6,182,212,0.8) 100%);"
         weather_icon = "⛅"
         if temp > 30:
-            bg_gradient = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+            bg_style = "background: linear-gradient(135deg, rgba(245,158,11,0.8) 0%, rgba(217,119,6,0.8) 100%);"
             weather_icon = "☀️"
         elif temp < 20:
-            bg_gradient = "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)"
+            bg_style = "background: linear-gradient(135deg, rgba(99,102,241,0.8) 0%, rgba(79,70,229,0.8) 100%);"
             weather_icon = "❄️"
 
+        # Note: I removed the inline background style from here so the CSS class takes over for the glass effect, 
+        # but added a subtle inner div for color if needed. For now, let's trust the CSS gradient.
+        # Actually, let's apply the color via inline style but keep transparency for the blur to work.
+        
         st.markdown(f"""
-        <div class="weather-container" style="background: {bg_gradient};">
+        <div class="weather-container" style="{bg_style}">
             <div class="live-badge">
                 <div class="live-dot"></div> LIVE WEATHER
             </div>
@@ -428,3 +469,4 @@ elif nav == "🥔 Potato (Aloo)":
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
     st.info("🚧 Coming Soon...") 
+    
