@@ -28,7 +28,7 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. PREMIUM CSS (FLEXBOX WEATHER + FULL UI) ---
+# --- 3. PREMIUM CSS (FULL SUITE) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -44,7 +44,7 @@ st.markdown("""
     @keyframes float-weather { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
     @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 50, 50, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0); } }
 
-    /* GLOBAL ANIMATION */
+    /* GLOBAL ELEMENTS */
     h1, h2, h3, p, span, a, div.stMarkdown { animation: fadeInUp 0.8s ease-out both; }
 
     /* SIDEBAR */
@@ -64,7 +64,7 @@ st.markdown("""
     }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[role="radio"] { display: none; }
 
-    /* HERO */
+    /* HERO SECTION */
     .hero-container {
         text-align: center; padding: 60px 20px; border-radius: 35px;
         background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
@@ -86,7 +86,7 @@ st.markdown("""
     .slide img { width: 100%; height: 100%; object-fit: cover; border-radius: 15px; }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
-    /* --- PREMIUM WEATHER CARD (FIXED FLEXBOX) --- */
+    /* --- FIXED WEATHER CARD (FLEXBOX) --- */
     .weather-card {
         background: rgba(255, 255, 255, 0.15);
         backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
@@ -96,51 +96,36 @@ st.markdown("""
         color: white;
         height: 350px; 
         padding: 20px;
-        
-        /* Flexbox Layout: Ensures No Overlap */
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        align-items: center;
-        text-align: center;
-        position: relative;
-        overflow: hidden;
+        display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+        text-align: center; position: relative; overflow: hidden;
     }
 
     .weather-badge-top {
-        background: rgba(0, 0, 0, 0.2);
-        padding: 8px 20px; border-radius: 30px;
+        background: rgba(0, 0, 0, 0.2); padding: 8px 20px; border-radius: 30px;
         font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;
-        display: inline-flex; align-items: center; gap: 8px;
-        border: 1px solid rgba(255,255,255,0.1);
-        z-index: 2;
+        display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.1); z-index: 2;
     }
     .live-dot { width: 8px; height: 8px; background: #ff4d4d; border-radius: 50%; animation: pulse-red 1.5s infinite; }
 
     .weather-main {
-        flex-grow: 1; /* Takes available space */
-        display: flex; flex-direction: column; justify-content: center; align-items: center;
-        z-index: 2;
+        flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2;
     }
     .weather-icon { font-size: 5rem; margin-bottom: 5px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.6)); animation: float-weather 4s ease-in-out infinite; }
     .temp-text { font-size: 4rem; font-weight: 800; line-height: 1; text-shadow: 0 5px 20px rgba(0,0,0,0.15); }
-    
     .weather-stats { display: flex; gap: 10px; margin-top: 10px; }
     .stat-pill { background: rgba(255, 255, 255, 0.2); padding: 5px 15px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; }
 
     .weather-badge-bottom {
-        background: rgba(255, 255, 255, 0.2);
-        padding: 8px 25px; border-radius: 20px;
-        font-size: 0.8rem; font-weight: 700; letter-spacing: 1px;
-        text-transform: uppercase;
-        border: 1px solid rgba(255,255,255,0.2);
-        z-index: 2;
+        background: rgba(255, 255, 255, 0.2); padding: 8px 25px; border-radius: 20px;
+        font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+        border: 1px solid rgba(255,255,255,0.2); z-index: 2;
     }
 
     /* CARDS & RESULTS */
     .feature-card {
         background: rgba(255, 255, 255, 0.9); padding: 25px; border-radius: 25px; text-align: center;
         box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid white; transition: transform 0.3s;
+        height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;
     }
     .feature-card:hover { transform: translateY(-5px); border-color: #34d399; }
     
@@ -185,15 +170,18 @@ st.sidebar.info("**Developers:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engineer
 
 # --- 6. MAIN LOGIC ---
 if nav == "🏠 Home Page":
+    # 1. HERO SECTION
     st.markdown("""
     <div class="hero-container">
         <h1 style="font-size: 4rem; font-weight: 900; background: -webkit-linear-gradient(#064e3b, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Plant Doctor AI</h1>
         <p style="color:#065f46; font-size:1.5rem; font-weight:600;">AI-Powered Crop Disease Detection</p>
+        <p style="color:#047857; font-size:1.1rem; max-width:700px; margin:auto;">Upload a leaf image and get instant disease diagnosis with treatment guidance.</p>
         <br>
         <a class="cta-button" href="#alookibimaricheckkarein">🌿 Start Diagnosis</a>
     </div>
     """, unsafe_allow_html=True)
     
+    # 2. SLIDER + WEATHER
     col1, col2 = st.columns([2, 1])
     
     with col1:
@@ -220,7 +208,6 @@ if nav == "🏠 Home Page":
             bg_style = "background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);"
             weather_icon = "❄️"
 
-        # NEW WEATHER HTML (MATCHING FLEXBOX CSS)
         st.markdown(f"""
         <div class="weather-card" style="{bg_style}">
             <div class="weather-badge-top">
@@ -241,18 +228,48 @@ if nav == "🏠 Home Page":
         """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
+    
+    # 3. STATS ROW
     c1, c2, c3, c4 = st.columns(4)
     stats = [("🌱", "15K+", "Images"), ("🎯", "98%", "Accuracy"), ("⚡", "< 1s", "Fast"), ("👨‍🌾", "Expert", "Approved")]
     for col, (icon, val, lbl) in zip([c1,c2,c3,c4], stats):
         with col:
             st.markdown(f"""
-            <div class="feature-card">
+            <div class="feature-card" style="min-height: 150px;">
                 <div style="font-size:2.5rem; margin-bottom:10px;">{icon}</div>
                 <h2 style="margin:0; color:#064e3b; font-weight:800;">{val}</h2>
                 <p style="color:#555; margin:0;">{lbl}</p>
             </div>
             """, unsafe_allow_html=True)
+            
+    # 4. HOW IT WORKS (Restored)
+    st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:60px; font-size:2.5rem;'>How It Works</h2>", unsafe_allow_html=True)
+    c1, c2, c3 = st.columns(3)
+    steps = [("📸", "Upload Leaf", "Clear photo lein."), ("🤖", "AI Analysis", "Model check karega."), ("💊", "Get Cure", "Ilaj payein.")]
+    for col, (icon, title, desc) in zip([c1,c2,c3], steps):
+        with col:
+            st.markdown(f"""
+            <div class="feature-card" style="min-height: 200px;">
+                <div class="feature-icon" style="font-size:3.5rem; margin-bottom:15px; color:#059669;">{icon}</div>
+                <h3 style="color:#064e3b; font-weight:700;">{title}</h3><p style="color:#555;">{desc}</p>
+            </div>
+            """, unsafe_allow_html=True)
 
+    # 5. SUPPORTED CROPS (Restored)
+    st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:60px; font-size:2.5rem;'>Supported Crops</h2>", unsafe_allow_html=True)
+    c1, c2, c3 = st.columns(3)
+    crops = [("🥔", "Potato", "Fully Supported ✅"), ("🍅", "Tomato", "Launching Soon 🚀"), ("🌽", "Corn", "In Development 🛠️")]
+    for col, (icon, name, status) in zip([c1,c2,c3], crops):
+        with col:
+            st.markdown(f"""
+            <div class="feature-card" style="min-height:220px;">
+                <div style="font-size:4.5rem; margin-bottom:15px;" class="feature-icon">{icon}</div>
+                <h3 style="color:#064e3b; font-weight:800;">{name}</h3>
+                <p style="font-weight:600; color:#059669;">{status}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # 6. FOOTER
     st.markdown("""
     <hr style="border-top: 2px solid #a7f3d0; margin-top: 80px;">
     <div style="text-align:center; padding:30px; color:#555;">
