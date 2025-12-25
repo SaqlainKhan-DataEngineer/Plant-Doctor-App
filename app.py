@@ -28,7 +28,7 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM ANIMATED CSS ---
+# --- 3. ULTRA PREMIUM CSS (SMALLER PARTICLES + PREMIUM NAV) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -38,15 +38,9 @@ st.markdown("""
         scroll-behavior: smooth;
     }
 
-    /* --- 1. ANIMATIONS (POPUP, SLIDE, GLOW) --- */
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(40px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes popIn {
-        0% { transform: scale(0.5); opacity: 0; }
-        100% { transform: scale(1); opacity: 1; }
-    }
+    /* --- 1. ANIMATIONS --- */
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     @keyframes float-and-glow {
         0% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
         50% { transform: translateY(-12px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.8); }
@@ -62,26 +56,22 @@ st.markdown("""
         100% { background-position: 0% 50%; }
     }
 
-    /* Apply Animations Globally */
-    h1, h2, h3, p, span, a, div.stMarkdown {
-        animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-    }
-    
-    .feature-icon {
-        animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both 0.3s; /* Bouncy Pop */
-    }
+    /* Apply Animations */
+    h1, h2, h3, p, span, a, div.stMarkdown { animation: fadeInUp 0.8s ease-out both; }
+    .feature-icon { animation: popIn 0.6s ease-out both 0.3s; }
 
-    /* --- 2. BACKGROUND PARTICLES (EMERALD WIND) --- */
+    /* --- 2. BACKGROUND PARTICLES (SMALLER & SUBTLE) --- */
+    /* Size ko 4px se kam kar ke 2px kar diya taake barik lagein */
     .stApp::before {
         content: "";
         position: fixed;
         top: -50%; left: -50%; width: 200%; height: 200%;
         background-image:
-            radial-gradient(circle at 20px 30px, rgba(4, 120, 87, 0.5) 0px, transparent 4px),
-            radial-gradient(circle at 40px 70px, rgba(16, 185, 129, 0.6) 0px, transparent 4px),
-            radial-gradient(circle at 50px 160px, rgba(5, 150, 105, 0.5) 0px, transparent 4px),
-            radial-gradient(circle at 90px 40px, rgba(52, 211, 153, 0.7) 0px, transparent 4px),
-            radial-gradient(circle at 130px 80px, rgba(6, 78, 59, 0.6) 0px, transparent 4px);
+            radial-gradient(circle at 20px 30px, rgba(4, 120, 87, 0.5) 0px, transparent 2px),
+            radial-gradient(circle at 40px 70px, rgba(16, 185, 129, 0.6) 0px, transparent 2px),
+            radial-gradient(circle at 50px 160px, rgba(5, 150, 105, 0.5) 0px, transparent 2px),
+            radial-gradient(circle at 90px 40px, rgba(52, 211, 153, 0.7) 0px, transparent 3px),
+            radial-gradient(circle at 130px 80px, rgba(6, 78, 59, 0.6) 0px, transparent 2px);
         background-repeat: repeat;
         background-size: 200px 200px;
         animation: diamond-wind 25s linear infinite;
@@ -89,7 +79,42 @@ st.markdown("""
         z-index: 0;
     }
 
-    /* --- 3. HERO & CARDS (3D TILT & GLOW) --- */
+    /* --- 3. PREMIUM SIDEBAR NAVIGATION (FIXED BLACK BOX) --- */
+    [data-testid="stSidebar"] { background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%); border-right: none; }
+    [data-testid="stSidebar"] * { color: #ecfdf5 !important; }
+    
+    /* Navigation Buttons - Glassmorphism Style */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
+        background: rgba(255, 255, 255, 0.08); 
+        padding: 12px 15px; 
+        border-radius: 12px; 
+        margin-bottom: 8px !important;
+        border: 1px solid rgba(255,255,255,0.1); 
+        width: 100%; 
+        display: flex; 
+        align-items: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    /* Hover Effect */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
+        background: rgba(255, 255, 255, 0.2); 
+        transform: translateX(5px);
+        border-color: #34d399;
+    }
+    
+    /* Selected Item - Neon Glow (No Black Box) */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
+         background: linear-gradient(90deg, rgba(16, 185, 129, 0.4), transparent) !important;
+         border-left: 5px solid #34d399 !important; 
+         font-weight: 800; 
+         transform: translateX(5px);
+         box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+         color: white !important;
+    }
+
+    /* --- 4. HERO & CARDS --- */
     .hero-container {
         text-align: center; padding: 60px 20px; border-radius: 35px;
         background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
@@ -107,35 +132,24 @@ st.markdown("""
         box-shadow: 0 10px 30px rgba(0,0,0,0.08);
         height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;
         transform-style: preserve-3d; 
-        transition: transform 0.4s ease, box-shadow 0.4s ease, border-color 0.3s;
+        transition: transform 0.4s ease, box-shadow 0.4s ease;
         position: relative; z-index: 1; 
         animation: fadeInUp 1s ease-out;
     }
-    
     .feature-card:hover { 
         transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateY(-15px); 
-        box-shadow: 0 30px 60px rgba(16, 185, 129, 0.3);
-        border-color: #34d399;
+        box-shadow: 0 30px 60px rgba(16, 185, 129, 0.3); border-color: #34d399;
     }
     
-    /* ANIMATED BUTTON */
     .cta-button {
-        display: inline-block; 
-        background: linear-gradient(90deg, #059669, #10b981); 
-        color: white !important;
-        padding: 18px 45px; border-radius: 50px; font-weight: 800; font-size: 1.1rem;
-        text-decoration: none;
-        box-shadow: 0 10px 30px rgba(16,185,129,0.5); 
-        transition: all 0.3s; margin-top: 25px;
-        border: 2px solid #a7f3d0;
-        animation: popIn 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        display: inline-block; background: linear-gradient(90deg, #059669, #10b981); color: white !important;
+        padding: 18px 45px; border-radius: 50px; font-weight: 800; font-size: 1.1rem; text-decoration: none;
+        box-shadow: 0 10px 30px rgba(16,185,129,0.5); transition: all 0.3s; margin-top: 25px; border: 2px solid #a7f3d0;
+        animation: popIn 1.2s ease-out;
     }
-    .cta-button:hover { 
-        transform: scale(1.1) translateY(-5px); 
-        box-shadow: 0 20px 40px rgba(16,185,129,0.7); 
-    }
+    .cta-button:hover { transform: scale(1.1) translateY(-5px); }
 
-    /* --- 4. SLIDER & WEATHER --- */
+    /* --- 5. SLIDER & WEATHER --- */
     .slider-container {
         width: 100%; overflow: hidden; border-radius: 25px;
         box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.7);
@@ -145,7 +159,7 @@ st.markdown("""
     .slide-track:hover { animation-play-state: paused; }
     .slide { width: 600px; height: 350px; flex-shrink: 0; padding: 0 5px; }
     .slide img { width: 100%; height: 100%; object-fit: cover; border-radius: 15px; transition: transform 0.4s; }
-    .slide img:hover { transform: scale(1.08); filter: brightness(1.1); }
+    .slide img:hover { transform: scale(1.08); filter: brightness(1.1); cursor: grab; }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
     .weather-container {
@@ -153,41 +167,22 @@ st.markdown("""
         border-radius: 25px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.3);
         box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); color: white; text-align: center;
         height: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center;
-        animation: popIn 1s ease-out 0.2s backwards; /* Slight delay */
+        animation: popIn 1s ease-out 0.2s backwards;
     }
     .weather-icon-big { font-size: 5rem; margin-bottom: 10px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.8)); animation: float-and-glow 4s ease-in-out infinite; }
     .temp-text { font-size: 4.5rem; font-weight: 800; margin: 0; line-height: 1; text-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-    
-    /* --- 5. SIDEBAR STYLING --- */
-    [data-testid="stSidebar"] { background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%); border-right: none; }
-    [data-testid="stSidebar"] * { color: #ecfdf5 !important; }
-    
-    /* Sidebar Buttons */
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
-        background: rgba(255, 255, 255, 0.08); padding: 12px 15px; border-radius: 12px; margin-bottom: 8px !important;
-        border: 1px solid rgba(255,255,255,0.05); width: 100%; display: flex; align-items: center;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    }
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
-        background: rgba(255, 255, 255, 0.2); transform: translateX(8px);
-    }
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
-         background: linear-gradient(90deg, rgba(16, 185, 129, 0.3), transparent) !important;
-         border-left: 5px solid #34d399 !important; font-weight: 800; transform: translateX(8px);
-         box-shadow: -5px 5px 15px rgba(0,0,0,0.1);
-    }
-    
-    /* Result Box */
+    .weather-grid { display: flex; gap: 15px; margin-top: 15px; justify-content: center; }
+    .stat-badge { background: rgba(0, 0, 0, 0.2); padding: 8px 15px; border-radius: 50px; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.1); }
+
     .result-box { 
         padding: 30px; border-radius: 25px; text-align: center; 
         background: rgba(255,255,255,0.95); 
         box-shadow: 0 20px 50px rgba(0,0,0,0.1); 
-        animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy Entry */
+        animation: popIn 0.6s ease-out;
         border: 2px solid white;
     }
     
     img { border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: transform 0.3s; }
-    img:hover { transform: scale(1.02); }
     </style>
     """, unsafe_allow_html=True)
 
@@ -203,7 +198,7 @@ def load_model():
 
 model, processor = load_model()
 
-# --- 4. SIDEBAR (ANIMATED LOGO RESTORED) ---
+# --- 4. SIDEBAR (ANIMATED LOGO) ---
 st.sidebar.markdown("""
     <div style="display: flex; justify-content: center; margin-bottom: 25px; margin-top: 10px;">
         <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png" 
@@ -227,7 +222,6 @@ st.sidebar.info("**Developers:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engineer
 
 # --- 5. MAIN LOGIC ---
 if nav == "🏠 Home Page":
-    # HERO
     st.markdown("""
     <div class="hero-container">
         <h1 style="font-size: 4.5rem; font-weight: 900; background: -webkit-linear-gradient(#064e3b, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Plant Doctor AI</h1>
@@ -274,14 +268,14 @@ if nav == "🏠 Home Page":
 
         st.markdown(f"""
         <div class="weather-container" style="background: {bg_gradient};">
-            <div class="weather-label">📍 LIVE FARM WEATHER</div>
+            <div style="font-size:1.1rem; font-weight:600; margin-bottom:10px; letter-spacing:1px; color:#e0f2fe;">📍 LIVE FARM WEATHER</div>
             <div class="weather-icon-big">{weather_icon}</div>
             <div class="temp-text">{temp}°C</div>
             <div class="weather-grid">
                 <div class="stat-badge">💨 {wind} km/h</div>
                 <div class="stat-badge">💧 65% Hum</div>
             </div>
-            <div style="margin-top:20px; font-size:0.85rem; opacity:0.9;">Punjab Region Data</div>
+            <div style="margin-top:20px; font-size:0.8rem; opacity:0.8;">Punjab Region Data</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -327,7 +321,7 @@ if nav == "🏠 Home Page":
             </div>
             """, unsafe_allow_html=True)
 
-    # FOOTER
+    # FOOTER (TECH STACK RESTORED)
     st.markdown("""
     <hr style="border-top: 2px solid #a7f3d0; margin-top: 80px;">
     <div style="text-align:center; padding:30px; color:#555;">
@@ -433,4 +427,3 @@ elif nav == "🥔 Potato (Aloo)":
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
     st.info("🚧 Coming Soon...") 
-    
