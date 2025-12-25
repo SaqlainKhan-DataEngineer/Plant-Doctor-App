@@ -277,7 +277,7 @@ if nav == "🏠 Home Page":
         st.markdown(f"""
         <div class="weather-container" style="background: {bg_gradient};">
             <div class="live-badge">
-                <div class="live-dot"></div> LIVE
+                <div class="live-dot"></div> LIVE WEATHER
             </div>
             
             <div class="weather-icon-big">{weather_icon}</div>
