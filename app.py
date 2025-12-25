@@ -5,6 +5,7 @@ from transformers import AutoImageProcessor, AutoModelForImageClassification
 import time
 import datetime
 import requests
+import os  # <--- Ye add kiya hai path check karne ke liye
 
 # --- 1. PAGE SETUP ---
 st.set_page_config(
@@ -14,9 +15,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ROBUST WEATHER FUNCTION ---
+# --- 2. ROBUST WEATHER FUNCTION (Optimized) ---
 def get_real_weather():
     try:
+        # Timeout added to prevent crashing
         url = "https://api.open-meteo.com/v1/forecast?latitude=31.5204&longitude=74.3587&current_weather=true"
         response = requests.get(url, timeout=3) 
         data = response.json()
@@ -24,11 +26,11 @@ def get_real_weather():
         wind = data['current_weather']['windspeed']
         return temp, wind
     except:
-        return 28, 12
+        return 28, 12 # Fallback Data
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS ---
+# --- 3. ULTRA PREMIUM CSS (SAME AS BEFORE) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -46,7 +48,6 @@ st.markdown("""
     @keyframes diamond-wind { 0% { transform: translateY(0) translateX(0); } 100% { transform: translateY(100px) translateX(-100px); } }
     @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
     @keyframes float-logo { 0% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } 50% { transform: translateY(-8px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.7); } 100% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } }
-    @keyframes rotate-glow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
     h1, h2, h3, p, span, a, div.stMarkdown { animation: fadeInUp 0.8s ease-out both; }
 
@@ -115,11 +116,11 @@ st.markdown("""
     .slide img:hover { transform: scale(1.08); filter: brightness(1.1); cursor: grab; }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
-    /* PREMIUM WEATHER WIDGET */
+    /* NEW PREMIUM WEATHER WIDGET */
     .weather-container {
         position: relative;
         background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(25px);
+        backdrop-filter: blur(25px); /* Strong Blur */
         -webkit-backdrop-filter: blur(25px);
         border-radius: 30px;
         padding: 25px;
@@ -132,6 +133,7 @@ st.markdown("""
     }
     .weather-container:hover { transform: translateY(-5px); box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.35); }
 
+    /* Decorative Glow behind the card */
     .weather-glow {
         position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
         background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%);
@@ -169,13 +171,20 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. OPTIMIZED MODEL LOADING ---
+# --- 4. OPTIMIZED MODEL LOADING (WITH PATH FIX) ---
 @st.cache_resource
 def load_model():
     try:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model = AutoModelForImageClassification.from_pretrained("mera_potato_model").to(device)
-        processor = AutoImageProcessor.from_pretrained("mera_potato_model")
+        
+        # --- PATH FIX: Check karega files kahan hain ---
+        if os.path.exists("config.json") and (os.path.exists("model.safetensors") or os.path.exists("pytorch_model.bin")):
+            model_path = "." # Current directory
+        else:
+            model_path = "mera_potato_model" # Subfolder
+            
+        model = AutoModelForImageClassification.from_pretrained(model_path).to(device)
+        processor = AutoImageProcessor.from_pretrained(model_path)
         model.eval() 
         return model, processor, device
     except:
@@ -332,7 +341,12 @@ if nav == "🏠 Home Page":
 
 elif nav == "🥔 Potato (Aloo)":
     st.header("🥔 Aloo Ki Bimari Check Karein", anchor="alookibimaricheckkarein")
-    if not model: st.error("⚠️ Model folder nahi mila!"); st.stop()
+    
+    # --- MODEL CHECK (SAFE) ---
+    if not model:
+        st.error("⚠️ **Model Folder Missing!**")
+        st.info("Ensure `config.json` and `model.safetensors` are in the same folder as `app.py` or in `mera_potato_model` folder.")
+        st.stop()
     
     uploaded_file = st.file_uploader("Upload Leaf Photo", type=["jpg", "png", "jpeg"])
     
@@ -343,39 +357,43 @@ elif nav == "🥔 Potato (Aloo)":
         with col1:
             display_image = Image.open(uploaded_file).convert('RGB')
             st.image(display_image, caption="Uploaded Photo", use_column_width=True)
+        
         with col2:
-            my_bar = st.progress(0, text="Starting engine...")
-            model_image = display_image.resize((224, 224)) 
-            inputs = processor(images=model_image, return_tensors="pt").to(device)
-            
-            with torch.no_grad():
-                outputs = model(**inputs)
-                logits = outputs.logits
-                idx = logits.argmax(-1).item()
-                conf = torch.softmax(logits, dim=1)[0][idx].item() * 100
-                label = model.config.id2label[idx].replace("_", " ").title()
-                probs = torch.softmax(logits, dim=1)[0].tolist()
-                labels = [model.config.id2label[i].replace("_", " ").title() for i in range(len(probs))]
-                prob_dict = {l: p*100 for l, p in zip(labels, probs)}
-            
-            my_bar.empty()
+            with st.spinner("Analyzing..."):
+                time.sleep(1) 
+                
+                # PREDICTION LOGIC
+                import torch
+                model_image = display_image.resize((224, 224)) 
+                inputs = processor(images=model_image, return_tensors="pt").to(device)
+                
+                with torch.no_grad():
+                    outputs = model(**inputs)
+                    logits = outputs.logits
+                    idx = logits.argmax(-1).item()
+                    conf = torch.softmax(logits, dim=1)[0][idx].item() * 100
+                    label = model.config.id2label[idx].replace("_", " ").title()
+                    probs = torch.softmax(logits, dim=1)[0].tolist()
+                    labels = [model.config.id2label[i].replace("_", " ").title() for i in range(len(probs))]
+                    prob_dict = {l: p*100 for l, p in zip(labels, probs)}
+                
+                # --- 90% CHECK ---
+                if conf < 90:
+                    st.error("⚠️ **Photo Clear Nahi Hai!**")
+                    st.warning(f"Confidence: {conf:.1f}% (Low)\n\nYe Aloo ka patta nahi lag raha. Saaf photo upload karein.")
+                    st.stop()
 
-            # --- ADDED: 90% Confidence Check Logic ---
-            if conf < 90:
-                st.error("⚠️ **Photo Clear Nahi Hai!**")
-                st.warning(f"Confidence: {conf:.1f}% (Low)\n\nYe Aloo ka patta nahi lag raha ya tasveer dhundli hai. Kripya saaf photo lein.")
-                st.stop()
-            # ----------------------------------------
-
+            # DISPLAY RESULT
             is_healthy = "healthy" in label.lower() or "healty" in label.lower()
+            
             bg_color = "#ecfdf5" if is_healthy else "#fef2f2"
             border_color = "#059669" if is_healthy else "#dc2626"
             
             st.markdown(f"""
-                <div class='result-box' style='background: {bg_color}; border: 2px solid {border_color};'>
-                    <h2 style='color: {border_color}; margin:0; font-weight: 800;'>{label}</h2>
-                    <h4 style='color: {border_color}; margin-top: 10px; font-weight: 600;'>Confidence: {conf:.1f}%</h4>
-                </div>
+            <div class='result-box' style='background: {bg_color}; border: 2px solid {border_color};'>
+                <h2 style='color: {border_color}; margin:0; font-weight: 800;'>{label}</h2>
+                <h4 style='color: {border_color}; margin-top: 10px; font-weight: 600;'>Confidence: {conf:.1f}%</h4>
+            </div>
             """, unsafe_allow_html=True)
             
             st.write("### 📊 Analysis Breakdown")
@@ -425,8 +443,6 @@ elif nav == "🥔 Potato (Aloo)":
                     </ul>
                 </div>
                 """, unsafe_allow_html=True)
-            else:
-                 st.info("⚠️ Bimari detect hui hai, lekin iska specific ilaj database mein nahi hai. Kisi maahir se rabta karein.")
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
-    st.info("🚧 Coming Soon...")
+    st.info("🚧 Coming Soon...") 
