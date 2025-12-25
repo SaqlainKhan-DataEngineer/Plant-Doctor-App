@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ROBUST WEATHER FUNCTION (Optimized) ---
+# --- 2. ROBUST WEATHER FUNCTION ---
 def get_real_weather():
     try:
         # Timeout added to prevent crashing
@@ -29,7 +29,7 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS (SAME AS BEFORE) ---
+# --- 3. ULTRA PREMIUM CSS (UPDATED) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -43,10 +43,11 @@ st.markdown("""
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 50, 50, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0); } }
-    @keyframes float-weather { 0% { transform: translateY(0px); } 50% { transform: translateY(-8px); } 100% { transform: translateY(0px); } }
+    @keyframes float-weather { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
     @keyframes diamond-wind { 0% { transform: translateY(0) translateX(0); } 100% { transform: translateY(100px) translateX(-100px); } }
     @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
     @keyframes float-logo { 0% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } 50% { transform: translateY(-8px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.7); } 100% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } }
+    @keyframes rotate-glow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
     h1, h2, h3, p, span, a, div.stMarkdown { animation: fadeInUp 0.8s ease-out both; }
 
@@ -106,7 +107,7 @@ st.markdown("""
     }
     .cta-button:hover { transform: scale(1.1) translateY(-5px); }
 
-    /* SLIDER & WEATHER */
+    /* SLIDER */
     .slider-container { width: 100%; overflow: hidden; border-radius: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.7); background: #000; animation: popIn 1s ease-out; }
     .slide-track { display: flex; width: calc(1000px * 10); animation: scroll 45s linear infinite; }
     .slide-track:hover { animation-play-state: paused; }
@@ -115,29 +116,56 @@ st.markdown("""
     .slide img:hover { transform: scale(1.08); filter: brightness(1.1); cursor: grab; }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
+    /* NEW PREMIUM WEATHER WIDGET */
     .weather-container {
-        background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px);
-        border-radius: 25px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); color: white; text-align: center;
-        height: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center;
-        animation: popIn 1s ease-out 0.2s backwards; position: relative;
+        position: relative;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(25px); /* Strong Blur */
+        -webkit-backdrop-filter: blur(25px);
+        border-radius: 30px;
+        padding: 25px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+        overflow: hidden;
+        transition: transform 0.3s ease;
+        height: 350px;
+        display: flex; flex-direction: column; justify-content: space-between;
     }
-    .weather-icon-big { font-size: 5rem; margin-bottom: 10px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.8)); animation: float-weather 4s ease-in-out infinite; }
-    .temp-text { font-size: 4.5rem; font-weight: 800; margin: 0; line-height: 1; text-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-    
-    .live-badge {
-        background: rgba(0, 0, 0, 0.3); padding: 5px 15px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.2);
-        display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-    .live-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 10px #ef4444; animation: pulse-red 1.5s infinite; }
-    
-    .region-pill {
-        margin-top: 20px; background: rgba(0, 0, 0, 0.2); padding: 8px 20px; border-radius: 50px;
-        font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; border: 1px solid rgba(255,255,255,0.15);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase; color: rgba(255,255,255,0.9);
-    }
+    .weather-container:hover { transform: translateY(-5px); box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.35); }
 
-    .stat-badge { background: rgba(0, 0, 0, 0.2); padding: 8px 15px; border-radius: 50px; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.1); }
+    /* Decorative Glow behind the card */
+    .weather-glow {
+        position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%);
+        animation: rotate-glow 15s linear infinite; z-index: 0; pointer-events: none;
+    }
+    .weather-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; height: 100%; }
+    .weather-header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+
+    .live-badge {
+        background: rgba(0, 0, 0, 0.3); padding: 6px 14px; border-radius: 20px;
+        font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;
+        border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .live-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px #ef4444; animation: pulse-red 1.5s infinite; }
+
+    .temp-big {
+        font-size: 5.5rem; font-weight: 800; line-height: 1;
+        background: linear-gradient(180deg, #ffffff 20%, rgba(255,255,255,0.6) 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2)); margin: 10px 0;
+    }
+    .weather-icon-3d { font-size: 4rem; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3)); animation: float-weather 6s ease-in-out infinite; }
+
+    .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; margin-top: auto; }
+    .detail-item {
+        background: rgba(255, 255, 255, 0.15); border-radius: 15px; padding: 10px; text-align: center;
+        border: 1px solid rgba(255,255,255,0.1); transition: background 0.2s;
+    }
+    .detail-item:hover { background: rgba(255, 255, 255, 0.25); }
+    .detail-label { font-size: 0.75rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 1px; }
+    .detail-val { font-size: 1.1rem; font-weight: 700; color: white; }
+
     .result-box { padding: 30px; border-radius: 25px; text-align: center; background: rgba(255,255,255,0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.1); animation: popIn 0.6s ease-out; border: 2px solid white; }
     img { border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: transform 0.3s; }
     </style>
@@ -147,11 +175,10 @@ st.markdown("""
 @st.cache_resource
 def load_model():
     try:
-        # GPU Check added (Kimi's Suggestion)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = AutoModelForImageClassification.from_pretrained("mera_potato_model").to(device)
         processor = AutoImageProcessor.from_pretrained("mera_potato_model")
-        model.eval() # Eval mode for speed
+        model.eval() 
         return model, processor, device
     except:
         return None, None, "cpu"
@@ -214,27 +241,42 @@ if nav == "🏠 Home Page":
         """, unsafe_allow_html=True)
         
     with col2:
-        bg_gradient = "linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)"
-        weather_icon = "⛅"
+        # --- NEW PREMIUM WIDGET LOGIC ---
         if temp > 30:
-            bg_gradient = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
+            card_bg = "linear-gradient(145deg, #f59e0b 0%, #ea580c 100%)"
             weather_icon = "☀️"
+            condition = "Sunny"
         elif temp < 20:
-            bg_gradient = "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)"
+            card_bg = "linear-gradient(145deg, #6366f1 0%, #3b82f6 100%)"
             weather_icon = "❄️"
+            condition = "Chilly"
+        else:
+            card_bg = "linear-gradient(145deg, #10b981 0%, #059669 100%)"
+            weather_icon = "⛅"
+            condition = "Pleasant"
 
         st.markdown(f"""
-        <div class="weather-container" style="background: {bg_gradient};">
-            <div class="live-badge">
-                <div class="live-dot"></div> LIVE WEATHER
+        <div class="weather-container" style="background: {card_bg};">
+            <div class="weather-glow"></div>
+            <div class="weather-content">
+                <div class="weather-header">
+                    <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+                    <div style="font-weight:600; font-size:0.9rem; color:rgba(255,255,255,0.9);">📍 Punjab</div>
+                </div>
+                <div class="weather-icon-3d">{weather_icon}</div>
+                <div class="temp-big">{temp}°</div>
+                <div style="font-size:1.2rem; font-weight:600; color:rgba(255,255,255,0.9); margin-bottom:15px;">{condition}</div>
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <div class="detail-label">Wind</div>
+                        <div class="detail-val">{wind} <span style="font-size:0.7rem;">km/h</span></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Humidity</div>
+                        <div class="detail-val">65 <span style="font-size:0.7rem;">%</span></div>
+                    </div>
+                </div>
             </div>
-            <div class="weather-icon-big">{weather_icon}</div>
-            <div class="temp-text">{temp}°C</div>
-            <div class="weather-grid">
-                <div class="stat-badge">💨 {wind} km/h</div>
-                <div class="stat-badge">💧 65% Hum</div>
-            </div>
-            <div class="region-pill">📍 Punjab Region</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -297,7 +339,6 @@ elif nav == "🥔 Potato (Aloo)":
     
     uploaded_file = st.file_uploader("Upload Leaf Photo", type=["jpg", "png", "jpeg"])
     
-    # 5MB Check (Added for Security)
     if uploaded_file is not None and uploaded_file.size > 5*1024*1024:
         st.error("⚠️ File size too large! Please upload image under 5MB.")
     elif uploaded_file:
@@ -307,11 +348,8 @@ elif nav == "🥔 Potato (Aloo)":
             st.image(display_image, caption="Uploaded Photo", use_column_width=True)
         with col2:
             my_bar = st.progress(0, text="Starting engine...")
-            
-            # Optimization: Resize for model only (Kimi's Tip)
             model_image = display_image.resize((224, 224)) 
-            
-            inputs = processor(images=model_image, return_tensors="pt").to(device) # Move to device
+            inputs = processor(images=model_image, return_tensors="pt").to(device)
             
             with torch.no_grad():
                 outputs = model(**inputs)
@@ -319,12 +357,11 @@ elif nav == "🥔 Potato (Aloo)":
                 idx = logits.argmax(-1).item()
                 conf = torch.softmax(logits, dim=1)[0][idx].item() * 100
                 label = model.config.id2label[idx].replace("_", " ").title()
-                
                 probs = torch.softmax(logits, dim=1)[0].tolist()
                 labels = [model.config.id2label[i].replace("_", " ").title() for i in range(len(probs))]
                 prob_dict = {l: p*100 for l, p in zip(labels, probs)}
             
-            my_bar.empty() # Remove progress bar after done
+            my_bar.empty()
 
             is_healthy = "healthy" in label.lower() or "healty" in label.lower()
             bg_color = "#ecfdf5" if is_healthy else "#fef2f2"
@@ -343,12 +380,7 @@ elif nav == "🥔 Potato (Aloo)":
                 st.progress(int(p))
             
             report_text = f"Plant Doctor AI Report\nDate: {datetime.datetime.now()}\n\nDiagnosis: {label}\nConfidence: {conf:.1f}%\n\nStatus: {'Healthy' if is_healthy else 'Action Needed'}"
-            st.download_button(
-                label="📄 Download Report",
-                data=report_text,
-                file_name="plant_doctor_report.txt",
-                mime="text/plain"
-            )
+            st.download_button("📄 Download Report", report_text, file_name="plant_doctor_report.txt")
 
             if is_healthy:
                 st.balloons()
@@ -369,7 +401,6 @@ elif nav == "🥔 Potato (Aloo)":
                     <ul style="font-weight: 500;">
                         <li><b>Spray (Chemical):</b> Metalaxyl + Mancozeb (2.5g per Liter) spray karein.</li>
                         <li><b>Frequency:</b> Har 7-10 din baad spray dohrayein jab tak bimari khatam na ho.</li>
-                        <li><b>Organic:</b> Copper Fungicide ka bhi istemal kar sakte hain.</li>
                     </ul>
                 </div>
                 """, unsafe_allow_html=True)
@@ -380,18 +411,9 @@ elif nav == "🥔 Potato (Aloo)":
                     <ul style="font-weight: 500;">
                         <li><b>Spray (Chemical):</b> Chlorothalonil ya Azoxystrobin spray karein.</li>
                         <li><b>Organic:</b> Neem Oil ka spray bihtareen hai.</li>
-                        <li><b>Tip:</b> Neeche wale purane patton ko hata dein taake hawa lagay.</li>
                     </ul>
                 </div>
                 """, unsafe_allow_html=True)
-            else:
-                 st.info("⚠️ Bimari detect hui hai, lekin iska specific ilaj database mein nahi hai. Kisi maahir se rabta karein.")
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
     st.info("🚧 Coming Soon...") 
-
-
-
-
-
-
