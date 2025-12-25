@@ -17,7 +17,6 @@ st.set_page_config(
 # --- 2. ROBUST WEATHER FUNCTION ---
 def get_real_weather():
     try:
-        # Timeout added to prevent crashing
         url = "https://api.open-meteo.com/v1/forecast?latitude=31.5204&longitude=74.3587&current_weather=true"
         response = requests.get(url, timeout=3) 
         data = response.json()
@@ -29,7 +28,7 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS (UPDATED WEATHER WIDGET) ---
+# --- 3. ULTRA PREMIUM CSS (COMPACT WIDGET VERSION) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -63,7 +62,7 @@ st.markdown("""
         pointer-events: none; z-index: 0;
     }
 
-    /* SIDEBAR NAVIGATION */
+    /* SIDEBAR */
     [data-testid="stSidebar"] { background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%); border-right: none; }
     [data-testid="stSidebar"] * { color: #ecfdf5 !important; }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
@@ -115,107 +114,48 @@ st.markdown("""
     .slide img:hover { transform: scale(1.08); filter: brightness(1.1); cursor: grab; }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
-    /* --- PREMIUM WEATHER CONTAINER START --- */
-    .weather-container {
-        background: rgba(255, 255, 255, 0.1); 
-        backdrop-filter: blur(25px);         
-        -webkit-backdrop-filter: blur(25px);
-        border-radius: 30px; 
-        padding: 20px; 
+    /* --- NEW COMPACT WEATHER WIDGET --- */
+    .weather-container-compact {
+        background: rgba(255, 255, 255, 0.15); 
+        backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+        border-radius: 30px; padding: 25px; 
         border: 1px solid rgba(255, 255, 255, 0.4); 
         box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15); 
-        color: white; 
-        text-align: center;
-        height: 400px; /* Increased Height */
-        display: flex; 
-        flex-direction: column; 
-        justify-content: center; 
-        align-items: center;
-        position: relative; 
-        overflow: hidden;
-        animation: popIn 1s ease-out 0.2s backwards;
+        color: white; text-align: left;
+        height: 350px; /* Fixed height match slider area */
+        display: flex; flex-direction: column; justify-content: space-between;
+        position: relative; overflow: hidden; animation: popIn 1s ease-out 0.2s backwards;
     }
-    
-    .weather-container::before {
+    .weather-container-compact::before {
         content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%);
-        transform: rotate(45deg); pointer-events: none;
+        background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+        transform: rotate(30deg); pointer-events: none;
     }
-
-    .weather-icon-big { 
-        font-size: 5.5rem; 
-        margin-top: 20px;
-        margin-bottom: 5px; 
-        filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2)); 
-        animation: float-weather 4s ease-in-out infinite; 
-        z-index: 1;
-    }
+    .weather-header, .weather-footer { display: flex; justify-content: space-between; align-items: center; width: 100%; z-index: 2;}
+    .weather-body-flex { display: flex; align-items: center; justify-content: space-between; flex-grow: 1; z-index: 2; }
     
-    .temp-text { 
-        font-size: 4rem; 
-        font-weight: 800; 
-        margin: 5px 0; 
-        line-height: 1; 
-        text-shadow: 0 5px 20px rgba(0,0,0,0.2); 
-        z-index: 1;
-    }
+    .weather-icon-side { font-size: 5rem; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.2)); animation: float-weather 4s ease-in-out infinite; }
+    .weather-info-side { text-align: right; }
+    .temp-text-side { font-size: 3.5rem; font-weight: 800; line-height: 1; text-shadow: 0 5px 20px rgba(0,0,0,0.2); }
+    .weather-grid-side { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
 
-    .weather-grid {
-        display: flex; gap: 15px; margin-top: 10px; z-index: 1; margin-bottom: 30px;
+    /* Compact Badges - No longer absolute */
+    .live-badge-compact {
+        background: rgba(255, 50, 50, 0.2); backdrop-filter: blur(5px);
+        padding: 6px 15px; border-radius: 30px; border: 1px solid rgba(255, 50, 50, 0.4);
+        display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.7rem; letter-spacing: 1px; text-transform: uppercase;
     }
+    .live-dot-compact { width: 6px; height: 6px; background: #ff4d4d; border-radius: 50%; box-shadow: 0 0 8px #ff4d4d; animation: pulse-red 1.5s infinite; }
     
-    /* --- FLOATING BADGES --- */
-    .live-badge {
-        position: absolute;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        padding: 8px 20px;
-        border-radius: 30px;
-        border: 1px solid rgba(255, 255, 255, 0.5);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        display: inline-flex; align-items: center; gap: 8px;
-        font-weight: 700; font-size: 0.75rem; letter-spacing: 1.5px;
-        text-transform: uppercase;
-        z-index: 10;
-        transition: all 0.3s ease;
+    .region-pill-compact {
+        background: rgba(0, 0, 0, 0.2); backdrop-filter: blur(5px);
+        padding: 6px 15px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.2);
+        font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px;
+        display: inline-flex; align-items: center; gap: 5px; text-transform: uppercase; color: rgba(255,255,255,0.8);
     }
-    .live-badge:hover { background: rgba(255, 255, 255, 0.3); transform: translateX(-50%) scale(1.05); }
+    /* ---------------------------------- */
 
-    .live-dot { 
-        width: 8px; height: 8px; background: #ff4d4d; border-radius: 50%; 
-        box-shadow: 0 0 10px #ff4d4d; animation: pulse-red 1.5s infinite; 
-    }
-    
-    .region-pill {
-        position: absolute;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.25);
-        backdrop-filter: blur(10px);
-        padding: 10px 25px;
-        border-radius: 15px;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        font-size: 0.85rem; font-weight: 700; letter-spacing: 1px;
-        display: inline-flex; align-items: center; gap: 8px;
-        text-transform: uppercase; color: rgba(255,255,255,0.95);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        z-index: 10;
-    }
-    /* --- PREMIUM WEATHER CONTAINER END --- */
-
-    .stat-badge { 
-        background: rgba(255, 255, 255, 0.2); 
-        padding: 8px 15px; 
-        border-radius: 12px; 
-        font-size: 0.9rem; font-weight: 600;
-        border: 1px solid rgba(255,255,255,0.2); 
-        display: flex; align-items: center; gap: 5px;
-    }
+    .stat-badge { background: rgba(255, 255, 255, 0.2); padding: 6px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 5px; }
     .result-box { padding: 30px; border-radius: 25px; text-align: center; background: rgba(255,255,255,0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.1); animation: popIn 0.6s ease-out; border: 2px solid white; }
     img { border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: transform 0.3s; }
     </style>
@@ -273,7 +213,8 @@ if nav == "🏠 Home Page":
     </div>
     """, unsafe_allow_html=True)
     
-    col1, col2 = st.columns([2, 1])
+    # Changed column ratio so weather widget is smaller
+    col1, col2 = st.columns([2.2, 1])
     
     with col1:
         st.markdown("""
@@ -291,32 +232,36 @@ if nav == "🏠 Home Page":
         """, unsafe_allow_html=True)
         
     with col2:
-        # Gradient Logic based on Temperature (Updated for new CSS)
-        bg_style = "background: linear-gradient(135deg, rgba(59,130,246,0.8) 0%, rgba(6,182,212,0.8) 100%);"
+        # New Gradient & Compact Structure
+        bg_style = "background: linear-gradient(135deg, rgba(59,130,246,0.7) 0%, rgba(6,182,212,0.7) 100%);"
         weather_icon = "⛅"
         if temp > 30:
-            bg_style = "background: linear-gradient(135deg, rgba(245,158,11,0.8) 0%, rgba(217,119,6,0.8) 100%);"
+            bg_style = "background: linear-gradient(135deg, rgba(245,158,11,0.7) 0%, rgba(217,119,6,0.7) 100%);"
             weather_icon = "☀️"
         elif temp < 20:
-            bg_style = "background: linear-gradient(135deg, rgba(99,102,241,0.8) 0%, rgba(79,70,229,0.8) 100%);"
+            bg_style = "background: linear-gradient(135deg, rgba(99,102,241,0.7) 0%, rgba(79,70,229,0.7) 100%);"
             weather_icon = "❄️"
 
-        # Note: I removed the inline background style from here so the CSS class takes over for the glass effect, 
-        # but added a subtle inner div for color if needed. For now, let's trust the CSS gradient.
-        # Actually, let's apply the color via inline style but keep transparency for the blur to work.
-        
         st.markdown(f"""
-        <div class="weather-container" style="{bg_style}">
-            <div class="live-badge">
-                <div class="live-dot"></div> LIVE WEATHER
+        <div class="weather-container-compact" style="{bg_style}">
+            <div class="weather-header">
+                <div class="live-badge-compact"><div class="live-dot-compact"></div> LIVE</div>
             </div>
-            <div class="weather-icon-big">{weather_icon}</div>
-            <div class="temp-text">{temp}°C</div>
-            <div class="weather-grid">
-                <div class="stat-badge">💨 {wind} km/h</div>
-                <div class="stat-badge">💧 65% Hum</div>
+            
+            <div class="weather-body-flex">
+                <div class="weather-icon-side">{weather_icon}</div>
+                <div class="weather-info-side">
+                    <div class="temp-text-side">{temp}°C</div>
+                    <div class="weather-grid-side">
+                        <div class="stat-badge">💨 {wind} km/h</div>
+                        <div class="stat-badge">💧 65%</div>
+                    </div>
+                </div>
             </div>
-            <div class="region-pill">📍 Punjab Region</div>
+            
+            <div class="weather-footer">
+                <div></div> <div class="region-pill-compact">📍 Punjab Region</div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -469,4 +414,3 @@ elif nav == "🥔 Potato (Aloo)":
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
     st.info("🚧 Coming Soon...") 
-    
