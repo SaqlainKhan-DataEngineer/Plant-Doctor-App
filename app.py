@@ -3,7 +3,8 @@ from PIL import Image
 import torch
 from transformers import AutoImageProcessor, AutoModelForImageClassification
 import time
-import datetime 
+import datetime
+import requests # Real Weather ke liye
 
 # --- 1. PAGE SETUP ---
 st.set_page_config(
@@ -13,7 +14,22 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ULTRA PREMIUM CSS (FIXED ALIGNMENT & TREATMENT) ---
+# --- 2. FUNCTION TO GET REAL WEATHER (No API Key Needed) ---
+def get_real_weather():
+    try:
+        # Using Open-Meteo API (Free, No Key) for Lahore/Punjab coordinates
+        url = "https://api.open-meteo.com/v1/forecast?latitude=31.5204&longitude=74.3587&current_weather=true"
+        response = requests.get(url)
+        data = response.json()
+        temp = data['current_weather']['temperature']
+        wind = data['current_weather']['windspeed']
+        return temp, wind
+    except:
+        return 28, 12 # Fallback agar internet na ho
+
+temp, wind = get_real_weather()
+
+# --- 3. ULTRA PREMIUM CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -23,109 +39,149 @@ st.markdown("""
         scroll-behavior: smooth;
     }
 
-    /* --- SLIDESHOW (PAUSE ON HOVER) --- */
-    .slider-frame {
-        overflow: hidden;
+    /* --- PREMIUM SCROLLABLE SLIDESHOW --- */
+    .slider-container {
         width: 100%;
-        max-width: 1000px;
-        height: 400px;
-        margin: 0 auto 40px auto;
-        border-radius: 20px;
-        box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        overflow: hidden;
+        border-radius: 25px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.2);
         border: 1px solid rgba(255,255,255,0.5);
         position: relative;
-        z-index: 1;
+        background: #000;
     }
-    .slide-images {
-        width: 500%;
+    
+    .slide-track {
+        display: flex;
+        width: calc(1000px * 10); /* Wide track */
+        animation: scroll 40s linear infinite;
+    }
+    
+    .slide-track:hover {
+        animation-play-state: paused; /* Ruk jayega jab mouse upar ho */
+    }
+    
+    .slide {
+        width: 600px; /* Fixed width per image */
+        height: 350px;
+        flex-shrink: 0;
+        padding: 0 10px;
+    }
+    
+    .slide img {
+        width: 100%;
         height: 100%;
-        display: flex;
-        animation: slide_animation 16s infinite ease-in-out;
-    }
-    /* MOUSE UPAR LANAY SE SLIDESHOW RUK JAYEGA */
-    .slide-images:hover {
-        animation-play-state: paused;
+        object-fit: cover;
+        border-radius: 15px;
+        transition: transform 0.3s;
     }
     
-    .img-container { width: 100%; height: 100%; }
-    .img-container img { width: 100%; height: 100%; object-fit: cover; }
-
-    @keyframes slide_animation {
-        0% { margin-left: 0%; } 15% { margin-left: 0%; }
-        20% { margin-left: -100%; } 35% { margin-left: -100%; }
-        40% { margin-left: -200%; } 55% { margin-left: -200%; }
-        60% { margin-left: -300%; } 75% { margin-left: -300%; }
-        80% { margin-left: -400%; } 95% { margin-left: -400%; }
-        100% { margin-left: 0%; }
+    .slide img:hover {
+        transform: scale(1.05);
+        cursor: pointer;
     }
 
-    /* --- SIDEBAR FIXED ALIGNMENT --- */
-    [data-testid="stSidebar"] { 
-        background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%); 
-        border-right: none; 
+    @keyframes scroll {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(calc(-600px * 5)); } /* 5 images width */
     }
-    [data-testid="stSidebar"] * { color: #ecfdf5 !important; }
-    
-    /* Radio Buttons Container */
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
-        background: rgba(255, 255, 255, 0.05); 
-        padding: 12px 15px; 
-        border-radius: 10px; 
-        margin-bottom: 8px !important;
-        border: 1px solid rgba(255,255,255,0.05); 
-        transition: all 0.2s;
-        width: 100%; /* Ensure full width */
+
+    /* --- PREMIUM WEATHER WIDGET (GLASSMORPHISM) --- */
+    .weather-container {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border-radius: 25px;
+        padding: 25px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        color: white;
+        text-align: center;
+        height: 350px;
         display: flex;
+        flex-direction: column;
+        justify-content: center;
         align-items: center;
+        position: relative;
+        overflow: hidden;
     }
     
-    /* Hover Effect */
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
-        background: rgba(255, 255, 255, 0.15);
-        border-color: #34d399;
-    }
-    
-    /* Selected Item (Fixed Alignment - No Zig Zag) */
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
-         background: linear-gradient(90deg, rgba(16, 185, 129, 0.3), transparent) !important;
-         border-left: 4px solid #34d399 !important; 
-         font-weight: 700;
+    /* Sun Glow Effect */
+    .weather-container::before {
+        content: '';
+        position: absolute;
+        top: -50px; right: -50px;
+        width: 100px; height: 100px;
+        background: #fbbf24;
+        filter: blur(60px);
+        opacity: 0.6;
     }
 
-    /* --- BACKGROUND PARTICLES --- */
+    .weather-icon-big {
+        font-size: 5rem;
+        margin-bottom: 10px;
+        filter: drop-shadow(0 0 15px rgba(255,255,255,0.6));
+        animation: float 3s ease-in-out infinite;
+    }
+    
+    .temp-text {
+        font-size: 4.5rem;
+        font-weight: 800;
+        background: -webkit-linear-gradient(#fff, #e0f2fe);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
+        line-height: 1;
+    }
+    
+    .weather-label {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #ecfdf5;
+        letter-spacing: 1px;
+        margin-bottom: 15px;
+    }
+    
+    .weather-grid {
+        display: flex;
+        gap: 15px;
+        margin-top: 15px;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .stat-badge {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 8px 15px;
+        border-radius: 50px;
+        font-size: 0.9rem;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+    }
+
+    /* --- GLOBAL STYLES --- */
     .stApp::before {
         content: "";
         position: fixed;
-        top: -50%; left: -50%; width: 200%; height: 200%;
+        top: 0; left: 0; width: 100%; height: 100%;
         background-image:
-            radial-gradient(circle at 20px 30px, rgba(4, 120, 87, 0.4) 0px, transparent 3px),
-            radial-gradient(circle at 40px 70px, rgba(16, 185, 129, 0.5) 0px, transparent 3px),
-            radial-gradient(circle at 50px 160px, rgba(5, 150, 105, 0.4) 0px, transparent 3px),
-            radial-gradient(circle at 90px 40px, rgba(52, 211, 153, 0.6) 0px, transparent 2px),
-            radial-gradient(circle at 130px 80px, rgba(6, 78, 59, 0.5) 0px, transparent 3px);
-        background-repeat: repeat;
-        background-size: 200px 200px;
-        animation: diamond-wind 30s linear infinite;
-        pointer-events: none;
+            radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.2) 0%, transparent 20%),
+            radial-gradient(circle at 80% 20%, rgba(6, 78, 59, 0.2) 0%, transparent 20%);
+        background-size: 100% 100%;
+        animation: bgShift 20s infinite alternate;
         z-index: 0;
+        pointer-events: none;
     }
-    @keyframes diamond-wind {
-        0% { transform: translateY(0) translateX(0); }
-        100% { transform: translateY(100px) translateX(-100px); } 
-    }
-
-    /* --- ANIMATIONS --- */
-    h1, h2, h3, p, span, a { animation: fadeInUp 0.8s ease-out backwards; }
     
-    @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 80% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
-
-    /* --- CARDS & HERO --- */
     .hero-container {
         text-align: center; padding: 50px 20px; border-radius: 30px;
         background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
         background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite, popIn 1s ease-out;
+        animation: gradientBG 15s ease infinite;
         box-shadow: 0 20px 50px rgba(0,0,0,0.1); margin-bottom: 40px; border: 1px solid rgba(255,255,255,0.6);
         position: relative; z-index: 1;
     }
@@ -136,27 +192,31 @@ st.markdown("""
         padding: 30px; border-radius: 25px; text-align: center;
         border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 8px 32px rgba(0,0,0,0.07);
         height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;
-        transform-style: preserve-3d; transition: transform 0.4s ease, box-shadow 0.4s ease;
-        position: relative; z-index: 1; animation: fadeInUp 1s ease-out;
+        transition: transform 0.3s;
+        position: relative; z-index: 1;
     }
-    .feature-card:hover { transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateY(-10px); border-color: #34d399; }
+    .feature-card:hover { transform: translateY(-10px); border-color: #34d399; }
     
     .cta-button {
         display: inline-block; background: linear-gradient(90deg, #059669, #10b981); color: white !important;
         padding: 15px 40px; border-radius: 50px; font-weight: 700; text-decoration: none;
-        box-shadow: 0 10px 25px rgba(16,185,129,0.4); transition: all 0.3s; margin-top: 20px; animation: popIn 1.2s ease-out;
+        box-shadow: 0 10px 25px rgba(16,185,129,0.4); transition: all 0.3s; margin-top: 20px;
     }
-    .cta-button:hover { transform: scale(1.05); box-shadow: 0 15px 35px rgba(16,185,129,0.6); }
+    .cta-button:hover { transform: scale(1.05); }
 
-    .result-box { padding: 30px; border-radius: 25px; text-align: center; background: rgba(255,255,255,0.9); box-shadow: 0 15px 30px rgba(0,0,0,0.08); animation: popIn 0.5s ease-out; }
-    
-    /* --- SIDEBAR LOGO ANIMATION --- */
-    @keyframes float-and-glow {
-        0% { transform: translateY(0px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
-        50% { transform: translateY(-5px); box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
-        100% { transform: translateY(0px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
+    /* SIDEBAR */
+    [data-testid="stSidebar"] { background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%); border-right: none; }
+    [data-testid="stSidebar"] * { color: #ecfdf5 !important; }
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
+        background: rgba(255, 255, 255, 0.05); padding: 12px 15px; border-radius: 10px; margin-bottom: 8px !important;
+        border: 1px solid rgba(255,255,255,0.05); width: 100%; display: flex; align-items: center;
+    }
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
+         background: linear-gradient(90deg, rgba(16, 185, 129, 0.3), transparent) !important;
+         border-left: 4px solid #34d399 !important; font-weight: 700;
     }
     
+    .result-box { padding: 30px; border-radius: 25px; text-align: center; background: rgba(255,255,255,0.9); box-shadow: 0 15px 30px rgba(0,0,0,0.08); }
     img { border-radius: 15px; }
     </style>
     """, unsafe_allow_html=True)
@@ -178,8 +238,7 @@ st.sidebar.markdown("""
     <div style="display: flex; justify-content: center; margin-bottom: 20px; margin-top: 10px;">
         <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png" 
              style="width: 140px; border-radius: 50%; padding: 8px; background: rgba(255,255,255,0.15); 
-             border: 2px solid rgba(255,255,255,0.3); 
-             animation: float-and-glow 3s ease-in-out infinite;">
+             border: 2px solid rgba(255,255,255,0.3);">
     </div>
     """, unsafe_allow_html=True)
 
@@ -187,7 +246,6 @@ st.sidebar.markdown("<h1 style='text-align: center; color: white; font-weight: 8
 st.sidebar.markdown("<p style='text-align: center; font-size: 0.85rem; opacity: 0.8; margin-bottom: 20px; letter-spacing: 1px;'>AI DIAGNOSTICS</p>", unsafe_allow_html=True)
 st.sidebar.write("---")
 
-# Navigation
 nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field"])
 
 st.sidebar.write("---")
@@ -212,19 +270,51 @@ if nav == "🏠 Home Page":
     </div>
     """, unsafe_allow_html=True)
     
-    # --- SLIDESHOW SECTION ---
-    st.markdown("""
-    <div class="slider-frame">
-        <div class="slide-images">
-            <div class="img-container"><img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200"></div>
-            <div class="img-container"><img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=1200"></div>
-            <div class="img-container"><img src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=1200"></div>
-            <div class="img-container"><img src="https://images.unsplash.com/photo-1587334274328-64186a80aeee?w=1200"></div>
-            <div class="img-container"><img src="https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=1200"></div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # --- LAYOUT: SCROLLABLE SLIDER + PREMIUM WEATHER ---
+    col1, col2 = st.columns([2, 1])
     
+    with col1:
+        # Horizontal Scrolling Gallery (Pause on Hover)
+        st.markdown("""
+        <div class="slider-container">
+            <div class="slide-track">
+                <div class="slide"><img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=800"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1587334274328-64186a80aeee?w=800"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=800"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800"></div>
+            </div>
+        </div>
+        <p style="text-align:center; font-size:0.8rem; color:#aaa; margin-top:5px;">💡 Hover to Pause | Scroll to View</p>
+        """, unsafe_allow_html=True)
+        
+    with col2:
+        # REAL PREMIUM WEATHER
+        # Background changes based on Temperature
+        bg_gradient = "linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)" # Default Blue
+        weather_icon = "⛅"
+        if temp > 30:
+            bg_gradient = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" # Hot/Sunny
+            weather_icon = "☀️"
+        elif temp < 20:
+            bg_gradient = "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)" # Cold
+            weather_icon = "❄️"
+
+        st.markdown(f"""
+        <div class="weather-container" style="background: {bg_gradient};">
+            <div class="weather-label">📍 LIVE FARM WEATHER</div>
+            <div class="weather-icon-big">{weather_icon}</div>
+            <div class="temp-text">{temp}°C</div>
+            <div class="weather-grid">
+                <div class="stat-badge">💨 {wind} km/h</div>
+                <div class="stat-badge">💧 65% Hum</div>
+            </div>
+            <div style="margin-top:20px; font-size:0.85rem; opacity:0.9;">Punjab Region Data</div>
+        </div>
+        """, unsafe_allow_html=True)
+
     st.markdown("<br>", unsafe_allow_html=True)
     
     # --- TRUST INDICATORS ---
@@ -248,7 +338,7 @@ if nav == "🏠 Home Page":
         with col:
             st.markdown(f"""
             <div class="feature-card">
-                <div class="feature-icon" style="font-size:3.5rem; margin-bottom:15px;">{icon}</div>
+                <div class="feature-icon" style="font-size:3.5rem; margin-bottom:15px; color:#059669;">{icon}</div>
                 <h3 style="color:#064e3b; font-weight:700;">{title}</h3><p style="color:#555;">{desc}</p>
             </div>
             """, unsafe_allow_html=True)
@@ -261,17 +351,25 @@ if nav == "🏠 Home Page":
         with col:
             st.markdown(f"""
             <div class="feature-card" style="min-height:220px;">
-                <div style="font-size:4.5rem; margin-bottom:15px;" class="feature-icon">{icon}</div>
+                <div style="font-size:4.5rem; margin-bottom:15px;">{icon}</div>
                 <h3 style="color:#064e3b; font-weight:800;">{name}</h3>
                 <p style="font-weight:600; color:#059669;">{status}</p>
             </div>
             """, unsafe_allow_html=True)
 
-    # --- FOOTER ---
+    # --- FOOTER (TECHNOLOGY STACK) ---
     st.markdown("""
     <hr style="border-top: 2px solid #a7f3d0; margin-top: 80px;">
     <div style="text-align:center; padding:30px; color:#555;">
-        <p style="font-weight:600;">© 2025 Plant Doctor AI | Built with ❤️ by Saqlain & Raheel</p>
+        <p style="font-weight:700; font-size: 1.1rem;">© 2025 Plant Doctor AI</p>
+        <p style="font-size:0.9rem; margin-top: 10px;">
+            Built with ❤️ using 
+            <span style="background:#fce7f3; padding:4px 8px; border-radius:5px; color:#be185d; font-weight:600;">Streamlit</span>
+            <span style="background:#e0e7ff; padding:4px 8px; border-radius:5px; color:#4338ca; font-weight:600;">PyTorch</span>
+            & 
+            <span style="background:#fef3c7; padding:4px 8px; border-radius:5px; color:#b45309; font-weight:600;">Transformers (ViT)</span>
+        </p>
+        <p style="font-size:0.8rem; margin-top: 10px; opacity: 0.8;">Developed by <b>Saqlain Khan</b> & <b>Raheel Chishti</b></p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -313,13 +411,13 @@ elif nav == "🥔 Potato (Aloo)":
                 </div>
             """, unsafe_allow_html=True)
             
-            # --- ANALYSIS CHART ---
+            # Analysis Chart
             st.write("### 📊 Analysis Breakdown")
             for l, p in prob_dict.items():
                 st.write(f"**{l}**")
                 st.progress(int(p))
             
-            # --- DOWNLOAD REPORT BUTTON ---
+            # Download Button
             report_text = f"Plant Doctor AI Report\nDate: {datetime.datetime.now()}\n\nDiagnosis: {label}\nConfidence: {conf:.1f}%\n\nStatus: {'Healthy' if is_healthy else 'Action Needed'}"
             st.download_button(
                 label="📄 Download Report",
@@ -328,7 +426,7 @@ elif nav == "🥔 Potato (Aloo)":
                 mime="text/plain"
             )
 
-            # --- DETAILED TREATMENT SECTION ---
+            # Detailed Treatment
             if is_healthy:
                 st.balloons()
                 st.markdown("""
@@ -341,7 +439,6 @@ elif nav == "🥔 Potato (Aloo)":
                     </ul>
                 </div>
                 """, unsafe_allow_html=True)
-                
             elif "late" in label.lower():
                 st.markdown("""
                 <div class='result-box' style='background: white; border-left: 5px solid #dc2626; text-align: left;'>
@@ -353,7 +450,6 @@ elif nav == "🥔 Potato (Aloo)":
                     </ul>
                 </div>
                 """, unsafe_allow_html=True)
-                
             elif "early" in label.lower():
                 st.markdown("""
                 <div class='result-box' style='background: white; border-left: 5px solid #d97706; text-align: left;'>
