@@ -28,7 +28,7 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS (COMPLETE RESTORATION) ---
+# --- 3. ULTRA PREMIUM CSS (RESTORED & FIXED) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -38,7 +38,7 @@ st.markdown("""
         scroll-behavior: smooth;
     }
 
-    /* --- ANIMATIONS (SAARI WAPAS AA GAYI HAIN) --- */
+    /* ANIMATIONS */
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 50, 50, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0); } }
@@ -49,7 +49,7 @@ st.markdown("""
 
     h1, h2, h3, p, span, a, div.stMarkdown { animation: fadeInUp 0.8s ease-out both; }
 
-    /* --- BACKGROUND PARTICLES (DIAMOND WIND) --- */
+    /* BACKGROUND PARTICLES (RESTORED) */
     .stApp::before {
         content: ""; position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
         background-image:
@@ -62,7 +62,7 @@ st.markdown("""
         pointer-events: none; z-index: 0;
     }
 
-    /* --- SIDEBAR STYLING (GRADIENTS & BUTTONS) --- */
+    /* SIDEBAR STYLE (RESTORED) */
     [data-testid="stSidebar"] { background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%); border-right: none; }
     [data-testid="stSidebar"] * { color: #ecfdf5 !important; }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
@@ -79,7 +79,7 @@ st.markdown("""
     }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[role="radio"] { display: none; }
 
-    /* --- HERO & CARDS --- */
+    /* HERO & CARDS */
     .hero-container {
         text-align: center; padding: 60px 20px; border-radius: 35px;
         background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
@@ -105,7 +105,7 @@ st.markdown("""
     }
     .cta-button:hover { transform: scale(1.1) translateY(-5px); }
 
-    /* --- SLIDER --- */
+    /* SLIDER */
     .slider-container { width: 100%; overflow: hidden; border-radius: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.7); background: #000; animation: popIn 1s ease-out; }
     .slide-track { display: flex; width: calc(1000px * 10); animation: scroll 45s linear infinite; }
     .slide-track:hover { animation-play-state: paused; }
@@ -114,42 +114,43 @@ st.markdown("""
     .slide img:hover { transform: scale(1.08); filter: brightness(1.1); cursor: grab; }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
-    /* --- FIXED WEATHER CONTAINER (OVERLAP SOLVED) --- */
+    /* --- WEATHER CONTAINER (PREMIUM FIXED) --- */
     .weather-container {
         background: rgba(255, 255, 255, 0.15); 
         backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
         border-radius: 25px; 
-        padding: 20px; 
+        padding: 25px; 
         border: 1px solid rgba(255, 255, 255, 0.3);
         box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); 
         color: white; 
         text-align: center;
-        height: 350px; 
         
-        /* Flexbox Fixing Overlap */
-        display: flex; 
-        flex-direction: column; 
-        justify-content: space-between; /* Ensures spacing between Top, Middle, Bottom */
-        align-items: center;
-        position: relative;
+        /* HEIGHT INCREASED TO PREVENT OVERLAP */
+        height: 420px; 
+        
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        position: relative; /* Essential for absolute badges */
         animation: popIn 1s ease-out 0.2s backwards;
     }
     
     .weather-icon-big { font-size: 5rem; margin-bottom: 5px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.8)); animation: float-weather 4s ease-in-out infinite; }
     .temp-text { font-size: 4rem; font-weight: 800; margin: 0; line-height: 1; text-shadow: 0 5px 15px rgba(0,0,0,0.2); }
     
+    /* ABSOLUTE BADGES RESTORED (BUT SAFER) */
     .live-badge {
+        position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
         background: rgba(0, 0, 0, 0.3); padding: 5px 15px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.2);
         display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        margin-top: 10px; /* Spacer */
+        z-index: 5;
     }
     .live-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 10px #ef4444; animation: pulse-red 1.5s infinite; }
     
     .region-pill {
+        position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
         background: rgba(0, 0, 0, 0.2); padding: 8px 20px; border-radius: 50px;
         font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; border: 1px solid rgba(255,255,255,0.15);
         box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase; color: rgba(255,255,255,0.9);
-        margin-bottom: 10px; /* Spacer */
+        z-index: 5;
     }
 
     .stat-badge { background: rgba(0, 0, 0, 0.2); padding: 8px 15px; border-radius: 50px; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.1); }
@@ -242,11 +243,9 @@ if nav == "🏠 Home Page":
             <div class="live-badge">
                 <div class="live-dot"></div> LIVE WEATHER
             </div>
-            <div>
-                <div class="weather-icon-big">{weather_icon}</div>
-                <div class="temp-text">{temp}°C</div>
-            </div>
-            <div class="weather-grid" style="display:flex; gap:10px; justify-content:center;">
+            <div class="weather-icon-big">{weather_icon}</div>
+            <div class="temp-text">{temp}°C</div>
+            <div class="weather-grid" style="display:flex; gap:10px; justify-content:center; margin-top:10px;">
                 <div class="stat-badge">💨 {wind} km/h</div>
                 <div class="stat-badge">💧 65% Hum</div>
             </div>
@@ -402,5 +401,4 @@ elif nav == "🥔 Potato (Aloo)":
                  st.info("⚠️ Bimari detect hui hai, lekin iska specific ilaj database mein nahi hai. Kisi maahir se rabta karein.")
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
-    st.info("🚧 Coming Soon...")
-    
+    st.info("🚧 Coming Soon...") 
