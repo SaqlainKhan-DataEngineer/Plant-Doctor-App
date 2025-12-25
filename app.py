@@ -30,7 +30,7 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS (SAME AS BEFORE) ---
+# --- 3. ULTRA PREMIUM CSS (Weather Widget Height Fixed Here) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -128,7 +128,9 @@ st.markdown("""
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
         overflow: hidden;
         transition: transform 0.3s ease;
-        height: 350px;
+        /* --- CHANGED HERE: Height Auto kar di hai taake cut na ho --- */
+        height: auto; 
+        min-height: 380px;
         display: flex; flex-direction: column; justify-content: space-between;
     }
     .weather-container:hover { transform: translateY(-5px); box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.35); }
@@ -157,7 +159,7 @@ st.markdown("""
     }
     .weather-icon-3d { font-size: 4rem; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3)); animation: float-weather 6s ease-in-out infinite; }
 
-    .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; margin-top: auto; }
+    .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; margin-top: auto; padding-top: 15px; }
     .detail-item {
         background: rgba(255, 255, 255, 0.15); border-radius: 15px; padding: 10px; text-align: center;
         border: 1px solid rgba(255,255,255,0.1); transition: background 0.2s;
@@ -445,4 +447,4 @@ elif nav == "🥔 Potato (Aloo)":
                 """, unsafe_allow_html=True)
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
-    st.info("🚧 Coming Soon...")  
+    st.info("🚧 Coming Soon...") 
