@@ -4,7 +4,7 @@ import torch
 from transformers import AutoImageProcessor, AutoModelForImageClassification
 import time
 import datetime
-import requests # Real Weather ke liye
+import requests
 
 # --- 1. PAGE SETUP ---
 st.set_page_config(
@@ -14,10 +14,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. FUNCTION TO GET REAL WEATHER (No API Key Needed) ---
+# --- 2. FUNCTION TO GET REAL WEATHER ---
 def get_real_weather():
     try:
-        # Using Open-Meteo API (Free, No Key) for Lahore/Punjab coordinates
         url = "https://api.open-meteo.com/v1/forecast?latitude=31.5204&longitude=74.3587&current_weather=true"
         response = requests.get(url)
         data = response.json()
@@ -25,11 +24,11 @@ def get_real_weather():
         wind = data['current_weather']['windspeed']
         return temp, wind
     except:
-        return 28, 12 # Fallback agar internet na ho
+        return 28, 12
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS ---
+# --- 3. ULTRA PREMIUM CSS (EMERALD WIND + ANIMATIONS RESTORED) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -39,149 +38,71 @@ st.markdown("""
         scroll-behavior: smooth;
     }
 
-    /* --- PREMIUM SCROLLABLE SLIDESHOW --- */
-    .slider-container {
-        width: 100%;
-        overflow: hidden;
-        border-radius: 25px;
-        box-shadow: 0 15px 40px rgba(0,0,0,0.2);
-        border: 1px solid rgba(255,255,255,0.5);
-        position: relative;
-        background: #000;
-    }
-    
-    .slide-track {
-        display: flex;
-        width: calc(1000px * 10); /* Wide track */
-        animation: scroll 40s linear infinite;
-    }
-    
-    .slide-track:hover {
-        animation-play-state: paused; /* Ruk jayega jab mouse upar ho */
-    }
-    
-    .slide {
-        width: 600px; /* Fixed width per image */
-        height: 350px;
-        flex-shrink: 0;
-        padding: 0 10px;
-    }
-    
-    .slide img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 15px;
-        transition: transform 0.3s;
-    }
-    
-    .slide img:hover {
-        transform: scale(1.05);
-        cursor: pointer;
-    }
-
-    @keyframes scroll {
-        0% { transform: translateX(0); }
-        100% { transform: translateX(calc(-600px * 5)); } /* 5 images width */
-    }
-
-    /* --- PREMIUM WEATHER WIDGET (GLASSMORPHISM) --- */
-    .weather-container {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
-        border-radius: 25px;
-        padding: 25px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        color: white;
-        text-align: center;
-        height: 350px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    /* Sun Glow Effect */
-    .weather-container::before {
-        content: '';
-        position: absolute;
-        top: -50px; right: -50px;
-        width: 100px; height: 100px;
-        background: #fbbf24;
-        filter: blur(60px);
-        opacity: 0.6;
-    }
-
-    .weather-icon-big {
-        font-size: 5rem;
-        margin-bottom: 10px;
-        filter: drop-shadow(0 0 15px rgba(255,255,255,0.6));
-        animation: float 3s ease-in-out infinite;
-    }
-    
-    .temp-text {
-        font-size: 4.5rem;
-        font-weight: 800;
-        background: -webkit-linear-gradient(#fff, #e0f2fe);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin: 0;
-        line-height: 1;
-    }
-    
-    .weather-label {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #ecfdf5;
-        letter-spacing: 1px;
-        margin-bottom: 15px;
-    }
-    
-    .weather-grid {
-        display: flex;
-        gap: 15px;
-        margin-top: 15px;
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .stat-badge {
-        background: rgba(0, 0, 0, 0.2);
-        padding: 8px 15px;
-        border-radius: 50px;
-        font-size: 0.9rem;
-        border: 1px solid rgba(255,255,255,0.1);
-    }
-
-    @keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-        100% { transform: translateY(0px); }
-    }
-
-    /* --- GLOBAL STYLES --- */
+    /* --- 1. BACKGROUND PARTICLES (EMERALD WIND - RESTORED) --- */
     .stApp::before {
         content: "";
         position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        /* Hare Heere (Emeralds) wapis aa gaye */
         background-image:
-            radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.2) 0%, transparent 20%),
-            radial-gradient(circle at 80% 20%, rgba(6, 78, 59, 0.2) 0%, transparent 20%);
-        background-size: 100% 100%;
-        animation: bgShift 20s infinite alternate;
-        z-index: 0;
+            radial-gradient(circle at 20px 30px, rgba(4, 120, 87, 0.5) 0px, transparent 4px),
+            radial-gradient(circle at 40px 70px, rgba(16, 185, 129, 0.6) 0px, transparent 4px),
+            radial-gradient(circle at 50px 160px, rgba(5, 150, 105, 0.5) 0px, transparent 4px),
+            radial-gradient(circle at 90px 40px, rgba(52, 211, 153, 0.7) 0px, transparent 4px),
+            radial-gradient(circle at 130px 80px, rgba(6, 78, 59, 0.6) 0px, transparent 4px);
+        background-repeat: repeat;
+        background-size: 200px 200px;
+        animation: diamond-wind 20s linear infinite;
         pointer-events: none;
+        z-index: 0;
     }
-    
+
+    @keyframes diamond-wind {
+        0% { transform: translateY(0) translateX(0); }
+        100% { transform: translateY(100px) translateX(-100px); } 
+    }
+
+    /* --- 2. LOGO ANIMATION (FLOAT & GLOW) --- */
+    @keyframes float-and-glow {
+        0% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+        50% { transform: translateY(-10px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.7); }
+        100% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+    }
+
+    /* --- 3. SLIDER & WEATHER STYLES --- */
+    .slider-container {
+        width: 100%; overflow: hidden; border-radius: 25px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.5);
+        background: #000;
+    }
+    .slide-track { display: flex; width: calc(1000px * 10); animation: scroll 40s linear infinite; }
+    .slide-track:hover { animation-play-state: paused; }
+    .slide { width: 600px; height: 350px; flex-shrink: 0; padding: 0 10px; }
+    .slide img { width: 100%; height: 100%; object-fit: cover; border-radius: 15px; transition: transform 0.3s; }
+    .slide img:hover { transform: scale(1.05); }
+    @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
+
+    .weather-container {
+        background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px);
+        border-radius: 25px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); color: white; text-align: center;
+        height: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+    }
+    .weather-icon-big { font-size: 5rem; margin-bottom: 10px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.6)); animation: float 3s ease-in-out infinite; }
+    .temp-text { font-size: 4.5rem; font-weight: 800; margin: 0; line-height: 1; }
+    .weather-label { font-size: 1.2rem; font-weight: 600; color: #ecfdf5; margin-bottom: 15px; }
+    .weather-grid { display: flex; gap: 15px; margin-top: 15px; justify-content: center; }
+    .stat-badge { background: rgba(0, 0, 0, 0.2); padding: 8px 15px; border-radius: 50px; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.1); }
+    @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+
+    /* --- 4. GENERAL UI --- */
     .hero-container {
         text-align: center; padding: 50px 20px; border-radius: 30px;
         background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
-        background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite;
+        background-size: 400% 400%; animation: gradientBG 15s ease infinite;
         box-shadow: 0 20px 50px rgba(0,0,0,0.1); margin-bottom: 40px; border: 1px solid rgba(255,255,255,0.6);
         position: relative; z-index: 1;
     }
@@ -192,8 +113,7 @@ st.markdown("""
         padding: 30px; border-radius: 25px; text-align: center;
         border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 8px 32px rgba(0,0,0,0.07);
         height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;
-        transition: transform 0.3s;
-        position: relative; z-index: 1;
+        transition: transform 0.3s; position: relative; z-index: 1;
     }
     .feature-card:hover { transform: translateY(-10px); border-color: #34d399; }
     
@@ -215,7 +135,6 @@ st.markdown("""
          background: linear-gradient(90deg, rgba(16, 185, 129, 0.3), transparent) !important;
          border-left: 4px solid #34d399 !important; font-weight: 700;
     }
-    
     .result-box { padding: 30px; border-radius: 25px; text-align: center; background: rgba(255,255,255,0.9); box-shadow: 0 15px 30px rgba(0,0,0,0.08); }
     img { border-radius: 15px; }
     </style>
@@ -233,12 +152,13 @@ def load_model():
 
 model, processor = load_model()
 
-# --- 4. SIDEBAR ---
+# --- 4. SIDEBAR (LOGO ANIMATION RESTORED) ---
 st.sidebar.markdown("""
     <div style="display: flex; justify-content: center; margin-bottom: 20px; margin-top: 10px;">
         <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png" 
              style="width: 140px; border-radius: 50%; padding: 8px; background: rgba(255,255,255,0.15); 
-             border: 2px solid rgba(255,255,255,0.3);">
+             border: 2px solid rgba(255,255,255,0.3); 
+             animation: float-and-glow 3s ease-in-out infinite;"> 
     </div>
     """, unsafe_allow_html=True)
 
@@ -292,7 +212,6 @@ if nav == "🏠 Home Page":
         
     with col2:
         # REAL PREMIUM WEATHER
-        # Background changes based on Temperature
         bg_gradient = "linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)" # Default Blue
         weather_icon = "⛅"
         if temp > 30:
@@ -465,5 +384,4 @@ elif nav == "🥔 Potato (Aloo)":
                  st.info("⚠️ Bimari detect hui hai, lekin iska specific ilaj database mein nahi hai. Kisi maahir se rabta karein.")
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
-    st.info("🚧 Coming Soon...") 
-    
+    st.info("🚧 Coming Soon...")
