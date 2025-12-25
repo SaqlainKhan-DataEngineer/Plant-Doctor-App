@@ -14,22 +14,22 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ROBUST WEATHER FUNCTION (Optimized) ---
+# --- 2. FUNCTION TO GET REAL WEATHER (Optimized) ---
 def get_real_weather():
     try:
-        # Timeout added to prevent crashing
+        # 3 Second Timeout added to prevent crashing (Kimi's Suggestion)
         url = "https://api.open-meteo.com/v1/forecast?latitude=31.5204&longitude=74.3587&current_weather=true"
-        response = requests.get(url, timeout=3) 
+        response = requests.get(url, timeout=3)
         data = response.json()
         temp = data['current_weather']['temperature']
         wind = data['current_weather']['windspeed']
         return temp, wind
     except:
-        return 28, 12 # Fallback Data
+        return 28, 12 # Fallback if API fails
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS (SAME AS BEFORE) ---
+# --- 3. ULTRA PREMIUM CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -39,18 +39,18 @@ st.markdown("""
         scroll-behavior: smooth;
     }
 
-    /* ANIMATIONS */
+    /* --- ANIMATIONS --- */
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-    @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 50, 50, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0); } }
-    @keyframes float-weather { 0% { transform: translateY(0px); } 50% { transform: translateY(-8px); } 100% { transform: translateY(0px); } }
+    @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+    @keyframes float-and-glow { 0% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } 50% { transform: translateY(-12px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.8); } 100% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } }
+    @keyframes float-weather { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
     @keyframes diamond-wind { 0% { transform: translateY(0) translateX(0); } 100% { transform: translateY(100px) translateX(-100px); } }
     @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-    @keyframes float-logo { 0% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } 50% { transform: translateY(-8px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.7); } 100% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } }
 
     h1, h2, h3, p, span, a, div.stMarkdown { animation: fadeInUp 0.8s ease-out both; }
 
-    /* BACKGROUND PARTICLES */
+    /* --- BACKGROUND PARTICLES (EMERALD) --- */
     .stApp::before {
         content: ""; position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
         background-image:
@@ -63,24 +63,44 @@ st.markdown("""
         pointer-events: none; z-index: 0;
     }
 
-    /* SIDEBAR NAVIGATION */
+    /* --- SIDEBAR NAVIGATION (PREMIUM GLASS) --- */
     [data-testid="stSidebar"] { background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%); border-right: none; }
     [data-testid="stSidebar"] * { color: #ecfdf5 !important; }
+    
+    /* Radio Container */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
-        background: rgba(0, 0, 0, 0.25); padding: 15px 20px; border-radius: 15px; margin-bottom: 12px !important;
-        border: 1px solid rgba(255,255,255,0.1); width: 100%; display: flex; align-items: center;
-        transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;
+        background: rgba(0, 0, 0, 0.2); /* Dark Glass */
+        padding: 15px 20px; 
+        border-radius: 15px; 
+        margin-bottom: 10px !important;
+        border: 1px solid rgba(255,255,255,0.1); 
+        width: 100%; 
+        display: flex; 
+        align-items: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        cursor: pointer;
     }
+    
+    /* Hover */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
-        background: rgba(255, 255, 255, 0.15); transform: scale(1.02); border-color: #34d399;
+        background: rgba(255, 255, 255, 0.15); 
+        transform: translateX(5px);
+        border-color: #34d399;
     }
+    
+    /* Selected */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
-         background: linear-gradient(90deg, #059669, #10b981) !important; border: 1px solid #a7f3d0 !important;
-         font-weight: 800; transform: scale(1.03); box-shadow: 0 0 20px rgba(16, 185, 129, 0.6) !important; color: white !important;
+         background: linear-gradient(90deg, #059669, #10b981) !important;
+         border: 1px solid #a7f3d0 !important;
+         font-weight: 800; 
+         transform: translateX(5px);
+         box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+         color: white !important;
     }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[role="radio"] { display: none; }
 
-    /* HERO & CARDS */
+    /* --- HERO & CARDS --- */
     .hero-container {
         text-align: center; padding: 60px 20px; border-radius: 35px;
         background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
@@ -88,6 +108,7 @@ st.markdown("""
         box-shadow: 0 20px 60px rgba(0,0,0,0.15); margin-bottom: 40px; 
         border: 2px solid rgba(255,255,255,0.8); position: relative; z-index: 1;
     }
+
     .feature-card {
         background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(25px);
         padding: 30px; border-radius: 30px; text-align: center;
@@ -96,7 +117,10 @@ st.markdown("""
         transform-style: preserve-3d; transition: transform 0.4s ease, box-shadow 0.4s ease;
         position: relative; z-index: 1; animation: fadeInUp 1s ease-out;
     }
-    .feature-card:hover { transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateY(-15px); box-shadow: 0 30px 60px rgba(16, 185, 129, 0.3); border-color: #34d399; }
+    .feature-card:hover { 
+        transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateY(-15px); 
+        box-shadow: 0 30px 60px rgba(16, 185, 129, 0.3); border-color: #34d399;
+    }
     
     .cta-button {
         display: inline-block; background: linear-gradient(90deg, #059669, #10b981); color: white !important;
@@ -106,8 +130,12 @@ st.markdown("""
     }
     .cta-button:hover { transform: scale(1.1) translateY(-5px); }
 
-    /* SLIDER & WEATHER */
-    .slider-container { width: 100%; overflow: hidden; border-radius: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.7); background: #000; animation: popIn 1s ease-out; }
+    /* --- SLIDER & WEATHER --- */
+    .slider-container {
+        width: 100%; overflow: hidden; border-radius: 25px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.7);
+        background: #000; animation: popIn 1s ease-out;
+    }
     .slide-track { display: flex; width: calc(1000px * 10); animation: scroll 45s linear infinite; }
     .slide-track:hover { animation-play-state: paused; }
     .slide { width: 600px; height: 350px; flex-shrink: 0; padding: 0 5px; }
@@ -115,29 +143,51 @@ st.markdown("""
     .slide img:hover { transform: scale(1.08); filter: brightness(1.1); cursor: grab; }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
+    /* --- FIXED WEATHER WIDGET --- */
     .weather-container {
         background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px);
-        border-radius: 25px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); color: white; text-align: center;
-        height: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center;
-        animation: popIn 1s ease-out 0.2s backwards; position: relative;
+        border-radius: 25px; 
+        padding: 20px; 
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); 
+        color: white; text-align: center;
+        height: 350px; 
+        display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+        animation: popIn 1s ease-out 0.2s backwards;
+        position: relative;
     }
-    .weather-icon-big { font-size: 5rem; margin-bottom: 10px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.8)); animation: float-weather 4s ease-in-out infinite; }
-    .temp-text { font-size: 4.5rem; font-weight: 800; margin: 0; line-height: 1; text-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+    .weather-icon-big { font-size: 4.5rem; margin: 0; filter: drop-shadow(0 0 15px rgba(255,255,255,0.8)); animation: float-weather 4s ease-in-out infinite; }
+    .temp-text { font-size: 4rem; font-weight: 800; margin: 0; line-height: 1; text-shadow: 0 5px 15px rgba(0,0,0,0.2); }
     
+    /* Live Badge (Inside Top Right) */
     .live-badge {
-        background: rgba(0, 0, 0, 0.3); padding: 5px 15px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.2);
-        display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        background: rgba(0, 0, 0, 0.3); 
+        padding: 5px 12px; 
+        border-radius: 20px; 
+        border: 1px solid rgba(255,255,255,0.2);
+        display: flex; align-items: center; gap: 8px; 
+        font-weight: 700; font-size: 0.7rem; letter-spacing: 1px;
+        position: absolute; /* Fix position inside card */
+        top: 15px;
+        right: 15px;
     }
-    .live-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 10px #ef4444; animation: pulse-red 1.5s infinite; }
+    .live-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px #ef4444; animation: pulse-red 1.5s infinite; }
     
+    /* Region Pill (Inside Bottom Center) */
     .region-pill {
-        margin-top: 20px; background: rgba(0, 0, 0, 0.2); padding: 8px 20px; border-radius: 50px;
-        font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; border: 1px solid rgba(255,255,255,0.15);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase; color: rgba(255,255,255,0.9);
+        background: rgba(255, 255, 255, 0.2); 
+        padding: 6px 15px; 
+        border-radius: 20px;
+        font-size: 0.8rem; font-weight: 600; 
+        border: 1px solid rgba(255,255,255,0.15);
+        display: inline-flex; align-items: center; gap: 5px;
+        color: white;
+        margin-bottom: 5px;
     }
 
-    .stat-badge { background: rgba(0, 0, 0, 0.2); padding: 8px 15px; border-radius: 50px; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.1); }
+    .stat-badge { background: rgba(0, 0, 0, 0.2); padding: 8px 15px; border-radius: 12px; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.1); }
+    .weather-grid { display: flex; gap: 10px; width: 100%; justify-content: center; }
+
     .result-box { padding: 30px; border-radius: 25px; text-align: center; background: rgba(255,255,255,0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.1); animation: popIn 0.6s ease-out; border: 2px solid white; }
     img { border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: transform 0.3s; }
     </style>
@@ -147,24 +197,24 @@ st.markdown("""
 @st.cache_resource
 def load_model():
     try:
-        # GPU Check added (Kimi's Suggestion)
+        # GPU Check (Kimi's Suggestion)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = AutoModelForImageClassification.from_pretrained("mera_potato_model").to(device)
         processor = AutoImageProcessor.from_pretrained("mera_potato_model")
-        model.eval() # Eval mode for speed
+        model.eval()
         return model, processor, device
     except:
         return None, None, "cpu"
 
 model, processor, device = load_model()
 
-# --- 5. SIDEBAR ---
+# --- 5. SIDEBAR (ANIMATED LOGO) ---
 st.sidebar.markdown("""
     <div style="display: flex; justify-content: center; margin-bottom: 25px; margin-top: 10px;">
         <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png" 
              style="width: 150px; border-radius: 50%; padding: 10px; background: rgba(255,255,255,0.15); 
              border: 3px solid rgba(255,255,255,0.4); 
-             animation: float-logo 3s ease-in-out infinite;"> 
+             animation: float-and-glow 3s ease-in-out infinite;"> 
     </div>
     """, unsafe_allow_html=True)
 
@@ -208,6 +258,7 @@ if nav == "🏠 Home Page":
                 <div class="slide"><img src="https://images.unsplash.com/photo-1587334274328-64186a80aeee?w=800"></div>
                 <div class="slide"><img src="https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=800"></div>
                 <div class="slide"><img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800"></div>
             </div>
         </div>
         <p style="text-align:center; font-size:0.8rem; color:#aaa; margin-top:5px;">💡 Hover to Pause | Scroll to View</p>
@@ -226,14 +277,17 @@ if nav == "🏠 Home Page":
         st.markdown(f"""
         <div class="weather-container" style="background: {bg_gradient};">
             <div class="live-badge">
-                <div class="live-dot"></div> LIVE WEATHER
+                <div class="live-dot"></div> LIVE
             </div>
+            
             <div class="weather-icon-big">{weather_icon}</div>
             <div class="temp-text">{temp}°C</div>
+            
             <div class="weather-grid">
                 <div class="stat-badge">💨 {wind} km/h</div>
                 <div class="stat-badge">💧 65% Hum</div>
             </div>
+            
             <div class="region-pill">📍 Punjab Region</div>
         </div>
         """, unsafe_allow_html=True)
@@ -297,7 +351,7 @@ elif nav == "🥔 Potato (Aloo)":
     
     uploaded_file = st.file_uploader("Upload Leaf Photo", type=["jpg", "png", "jpeg"])
     
-    # 5MB Check (Added for Security)
+    # 5MB Check
     if uploaded_file is not None and uploaded_file.size > 5*1024*1024:
         st.error("⚠️ File size too large! Please upload image under 5MB.")
     elif uploaded_file:
@@ -308,10 +362,9 @@ elif nav == "🥔 Potato (Aloo)":
         with col2:
             my_bar = st.progress(0, text="Starting engine...")
             
-            # Optimization: Resize for model only (Kimi's Tip)
+            # Optimization: Resize for model
             model_image = display_image.resize((224, 224)) 
-            
-            inputs = processor(images=model_image, return_tensors="pt").to(device) # Move to device
+            inputs = processor(images=model_image, return_tensors="pt").to(device)
             
             with torch.no_grad():
                 outputs = model(**inputs)
@@ -324,7 +377,7 @@ elif nav == "🥔 Potato (Aloo)":
                 labels = [model.config.id2label[i].replace("_", " ").title() for i in range(len(probs))]
                 prob_dict = {l: p*100 for l, p in zip(labels, probs)}
             
-            my_bar.empty() # Remove progress bar after done
+            my_bar.empty()
 
             is_healthy = "healthy" in label.lower() or "healty" in label.lower()
             bg_color = "#ecfdf5" if is_healthy else "#fef2f2"
@@ -389,4 +442,3 @@ elif nav == "🥔 Potato (Aloo)":
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
     st.info("🚧 Coming Soon...") 
-    
