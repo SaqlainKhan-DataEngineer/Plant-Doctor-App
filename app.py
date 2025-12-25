@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ULTRA PREMIUM CSS (RESTORING CONTENT & STYLE) ---
+# --- 2. ULTRA PREMIUM CSS (FIXED ALIGNMENT & TREATMENT) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -23,13 +23,13 @@ st.markdown("""
         scroll-behavior: smooth;
     }
 
-    /* --- SLIDESHOW (CENTERED & CLEAN) --- */
+    /* --- SLIDESHOW (PAUSE ON HOVER) --- */
     .slider-frame {
         overflow: hidden;
         width: 100%;
-        max-width: 1000px; /* Thora chota kiya taake fit aye */
+        max-width: 1000px;
         height: 400px;
-        margin: 0 auto 40px auto; /* Centered */
+        margin: 0 auto 40px auto;
         border-radius: 20px;
         box-shadow: 0 15px 40px rgba(0,0,0,0.15);
         border: 1px solid rgba(255,255,255,0.5);
@@ -42,6 +42,11 @@ st.markdown("""
         display: flex;
         animation: slide_animation 16s infinite ease-in-out;
     }
+    /* MOUSE UPAR LANAY SE SLIDESHOW RUK JAYEGA */
+    .slide-images:hover {
+        animation-play-state: paused;
+    }
+    
     .img-container { width: 100%; height: 100%; }
     .img-container img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -54,7 +59,41 @@ st.markdown("""
         100% { margin-left: 0%; }
     }
 
-    /* --- BACKGROUND PARTICLES (DIAMOND WIND) --- */
+    /* --- SIDEBAR FIXED ALIGNMENT --- */
+    [data-testid="stSidebar"] { 
+        background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%); 
+        border-right: none; 
+    }
+    [data-testid="stSidebar"] * { color: #ecfdf5 !important; }
+    
+    /* Radio Buttons Container */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
+        background: rgba(255, 255, 255, 0.05); 
+        padding: 12px 15px; 
+        border-radius: 10px; 
+        margin-bottom: 8px !important;
+        border: 1px solid rgba(255,255,255,0.05); 
+        transition: all 0.2s;
+        width: 100%; /* Ensure full width */
+        display: flex;
+        align-items: center;
+    }
+    
+    /* Hover Effect */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: #34d399;
+    }
+    
+    /* Selected Item (Fixed Alignment - No Zig Zag) */
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
+         background: linear-gradient(90deg, rgba(16, 185, 129, 0.3), transparent) !important;
+         border-left: 4px solid #34d399 !important; 
+         font-weight: 700;
+         /* Removed transform to keep it aligned */
+    }
+
+    /* --- BACKGROUND PARTICLES --- */
     .stApp::before {
         content: "";
         position: fixed;
@@ -78,7 +117,6 @@ st.markdown("""
 
     /* --- ANIMATIONS --- */
     h1, h2, h3, p, span, a { animation: fadeInUp 0.8s ease-out backwards; }
-    .feature-icon { animation: popIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) both; }
     
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 80% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); } }
@@ -111,27 +149,15 @@ st.markdown("""
     }
     .cta-button:hover { transform: scale(1.05); box-shadow: 0 15px 35px rgba(16,185,129,0.6); }
 
-    /* --- SIDEBAR --- */
-    [data-testid="stSidebar"] { background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%); border-right: none; }
-    [data-testid="stSidebar"] * { color: #ecfdf5 !important; }
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
-        background: rgba(255, 255, 255, 0.05); padding: 12px 15px; border-radius: 12px; margin-bottom: 10px !important;
-        border: 1px solid rgba(255,255,255,0.05); transition: all 0.3s;
-    }
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
-         background: linear-gradient(90deg, rgba(16, 185, 129, 0.25), transparent) !important;
-         border-left: 5px solid #34d399 !important; font-weight: 800; transform: translateX(5px);
-    }
-    
     .result-box { padding: 30px; border-radius: 25px; text-align: center; background: rgba(255,255,255,0.9); box-shadow: 0 15px 30px rgba(0,0,0,0.08); animation: popIn 0.5s ease-out; }
     
+    /* --- SIDEBAR LOGO ANIMATION --- */
     @keyframes float-and-glow {
         0% { transform: translateY(0px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
         50% { transform: translateY(-5px); box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
         100% { transform: translateY(0px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
     }
     
-    /* FIX FOR IMAGES */
     img { border-radius: 15px; }
     </style>
     """, unsafe_allow_html=True)
@@ -162,7 +188,8 @@ st.sidebar.markdown("<h1 style='text-align: center; color: white; font-weight: 8
 st.sidebar.markdown("<p style='text-align: center; font-size: 0.85rem; opacity: 0.8; margin-bottom: 20px; letter-spacing: 1px;'>AI DIAGNOSTICS</p>", unsafe_allow_html=True)
 st.sidebar.write("---")
 
-nav = st.sidebar.radio("", ["🏠  Home Page", "🥔  Potato (Aloo)", "🍅  Tomato Check", "🌽  Corn Field"])
+# Navigation (Names fixed for better alignment)
+nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field"])
 
 st.sidebar.write("---")
 with st.sidebar.expander("📸 Tips for Best Results"):
@@ -171,8 +198,7 @@ st.sidebar.write("---")
 st.sidebar.info("**Developers:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engineer)\n\n👨‍💻 **Raheel Chishti**\n(Team Member)")
 
 # --- 5. MAIN LOGIC ---
-if nav == "🏠  Home Page":
-    # --- HERO SECTION ---
+if nav == "🏠 Home Page":
     st.markdown("""
     <div class="hero-container">
         <h1 style="font-size: 4rem; font-weight: 900; background: -webkit-linear-gradient(#064e3b, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Plant Doctor AI</h1>
@@ -187,7 +213,7 @@ if nav == "🏠  Home Page":
     </div>
     """, unsafe_allow_html=True)
     
-    # --- SLIDESHOW SECTION (CENTERED, NO WEATHER) ---
+    # --- SLIDESHOW SECTION ---
     st.markdown("""
     <div class="slider-frame">
         <div class="slide-images">
@@ -202,7 +228,7 @@ if nav == "🏠  Home Page":
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # --- TRUST INDICATORS (RESTORED) ---
+    # --- TRUST INDICATORS ---
     c1, c2, c3, c4 = st.columns(4)
     stats = [("🌱", "15K+", "Images Trained"), ("🎯", "98%", "Accuracy"), ("⚡", "< 1s", "Fast Prediction"), ("👨‍🌾", "Expert", "Farmer Approved")]
     for col, (icon, val, lbl) in zip([c1,c2,c3,c4], stats):
@@ -215,7 +241,7 @@ if nav == "🏠  Home Page":
             </div>
             """, unsafe_allow_html=True)
 
-    # --- HOW IT WORKS (RESTORED) ---
+    # --- HOW IT WORKS ---
     st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:60px; font-size:2.5rem;'>How It Works</h2>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     steps = [("📸", "Upload Leaf", "Clear photo lein."), ("🤖", "AI Analysis", "Model check karega."), ("💊", "Get Cure", "Ilaj payein.")]
@@ -228,7 +254,7 @@ if nav == "🏠  Home Page":
             </div>
             """, unsafe_allow_html=True)
 
-    # --- SUPPORTED CROPS (RESTORED) ---
+    # --- SUPPORTED CROPS ---
     st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:60px; font-size:2.5rem;'>Supported Crops</h2>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     crops = [("🥔", "Potato", "Fully Supported ✅"), ("🍅", "Tomato", "Launching Soon 🚀"), ("🌽", "Corn", "In Development 🛠️")]
@@ -250,7 +276,7 @@ if nav == "🏠  Home Page":
     </div>
     """, unsafe_allow_html=True)
 
-elif nav == "🥔  Potato (Aloo)":
+elif nav == "🥔 Potato (Aloo)":
     st.header("🥔 Aloo Ki Bimari Check Karein", anchor="alookibimaricheckkarein")
     if not model: st.error("⚠️ Model folder nahi mila!"); st.stop()
     
@@ -259,7 +285,6 @@ elif nav == "🥔  Potato (Aloo)":
         col1, col2 = st.columns([1, 1.5])
         with col1:
             image = Image.open(uploaded_file).convert('RGB')
-            # ERROR FIXED: Removed style="..."
             st.image(image, caption="Uploaded Photo", use_column_width=True)
         with col2:
             my_bar = st.progress(0, text="Starting engine...")
@@ -289,11 +314,13 @@ elif nav == "🥔  Potato (Aloo)":
                 </div>
             """, unsafe_allow_html=True)
             
+            # --- ANALYSIS CHART ---
             st.write("### 📊 Analysis Breakdown")
             for l, p in prob_dict.items():
                 st.write(f"**{l}**")
                 st.progress(int(p))
             
+            # --- DOWNLOAD REPORT BUTTON ---
             report_text = f"Plant Doctor AI Report\nDate: {datetime.datetime.now()}\n\nDiagnosis: {label}\nConfidence: {conf:.1f}%\n\nStatus: {'Healthy' if is_healthy else 'Action Needed'}"
             st.download_button(
                 label="📄 Download Report",
@@ -302,12 +329,46 @@ elif nav == "🥔  Potato (Aloo)":
                 mime="text/plain"
             )
 
+            # --- RESTORED DETAILED TREATMENT SECTION ---
             if is_healthy:
                 st.balloons()
-                st.markdown("<div class='result-box' style='background:white;'><h3>🎉 Fasal Sehatmand Hai!</h3></div>", unsafe_allow_html=True)
+                st.markdown("""
+                <div class='result-box' style='background: white; border-left: 5px solid #059669; text-align: left;'>
+                    <h3 style='color: #059669; font-weight: 800;'>🎉 Mubarak Ho!</h3>
+                    <p style="font-weight: 600;">Aapki fasal bilkul theek hai. Hifazat ke liye ye karein:</p>
+                    <ul style="font-weight: 500;">
+                        <li>💧 <b>Pani:</b> Waqt par pani dein.</li>
+                        <li>👀 <b>Nigrani:</b> Rozana pattay check karein.</li>
+                    </ul>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            elif "late" in label.lower():
+                st.markdown("""
+                <div class='result-box' style='background: white; border-left: 5px solid #dc2626; text-align: left;'>
+                    <h3 style='color: #dc2626; font-weight: 800;'>💊 Late Blight Ka Ilaj</h3>
+                    <ul style="font-weight: 500;">
+                        <li><b>Spray (Chemical):</b> Metalaxyl + Mancozeb (2.5g per Liter) spray karein.</li>
+                        <li><b>Frequency:</b> Har 7-10 din baad spray dohrayein jab tak bimari khatam na ho.</li>
+                        <li><b>Organic:</b> Copper Fungicide ka bhi istemal kar sakte hain.</li>
+                    </ul>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            elif "early" in label.lower():
+                st.markdown("""
+                <div class='result-box' style='background: white; border-left: 5px solid #d97706; text-align: left;'>
+                    <h3 style='color: #d97706; font-weight: 800;'>💊 Early Blight Ka Ilaj</h3>
+                    <ul style="font-weight: 500;">
+                        <li><b>Spray (Chemical):</b> Chlorothalonil ya Azoxystrobin spray karein.</li>
+                        <li><b>Organic:</b> Neem Oil ka spray bihtareen hai.</li>
+                        <li><b>Tip:</b> Neeche wale purane patton ko hata dein taake hawa lagay.</li>
+                    </ul>
+                </div>
+                """, unsafe_allow_html=True)
             else:
-                st.markdown(f"<div class='result-box' style='background:white;'><h3>💊 Ilaj:</h3><p>Jald az jald spray karein.</p></div>", unsafe_allow_html=True)
+                 st.info("⚠️ Bimari detect hui hai, lekin iska specific ilaj database mein nahi hai. Kisi maahir se rabta karein.")
 
-elif nav in ["🍅  Tomato Check", "🌽  Corn Field"]:
+elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
     st.info("🚧 Coming Soon...") 
     
