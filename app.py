@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. ROBUST WEATHER FUNCTION (Optimized) ---
+# --- 2. ROBUST WEATHER FUNCTION ---
 def get_real_weather():
     try:
         # Timeout added to prevent crashing
@@ -29,7 +29,7 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS (SAME AS BEFORE) ---
+# --- 3. ULTRA PREMIUM CSS (UPDATED FOR FIX) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -106,7 +106,7 @@ st.markdown("""
     }
     .cta-button:hover { transform: scale(1.1) translateY(-5px); }
 
-    /* SLIDER & WEATHER */
+    /* SLIDER */
     .slider-container { width: 100%; overflow: hidden; border-radius: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.7); background: #000; animation: popIn 1s ease-out; }
     .slide-track { display: flex; width: calc(1000px * 10); animation: scroll 45s linear infinite; }
     .slide-track:hover { animation-play-state: paused; }
@@ -115,26 +115,68 @@ st.markdown("""
     .slide img:hover { transform: scale(1.08); filter: brightness(1.1); cursor: grab; }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
+    /* --- WEATHER CONTAINER FIX --- */
     .weather-container {
-        background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px);
-        border-radius: 25px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); color: white; text-align: center;
-        height: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center;
-        animation: popIn 1s ease-out 0.2s backwards; position: relative;
+        background: rgba(255, 255, 255, 0.15); 
+        backdrop-filter: blur(20px);
+        border-radius: 25px; 
+        padding: 25px; 
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); 
+        color: white; 
+        text-align: center;
+        height: 350px; 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center; 
+        align-items: center;
+        position: relative; /* Fixed: Keeps elements inside */
+        animation: popIn 1s ease-out 0.2s backwards;
     }
+    
     .weather-icon-big { font-size: 5rem; margin-bottom: 10px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.8)); animation: float-weather 4s ease-in-out infinite; }
     .temp-text { font-size: 4.5rem; font-weight: 800; margin: 0; line-height: 1; text-shadow: 0 5px 15px rgba(0,0,0,0.2); }
     
+    /* --- BADGES FIX --- */
     .live-badge {
-        background: rgba(0, 0, 0, 0.3); padding: 5px 15px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.2);
-        display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.8rem; letter-spacing: 1px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        position: absolute; /* Fixed */
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.3); 
+        padding: 5px 15px; 
+        border-radius: 50px; 
+        border: 1px solid rgba(255,255,255,0.2);
+        display: inline-flex; 
+        align-items: center; 
+        gap: 8px; 
+        font-weight: 700; 
+        font-size: 0.8rem; 
+        letter-spacing: 1px; 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        z-index: 2;
     }
     .live-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 10px #ef4444; animation: pulse-red 1.5s infinite; }
     
     .region-pill {
-        margin-top: 20px; background: rgba(0, 0, 0, 0.2); padding: 8px 20px; border-radius: 50px;
-        font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; border: 1px solid rgba(255,255,255,0.15);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase; color: rgba(255,255,255,0.9);
+        position: absolute; /* Fixed */
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.2); 
+        padding: 8px 20px; 
+        border-radius: 50px;
+        font-size: 0.8rem; 
+        font-weight: 700; 
+        letter-spacing: 1px; 
+        border: 1px solid rgba(255,255,255,0.15);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+        display: inline-flex; 
+        align-items: center; 
+        gap: 8px; 
+        text-transform: uppercase; 
+        color: rgba(255,255,255,0.9);
+        margin-top: 0;
     }
 
     .stat-badge { background: rgba(0, 0, 0, 0.2); padding: 8px 15px; border-radius: 50px; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.1); }
@@ -143,15 +185,14 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. OPTIMIZED MODEL LOADING ---
+# --- 4. MODEL LOADING ---
 @st.cache_resource
 def load_model():
     try:
-        # GPU Check added (Kimi's Suggestion)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = AutoModelForImageClassification.from_pretrained("mera_potato_model").to(device)
         processor = AutoImageProcessor.from_pretrained("mera_potato_model")
-        model.eval() # Eval mode for speed
+        model.eval() 
         return model, processor, device
     except:
         return None, None, "cpu"
@@ -297,7 +338,6 @@ elif nav == "🥔 Potato (Aloo)":
     
     uploaded_file = st.file_uploader("Upload Leaf Photo", type=["jpg", "png", "jpeg"])
     
-    # 5MB Check (Added for Security)
     if uploaded_file is not None and uploaded_file.size > 5*1024*1024:
         st.error("⚠️ File size too large! Please upload image under 5MB.")
     elif uploaded_file:
@@ -308,10 +348,9 @@ elif nav == "🥔 Potato (Aloo)":
         with col2:
             my_bar = st.progress(0, text="Starting engine...")
             
-            # Optimization: Resize for model only (Kimi's Tip)
             model_image = display_image.resize((224, 224)) 
             
-            inputs = processor(images=model_image, return_tensors="pt").to(device) # Move to device
+            inputs = processor(images=model_image, return_tensors="pt").to(device)
             
             with torch.no_grad():
                 outputs = model(**inputs)
@@ -324,7 +363,7 @@ elif nav == "🥔 Potato (Aloo)":
                 labels = [model.config.id2label[i].replace("_", " ").title() for i in range(len(probs))]
                 prob_dict = {l: p*100 for l, p in zip(labels, probs)}
             
-            my_bar.empty() # Remove progress bar after done
+            my_bar.empty()
 
             is_healthy = "healthy" in label.lower() or "healty" in label.lower()
             bg_color = "#ecfdf5" if is_healthy else "#fef2f2"
@@ -389,6 +428,3 @@ elif nav == "🥔 Potato (Aloo)":
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
     st.info("🚧 Coming Soon...") 
-
-
-
