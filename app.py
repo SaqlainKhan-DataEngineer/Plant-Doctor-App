@@ -28,7 +28,7 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS (EMERALD WIND + ANIMATIONS RESTORED) ---
+# --- 3. ULTRA PREMIUM ANIMATED CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -38,15 +38,44 @@ st.markdown("""
         scroll-behavior: smooth;
     }
 
-    /* --- 1. BACKGROUND PARTICLES (EMERALD WIND - RESTORED) --- */
+    /* --- 1. ANIMATIONS (POPUP, SLIDE, GLOW) --- */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(40px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes popIn {
+        0% { transform: scale(0.5); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes float-and-glow {
+        0% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+        50% { transform: translateY(-12px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.8); }
+        100% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+    }
+    @keyframes diamond-wind {
+        0% { transform: translateY(0) translateX(0); }
+        100% { transform: translateY(100px) translateX(-100px); } 
+    }
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* Apply Animations Globally */
+    h1, h2, h3, p, span, a, div.stMarkdown {
+        animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    }
+    
+    .feature-icon {
+        animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both 0.3s; /* Bouncy Pop */
+    }
+
+    /* --- 2. BACKGROUND PARTICLES (EMERALD WIND) --- */
     .stApp::before {
         content: "";
         position: fixed;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        /* Hare Heere (Emeralds) wapis aa gaye */
+        top: -50%; left: -50%; width: 200%; height: 200%;
         background-image:
             radial-gradient(circle at 20px 30px, rgba(4, 120, 87, 0.5) 0px, transparent 4px),
             radial-gradient(circle at 40px 70px, rgba(16, 185, 129, 0.6) 0px, transparent 4px),
@@ -55,88 +84,110 @@ st.markdown("""
             radial-gradient(circle at 130px 80px, rgba(6, 78, 59, 0.6) 0px, transparent 4px);
         background-repeat: repeat;
         background-size: 200px 200px;
-        animation: diamond-wind 20s linear infinite;
+        animation: diamond-wind 25s linear infinite;
         pointer-events: none;
         z-index: 0;
     }
 
-    @keyframes diamond-wind {
-        0% { transform: translateY(0) translateX(0); }
-        100% { transform: translateY(100px) translateX(-100px); } 
+    /* --- 3. HERO & CARDS (3D TILT & GLOW) --- */
+    .hero-container {
+        text-align: center; padding: 60px 20px; border-radius: 35px;
+        background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite, popIn 1s ease-out;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.15); margin-bottom: 40px; 
+        border: 2px solid rgba(255,255,255,0.8);
+        position: relative; z-index: 1;
     }
 
-    /* --- 2. LOGO ANIMATION (FLOAT & GLOW) --- */
-    @keyframes float-and-glow {
-        0% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
-        50% { transform: translateY(-10px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.7); }
-        100% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+    .feature-card {
+        background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(25px);
+        padding: 30px; border-radius: 30px; text-align: center;
+        border: 1px solid rgba(255,255,255,0.6); 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;
+        transform-style: preserve-3d; 
+        transition: transform 0.4s ease, box-shadow 0.4s ease, border-color 0.3s;
+        position: relative; z-index: 1; 
+        animation: fadeInUp 1s ease-out;
+    }
+    
+    .feature-card:hover { 
+        transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateY(-15px); 
+        box-shadow: 0 30px 60px rgba(16, 185, 129, 0.3);
+        border-color: #34d399;
+    }
+    
+    /* ANIMATED BUTTON */
+    .cta-button {
+        display: inline-block; 
+        background: linear-gradient(90deg, #059669, #10b981); 
+        color: white !important;
+        padding: 18px 45px; border-radius: 50px; font-weight: 800; font-size: 1.1rem;
+        text-decoration: none;
+        box-shadow: 0 10px 30px rgba(16,185,129,0.5); 
+        transition: all 0.3s; margin-top: 25px;
+        border: 2px solid #a7f3d0;
+        animation: popIn 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+    .cta-button:hover { 
+        transform: scale(1.1) translateY(-5px); 
+        box-shadow: 0 20px 40px rgba(16,185,129,0.7); 
     }
 
-    /* --- 3. SLIDER & WEATHER STYLES --- */
+    /* --- 4. SLIDER & WEATHER --- */
     .slider-container {
         width: 100%; overflow: hidden; border-radius: 25px;
-        box-shadow: 0 15px 40px rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.5);
-        background: #000;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.7);
+        background: #000; animation: popIn 1s ease-out;
     }
-    .slide-track { display: flex; width: calc(1000px * 10); animation: scroll 40s linear infinite; }
+    .slide-track { display: flex; width: calc(1000px * 10); animation: scroll 45s linear infinite; }
     .slide-track:hover { animation-play-state: paused; }
-    .slide { width: 600px; height: 350px; flex-shrink: 0; padding: 0 10px; }
-    .slide img { width: 100%; height: 100%; object-fit: cover; border-radius: 15px; transition: transform 0.3s; }
-    .slide img:hover { transform: scale(1.05); }
+    .slide { width: 600px; height: 350px; flex-shrink: 0; padding: 0 5px; }
+    .slide img { width: 100%; height: 100%; object-fit: cover; border-radius: 15px; transition: transform 0.4s; }
+    .slide img:hover { transform: scale(1.08); filter: brightness(1.1); }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
     .weather-container {
         background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px);
         border-radius: 25px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); color: white; text-align: center;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); color: white; text-align: center;
         height: 350px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+        animation: popIn 1s ease-out 0.2s backwards; /* Slight delay */
     }
-    .weather-icon-big { font-size: 5rem; margin-bottom: 10px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.6)); animation: float 3s ease-in-out infinite; }
-    .temp-text { font-size: 4.5rem; font-weight: 800; margin: 0; line-height: 1; }
-    .weather-label { font-size: 1.2rem; font-weight: 600; color: #ecfdf5; margin-bottom: 15px; }
-    .weather-grid { display: flex; gap: 15px; margin-top: 15px; justify-content: center; }
-    .stat-badge { background: rgba(0, 0, 0, 0.2); padding: 8px 15px; border-radius: 50px; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.1); }
-    @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-
-    /* --- 4. GENERAL UI --- */
-    .hero-container {
-        text-align: center; padding: 50px 20px; border-radius: 30px;
-        background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
-        background-size: 400% 400%; animation: gradientBG 15s ease infinite;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.1); margin-bottom: 40px; border: 1px solid rgba(255,255,255,0.6);
-        position: relative; z-index: 1;
-    }
-    @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-
-    .feature-card {
-        background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px);
-        padding: 30px; border-radius: 25px; text-align: center;
-        border: 1px solid rgba(255,255,255,0.5); box-shadow: 0 8px 32px rgba(0,0,0,0.07);
-        height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;
-        transition: transform 0.3s; position: relative; z-index: 1;
-    }
-    .feature-card:hover { transform: translateY(-10px); border-color: #34d399; }
+    .weather-icon-big { font-size: 5rem; margin-bottom: 10px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.8)); animation: float-and-glow 4s ease-in-out infinite; }
+    .temp-text { font-size: 4.5rem; font-weight: 800; margin: 0; line-height: 1; text-shadow: 0 5px 15px rgba(0,0,0,0.2); }
     
-    .cta-button {
-        display: inline-block; background: linear-gradient(90deg, #059669, #10b981); color: white !important;
-        padding: 15px 40px; border-radius: 50px; font-weight: 700; text-decoration: none;
-        box-shadow: 0 10px 25px rgba(16,185,129,0.4); transition: all 0.3s; margin-top: 20px;
-    }
-    .cta-button:hover { transform: scale(1.05); }
-
-    /* SIDEBAR */
+    /* --- 5. SIDEBAR STYLING --- */
     [data-testid="stSidebar"] { background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%); border-right: none; }
     [data-testid="stSidebar"] * { color: #ecfdf5 !important; }
+    
+    /* Sidebar Buttons */
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
-        background: rgba(255, 255, 255, 0.05); padding: 12px 15px; border-radius: 10px; margin-bottom: 8px !important;
+        background: rgba(255, 255, 255, 0.08); padding: 12px 15px; border-radius: 12px; margin-bottom: 8px !important;
         border: 1px solid rgba(255,255,255,0.05); width: 100%; display: flex; align-items: center;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
+        background: rgba(255, 255, 255, 0.2); transform: translateX(8px);
     }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
          background: linear-gradient(90deg, rgba(16, 185, 129, 0.3), transparent) !important;
-         border-left: 4px solid #34d399 !important; font-weight: 700;
+         border-left: 5px solid #34d399 !important; font-weight: 800; transform: translateX(8px);
+         box-shadow: -5px 5px 15px rgba(0,0,0,0.1);
     }
-    .result-box { padding: 30px; border-radius: 25px; text-align: center; background: rgba(255,255,255,0.9); box-shadow: 0 15px 30px rgba(0,0,0,0.08); }
-    img { border-radius: 15px; }
+    
+    /* Result Box */
+    .result-box { 
+        padding: 30px; border-radius: 25px; text-align: center; 
+        background: rgba(255,255,255,0.95); 
+        box-shadow: 0 20px 50px rgba(0,0,0,0.1); 
+        animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy Entry */
+        border: 2px solid white;
+    }
+    
+    img { border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: transform 0.3s; }
+    img:hover { transform: scale(1.02); }
     </style>
     """, unsafe_allow_html=True)
 
@@ -152,18 +203,18 @@ def load_model():
 
 model, processor = load_model()
 
-# --- 4. SIDEBAR (LOGO ANIMATION RESTORED) ---
+# --- 4. SIDEBAR (ANIMATED LOGO RESTORED) ---
 st.sidebar.markdown("""
-    <div style="display: flex; justify-content: center; margin-bottom: 20px; margin-top: 10px;">
+    <div style="display: flex; justify-content: center; margin-bottom: 25px; margin-top: 10px;">
         <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png" 
-             style="width: 140px; border-radius: 50%; padding: 8px; background: rgba(255,255,255,0.15); 
-             border: 2px solid rgba(255,255,255,0.3); 
+             style="width: 150px; border-radius: 50%; padding: 10px; background: rgba(255,255,255,0.15); 
+             border: 3px solid rgba(255,255,255,0.4); 
              animation: float-and-glow 3s ease-in-out infinite;"> 
     </div>
     """, unsafe_allow_html=True)
 
-st.sidebar.markdown("<h1 style='text-align: center; color: white; font-weight: 800; margin-top: -10px; font-size: 2rem;'>Plant Doctor</h1>", unsafe_allow_html=True)
-st.sidebar.markdown("<p style='text-align: center; font-size: 0.85rem; opacity: 0.8; margin-bottom: 20px; letter-spacing: 1px;'>AI DIAGNOSTICS</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<h1 style='text-align: center; color: white; font-weight: 800; margin-top: -10px; font-size: 2.2rem; text-shadow: 0 2px 10px rgba(0,0,0,0.2);'>Plant Doctor</h1>", unsafe_allow_html=True)
+st.sidebar.markdown("<p style='text-align: center; font-size: 0.9rem; opacity: 0.9; margin-bottom: 30px; letter-spacing: 2px; font-weight: 600;'>AI DIAGNOSTICS</p>", unsafe_allow_html=True)
 st.sidebar.write("---")
 
 nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field"])
@@ -176,13 +227,14 @@ st.sidebar.info("**Developers:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engineer
 
 # --- 5. MAIN LOGIC ---
 if nav == "🏠 Home Page":
+    # HERO
     st.markdown("""
     <div class="hero-container">
-        <h1 style="font-size: 4rem; font-weight: 900; background: -webkit-linear-gradient(#064e3b, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Plant Doctor AI</h1>
-        <p style="color:#065f46; font-size:1.4rem; font-weight:600; margin-bottom:10px;">
+        <h1 style="font-size: 4.5rem; font-weight: 900; background: -webkit-linear-gradient(#064e3b, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Plant Doctor AI</h1>
+        <p style="color:#065f46; font-size:1.5rem; font-weight:600; margin-bottom:15px;">
             AI-Powered Crop Disease Detection for Smart Farmers
         </p>
-        <p style="color:#047857; font-size:1.1rem; max-width:700px; margin:auto; line-height:1.6;">
+        <p style="color:#047857; font-size:1.2rem; max-width:750px; margin:auto; line-height:1.6;">
             Upload a leaf image and get instant disease diagnosis with treatment guidance.
         </p>
         <br>
@@ -190,11 +242,10 @@ if nav == "🏠 Home Page":
     </div>
     """, unsafe_allow_html=True)
     
-    # --- LAYOUT: SCROLLABLE SLIDER + PREMIUM WEATHER ---
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        # Horizontal Scrolling Gallery (Pause on Hover)
+        # SLIDER
         st.markdown("""
         <div class="slider-container">
             <div class="slide-track">
@@ -211,14 +262,14 @@ if nav == "🏠 Home Page":
         """, unsafe_allow_html=True)
         
     with col2:
-        # REAL PREMIUM WEATHER
-        bg_gradient = "linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)" # Default Blue
+        # WEATHER
+        bg_gradient = "linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)"
         weather_icon = "⛅"
         if temp > 30:
-            bg_gradient = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" # Hot/Sunny
+            bg_gradient = "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
             weather_icon = "☀️"
         elif temp < 20:
-            bg_gradient = "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)" # Cold
+            bg_gradient = "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)"
             weather_icon = "❄️"
 
         st.markdown(f"""
@@ -236,20 +287,20 @@ if nav == "🏠 Home Page":
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # --- TRUST INDICATORS ---
+    # TRUST STATS
     c1, c2, c3, c4 = st.columns(4)
     stats = [("🌱", "15K+", "Images Trained"), ("🎯", "98%", "Accuracy"), ("⚡", "< 1s", "Fast Prediction"), ("👨‍🌾", "Expert", "Farmer Approved")]
     for col, (icon, val, lbl) in zip([c1,c2,c3,c4], stats):
         with col:
             st.markdown(f"""
             <div class="feature-card" style="padding:20px; min-height:180px;">
-                <div style="font-size:3rem; margin-bottom:10px;">{icon}</div>
+                <div class="feature-icon" style="font-size:3rem; margin-bottom:10px;">{icon}</div>
                 <h2 style="margin:0; color:#064e3b; font-weight:800;">{val}</h2>
                 <p style="color:#555; margin:0;">{lbl}</p>
             </div>
             """, unsafe_allow_html=True)
 
-    # --- HOW IT WORKS ---
+    # HOW IT WORKS
     st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:60px; font-size:2.5rem;'>How It Works</h2>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     steps = [("📸", "Upload Leaf", "Clear photo lein."), ("🤖", "AI Analysis", "Model check karega."), ("💊", "Get Cure", "Ilaj payein.")]
@@ -262,7 +313,7 @@ if nav == "🏠 Home Page":
             </div>
             """, unsafe_allow_html=True)
 
-    # --- SUPPORTED CROPS ---
+    # CROPS
     st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:60px; font-size:2.5rem;'>Supported Crops</h2>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     crops = [("🥔", "Potato", "Fully Supported ✅"), ("🍅", "Tomato", "Launching Soon 🚀"), ("🌽", "Corn", "In Development 🛠️")]
@@ -270,13 +321,13 @@ if nav == "🏠 Home Page":
         with col:
             st.markdown(f"""
             <div class="feature-card" style="min-height:220px;">
-                <div style="font-size:4.5rem; margin-bottom:15px;">{icon}</div>
+                <div style="font-size:4.5rem; margin-bottom:15px;" class="feature-icon">{icon}</div>
                 <h3 style="color:#064e3b; font-weight:800;">{name}</h3>
                 <p style="font-weight:600; color:#059669;">{status}</p>
             </div>
             """, unsafe_allow_html=True)
 
-    # --- FOOTER (TECHNOLOGY STACK) ---
+    # FOOTER
     st.markdown("""
     <hr style="border-top: 2px solid #a7f3d0; margin-top: 80px;">
     <div style="text-align:center; padding:30px; color:#555;">
@@ -330,13 +381,11 @@ elif nav == "🥔 Potato (Aloo)":
                 </div>
             """, unsafe_allow_html=True)
             
-            # Analysis Chart
             st.write("### 📊 Analysis Breakdown")
             for l, p in prob_dict.items():
                 st.write(f"**{l}**")
                 st.progress(int(p))
             
-            # Download Button
             report_text = f"Plant Doctor AI Report\nDate: {datetime.datetime.now()}\n\nDiagnosis: {label}\nConfidence: {conf:.1f}%\n\nStatus: {'Healthy' if is_healthy else 'Action Needed'}"
             st.download_button(
                 label="📄 Download Report",
@@ -345,7 +394,6 @@ elif nav == "🥔 Potato (Aloo)":
                 mime="text/plain"
             )
 
-            # Detailed Treatment
             if is_healthy:
                 st.balloons()
                 st.markdown("""
@@ -384,4 +432,5 @@ elif nav == "🥔 Potato (Aloo)":
                  st.info("⚠️ Bimari detect hui hai, lekin iska specific ilaj database mein nahi hai. Kisi maahir se rabta karein.")
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
-    st.info("🚧 Coming Soon...")
+    st.info("🚧 Coming Soon...") 
+    
