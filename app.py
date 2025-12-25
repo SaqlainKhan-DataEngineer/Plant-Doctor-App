@@ -28,7 +28,7 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS (RESTORED & FIXED) ---
+# --- 3. ULTRA PREMIUM CSS (SLIDER HEIGHT FIXED) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -49,7 +49,7 @@ st.markdown("""
 
     h1, h2, h3, p, span, a, div.stMarkdown { animation: fadeInUp 0.8s ease-out both; }
 
-    /* BACKGROUND PARTICLES (RESTORED) */
+    /* BACKGROUND PARTICLES */
     .stApp::before {
         content: ""; position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
         background-image:
@@ -62,7 +62,7 @@ st.markdown("""
         pointer-events: none; z-index: 0;
     }
 
-    /* SIDEBAR STYLE (RESTORED) */
+    /* SIDEBAR */
     [data-testid="stSidebar"] { background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%); border-right: none; }
     [data-testid="stSidebar"] * { color: #ecfdf5 !important; }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
@@ -105,16 +105,17 @@ st.markdown("""
     }
     .cta-button:hover { transform: scale(1.1) translateY(-5px); }
 
-    /* SLIDER */
+    /* --- SLIDER (HEIGHT INCREASED) --- */
     .slider-container { width: 100%; overflow: hidden; border-radius: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.7); background: #000; animation: popIn 1s ease-out; }
     .slide-track { display: flex; width: calc(1000px * 10); animation: scroll 45s linear infinite; }
     .slide-track:hover { animation-play-state: paused; }
-    .slide { width: 600px; height: 350px; flex-shrink: 0; padding: 0 5px; }
+    /* Height changed from 350px to 420px to match weather box */
+    .slide { width: 600px; height: 420px; flex-shrink: 0; padding: 0 5px; }
     .slide img { width: 100%; height: 100%; object-fit: cover; border-radius: 15px; transition: transform 0.4s; }
     .slide img:hover { transform: scale(1.08); filter: brightness(1.1); cursor: grab; }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
-    /* --- WEATHER CONTAINER (PREMIUM FIXED) --- */
+    /* --- WEATHER CONTAINER --- */
     .weather-container {
         background: rgba(255, 255, 255, 0.15); 
         backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
@@ -124,19 +125,15 @@ st.markdown("""
         box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15); 
         color: white; 
         text-align: center;
-        
-        /* HEIGHT INCREASED TO PREVENT OVERLAP */
-        height: 420px; 
-        
+        height: 420px; /* Fixed Height */
         display: flex; flex-direction: column; justify-content: center; align-items: center;
-        position: relative; /* Essential for absolute badges */
+        position: relative;
         animation: popIn 1s ease-out 0.2s backwards;
     }
     
     .weather-icon-big { font-size: 5rem; margin-bottom: 5px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.8)); animation: float-weather 4s ease-in-out infinite; }
     .temp-text { font-size: 4rem; font-weight: 800; margin: 0; line-height: 1; text-shadow: 0 5px 15px rgba(0,0,0,0.2); }
     
-    /* ABSOLUTE BADGES RESTORED (BUT SAFER) */
     .live-badge {
         position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
         background: rgba(0, 0, 0, 0.3); padding: 5px 15px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.2);
@@ -173,7 +170,7 @@ def load_model():
 
 model, processor, device = load_model()
 
-# --- 5. SIDEBAR (LOGO ANIMATION INCLUDED) ---
+# --- 5. SIDEBAR ---
 st.sidebar.markdown("""
     <div style="display: flex; justify-content: center; margin-bottom: 25px; margin-top: 10px;">
         <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png" 
@@ -401,4 +398,4 @@ elif nav == "🥔 Potato (Aloo)":
                  st.info("⚠️ Bimari detect hui hai, lekin iska specific ilaj database mein nahi hai. Kisi maahir se rabta karein.")
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
-    st.info("🚧 Coming Soon...") 
+    st.info("🚧 Coming Soon...")
