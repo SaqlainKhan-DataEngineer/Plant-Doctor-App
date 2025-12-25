@@ -90,7 +90,6 @@ st.markdown("""
          background: linear-gradient(90deg, rgba(16, 185, 129, 0.3), transparent) !important;
          border-left: 4px solid #34d399 !important; 
          font-weight: 700;
-         /* Removed transform to keep it aligned */
     }
 
     /* --- BACKGROUND PARTICLES --- */
@@ -188,7 +187,7 @@ st.sidebar.markdown("<h1 style='text-align: center; color: white; font-weight: 8
 st.sidebar.markdown("<p style='text-align: center; font-size: 0.85rem; opacity: 0.8; margin-bottom: 20px; letter-spacing: 1px;'>AI DIAGNOSTICS</p>", unsafe_allow_html=True)
 st.sidebar.write("---")
 
-# Navigation (Names fixed for better alignment)
+# Navigation
 nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field"])
 
 st.sidebar.write("---")
@@ -329,7 +328,7 @@ elif nav == "🥔 Potato (Aloo)":
                 mime="text/plain"
             )
 
-            # --- RESTORED DETAILED TREATMENT SECTION ---
+            # --- DETAILED TREATMENT SECTION ---
             if is_healthy:
                 st.balloons()
                 st.markdown("""
