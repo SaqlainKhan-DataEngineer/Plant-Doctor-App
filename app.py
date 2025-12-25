@@ -29,7 +29,7 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS (UPDATED) ---
+# --- 3. ULTRA PREMIUM CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
@@ -42,7 +42,7 @@ st.markdown("""
     /* ANIMATIONS */
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-    @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 50, 50, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0); } }
+    @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
     @keyframes float-weather { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
     @keyframes diamond-wind { 0% { transform: translateY(0) translateX(0); } 100% { transform: translateY(100px) translateX(-100px); } }
     @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
@@ -362,6 +362,13 @@ elif nav == "🥔 Potato (Aloo)":
                 prob_dict = {l: p*100 for l, p in zip(labels, probs)}
             
             my_bar.empty()
+
+            # --- RESTORED LOGIC FOR LOW CONFIDENCE ---
+            if conf < 90:
+                st.error("⚠️ **Ye Aloo Ka Patta Nahi Lag Raha!**")
+                st.warning(f"Model Confidence: {conf:.1f}% (Low)\n\nSystem ko lag raha hai ke ye tasveer aloo ke pattay ki nahi hai, ya tasveer bohat dhundli hai. Kripya saaf photo upload karein.")
+                st.stop() # Yahan ruk jayega aur neechay wala code nahi chalega
+            # ------------------------------------------
 
             is_healthy = "healthy" in label.lower() or "healty" in label.lower()
             bg_color = "#ecfdf5" if is_healthy else "#fef2f2"
