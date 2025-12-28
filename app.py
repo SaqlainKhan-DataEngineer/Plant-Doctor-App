@@ -75,8 +75,8 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.15); transform: scale(1.02); border-color: #34d399;
     }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
-         background: linear-gradient(90deg, #059669, #10b981) !important; border: 1px solid #a7f3d0 !important;
-         font-weight: 800; transform: scale(1.03); box-shadow: 0 0 20px rgba(16, 185, 129, 0.6) !important; color: white !important;
+          background: linear-gradient(90deg, #059669, #10b981) !important; border: 1px solid #a7f3d0 !important;
+          font-weight: 800; transform: scale(1.03); box-shadow: 0 0 20px rgba(16, 185, 129, 0.6) !important; color: white !important;
     }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[role="radio"] { display: none; }
 
@@ -346,7 +346,8 @@ elif nav == "🥔 Potato (Aloo)":
         st.info("Ensure `config.json` and `model.safetensors` are in the same folder as `app.py` or in `mera_potato_model` folder.")
         st.stop()
     
-    uploaded_file = st.file_uploader("Upload Leaf Photo", type=["jpg", "png", "jpeg"])
+    # --- HERE IS THE FIX: Added "webp" to the list ---
+    uploaded_file = st.file_uploader("Upload Leaf Photo", type=["jpg", "png", "jpeg", "webp"])
     
     if uploaded_file is not None and uploaded_file.size > 5*1024*1024:
         st.error("⚠️ File size too large! Please upload image under 5MB.")
@@ -440,4 +441,4 @@ elif nav == "🥔 Potato (Aloo)":
                 """, unsafe_allow_html=True)
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
-    st.info("🚧 Coming Soon...")  
+    st.info("🚧 Coming Soon...") 
