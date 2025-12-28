@@ -346,8 +346,8 @@ elif nav == "🥔 Potato (Aloo)":
         st.info("Ensure `config.json` and `model.safetensors` are in the same folder as `app.py` or in `mera_potato_model` folder.")
         st.stop()
     
-    # --- HERE IS THE FIX: Added "webp" to the list ---
-    uploaded_file = st.file_uploader("Upload Leaf Photo", type=["jpg", "png", "jpeg", "webp"])
+    # --- HERE IS THE FIX: Added "jpeg" and "webp" and "jfif" ---
+    uploaded_file = st.file_uploader("Upload Leaf Photo", type=["jpg", "png", "jpeg", "webp", "jfif"])
     
     if uploaded_file is not None and uploaded_file.size > 5*1024*1024:
         st.error("⚠️ File size too large! Please upload image under 5MB.")
