@@ -138,17 +138,27 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. NEW MODEL LOADING (MACHINE LEARNING) ---
+# --- 4. MODEL LOADING (ADDING TOMATO MODEL) ---
 @st.cache_resource
 def load_ml_model():
     try:
         data = joblib.load("potato_disease_model.pkl") 
         return data['model'], data['scaler'], data['class_names']
     except Exception as e:
-        st.error(f"Error loading model: {e}")
+        st.error(f"Error loading potato model: {e}")
+        return None, None, None
+
+@st.cache_resource
+def load_tomato_model():
+    try:
+        data = joblib.load("tomato_disease_model_9_classes.pkl") 
+        return data['model'], data['scaler'], data['class_names']
+    except Exception as e:
+        st.error(f"Error loading tomato model: {e}")
         return None, None, None
 
 rf_model, scaler, class_names = load_ml_model()
+t_model, t_scaler, t_class_names = load_tomato_model()
 
 # --- 5. THE 4 DETECTIVES (Feature Extractors) ---
 def extract_all_features(image_bytes):
@@ -306,7 +316,7 @@ if nav == "🏠 Home Page":
 
     st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:60px; font-size:2.5rem;'>Supported Crops</h2>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
-    crops = [("🥔", "Potato", "Fully Supported ✅"), ("🍅", "Tomato", "Launching Soon 🚀"), ("🌽", "Corn", "In Development 🛠️")]
+    crops = [("🥔", "Potato", "Fully Supported ✅"), ("🍅", "Tomato", "Fully Supported ✅"), ("🌽", "Corn", "In Development 🛠️")]
     for col, (icon, name, status) in zip([c1,c2,c3], crops):
         with col:
             st.markdown(f"""
@@ -355,7 +365,6 @@ elif nav == "🥔 Potato (Aloo)":
                 time.sleep(1) 
                 
                 try:
-                    # ML Engine Logic
                     image_bytes = uploaded_file.getvalue()
                     features = extract_all_features(image_bytes)
                     features = np.nan_to_num(features).reshape(1, -1)
@@ -438,6 +447,113 @@ elif nav == "🥔 Potato (Aloo)":
                 </div>
                 """, unsafe_allow_html=True)
 
-elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
-    st.info("🚧 Coming Soon...") 
+# ==========================================
+# 🍅 NAYA TOMATO WALA HISSA (Yahan se shuru)
+# ==========================================
+elif nav == "🍅 Tomato Check":
+    st.header("🍅 Tamatar Ki Bimari Check Karein")
     
+    if not t_model:
+        st.error("⚠️ **Tomato Model File Missing!**")
+        st.info("Ensure `tomato_disease_model_9_classes.pkl` is in the same folder as `app.py`.")
+        st.stop()
+    
+    uploaded_file = st.file_uploader("Upload Tomato Leaf Photo", type=["jpg", "png", "jpeg", "webp", "jfif"])
+    
+    if uploaded_file is not None and uploaded_file.size > 5*1024*1024:
+        st.error("⚠️ File size too large! Please upload image under 5MB.")
+    elif uploaded_file:
+        col1, col2 = st.columns([1, 1.5])
+        with col1:
+            display_image = Image.open(uploaded_file).convert('RGB')
+            st.image(display_image, caption="Uploaded Photo", use_column_width=True)
+        
+        with col2:
+            with st.spinner("Analyzing Tomato features..."):
+                time.sleep(1) 
+                
+                try:
+                    image_bytes = uploaded_file.getvalue()
+                    features = extract_all_features(image_bytes)
+                    features = np.nan_to_num(features).reshape(1, -1)
+                    features_scaled = t_scaler.transform(features)
+                    
+                    pred_idx = t_model.predict(features_scaled)[0]
+                    probs = t_model.predict_proba(features_scaled)[0]
+                    conf = probs[pred_idx] * 100
+                    
+                    label = t_class_names[pred_idx].replace("_", " ").title()
+                    prob_dict = {l: p*100 for l, p in zip(t_class_names, probs)}
+                    
+                except Exception as e:
+                    st.error(f"Analysis failed: {e}")
+                    st.stop()
+                
+                if conf < 60:
+                    st.error("⚠️ **Photo Clear Nahi Hai!**")
+                    st.warning(f"Confidence: {conf:.1f}% (Low)\n\nYe Tamatar ka patta nahi lag raha ya model ko samajh nahi aa raha. Saaf photo upload karein.")
+                    st.stop()
+
+            is_healthy = "healthy" in label.lower()
+            
+            bg_color = "#ecfdf5" if is_healthy else "#fef2f2"
+            border_color = "#059669" if is_healthy else "#dc2626"
+            
+            st.markdown(f"""
+            <div class='result-box' style='background: {bg_color}; border: 2px solid {border_color};'>
+                <h2 style='color: {border_color}; margin:0; font-weight: 800;'>{label}</h2>
+                <h4 style='color: {border_color}; margin-top: 10px; font-weight: 600;'>Confidence: {conf:.1f}%</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.write("### 📊 Analysis Breakdown")
+            for l, p in prob_dict.items():
+                l_clean = l.replace("_", " ").title()
+                st.write(f"**{l_clean}**")
+                st.progress(int(p))
+            
+            report_text = f"Plant Doctor AI Report\nDate: {datetime.datetime.now()}\n\nDiagnosis: {label}\nConfidence: {conf:.1f}%\n\nStatus: {'Healthy' if is_healthy else 'Action Needed'}"
+            st.download_button(
+                label="📄 Download Report",
+                data=report_text,
+                file_name="tomato_doctor_report.txt",
+                mime="text/plain"
+            )
+
+            if is_healthy:
+                st.balloons()
+                st.markdown("""
+                <div class='result-box' style='background: white; border-left: 5px solid #059669; text-align: left;'>
+                    <h3 style='color: #059669; font-weight: 800;'>🎉 Mubarak Ho!</h3>
+                    <p style="font-weight: 600;">Aapki fasal bilkul theek hai. Hifazat ke liye ye karein:</p>
+                    <ul style="font-weight: 500;">
+                        <li>💧 <b>Pani:</b> Waqt par pani dein.</li>
+                        <li>👀 <b>Nigrani:</b> Rozana pattay check karein.</li>
+                    </ul>
+                </div>
+                """, unsafe_allow_html=True)
+            elif "virus" in label.lower() or "mosaic" in label.lower():
+                st.markdown("""
+                <div class='result-box' style='background: white; border-left: 5px solid #dc2626; text-align: left;'>
+                    <h3 style='color: #dc2626; font-weight: 800;'>⚠️ Alert (Virus)</h3>
+                    <ul style="font-weight: 500;">
+                        <li><b>Faori Qadam:</b> Mutasira poudon ko fauran ukhad kar jala dein ya door phaink dein.</li>
+                        <li><b>Wajah:</b> Yeh aam tor par safaid makhi (Whitefly) se phailta hai.</li>
+                        <li><b>Spray:</b> Whitefly ko control karne ke liye Insecticide ka spray karein.</li>
+                    </ul>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                <div class='result-box' style='background: white; border-left: 5px solid #d97706; text-align: left;'>
+                    <h3 style='color: #d97706; font-weight: 800;'>💊 Fungal/Bacterial Treatment</h3>
+                    <ul style="font-weight: 500;">
+                        <li><b>Spray:</b> Copper Fungicide ya Neem Oil ka spray karein.</li>
+                        <li><b>Ehtiyat:</b> Poudon ke darmiyan fasla rakhein taake hawa guzar sake.</li>
+                        <li><b>Pani:</b> Poudon ko oopar se pani na dein, sirf jaron (roots) mein dein.</li>
+                    </ul>
+                </div>
+                """, unsafe_allow_html=True)
+
+elif nav == "🌽 Corn Field":
+    st.info("🚧 Coming Soon...") 
