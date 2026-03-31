@@ -1,11 +1,13 @@
 import streamlit as st
 from PIL import Image
-import torch
-from transformers import AutoImageProcessor, AutoModelForImageClassification
+import cv2
+import numpy as np
+import joblib
 import time
 import datetime
 import requests
 import os 
+from skimage.feature import hog, local_binary_pattern, graycomatrix, graycoprops
 
 # --- 1. PAGE SETUP ---
 st.set_page_config(
@@ -29,15 +31,12 @@ def get_real_weather():
 
 temp, wind = get_real_weather()
 
-# --- 3. ULTRA PREMIUM CSS (Height Match Fix - 420px) ---
+# --- 3. ULTRA PREMIUM CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
     
-    html, body, [class*="css"] {
-        font-family: 'Outfit', sans-serif;
-        scroll-behavior: smooth;
-    }
+    html, body, [class*="css"] { font-family: 'Outfit', sans-serif; scroll-behavior: smooth; }
 
     /* ANIMATIONS */
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
@@ -71,9 +70,7 @@ st.markdown("""
         border: 1px solid rgba(255,255,255,0.1); width: 100%; display: flex; align-items: center;
         transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;
     }
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
-        background: rgba(255, 255, 255, 0.15); transform: scale(1.02); border-color: #34d399;
-    }
+    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover { background: rgba(255, 255, 255, 0.15); transform: scale(1.02); border-color: #34d399; }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
           background: linear-gradient(90deg, #059669, #10b981) !important; border: 1px solid #a7f3d0 !important;
           font-weight: 800; transform: scale(1.03); box-shadow: 0 0 20px rgba(16, 185, 129, 0.6) !important; color: white !important;
@@ -106,7 +103,7 @@ st.markdown("""
     }
     .cta-button:hover { transform: scale(1.1) translateY(-5px); }
 
-    /* SLIDER (HEIGHT FIXED TO 420px) */
+    /* SLIDER */
     .slider-container { width: 100%; overflow: hidden; border-radius: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.7); background: #000; animation: popIn 1s ease-out; }
     .slide-track { display: flex; width: calc(1000px * 10); animation: scroll 45s linear infinite; }
     .slide-track:hover { animation-play-state: paused; }
@@ -115,54 +112,24 @@ st.markdown("""
     .slide img:hover { transform: scale(1.08); filter: brightness(1.1); cursor: grab; }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
-    /* WEATHER WIDGET (HEIGHT FIXED TO 420px) */
+    /* WEATHER WIDGET */
     .weather-container {
-        position: relative;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(25px); 
-        -webkit-backdrop-filter: blur(25px);
-        border-radius: 30px;
-        padding: 25px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        position: relative; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(25px); 
+        border-radius: 30px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.2);
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-        overflow: hidden;
-        transition: transform 0.3s ease;
-        height: auto; 
-        min-height: 420px;
+        overflow: hidden; transition: transform 0.3s ease; height: auto; min-height: 420px;
         display: flex; flex-direction: column; justify-content: space-between;
     }
     .weather-container:hover { transform: translateY(-5px); box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.35); }
-
-    /* Decorative Glow behind the card */
-    .weather-glow {
-        position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%);
-        animation: rotate-glow 15s linear infinite; z-index: 0; pointer-events: none;
-    }
+    .weather-glow { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%); animation: rotate-glow 15s linear infinite; z-index: 0; pointer-events: none; }
     .weather-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; height: 100%; }
     .weather-header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-
-    .live-badge {
-        background: rgba(0, 0, 0, 0.3); padding: 6px 14px; border-radius: 20px;
-        font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;
-        border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
+    .live-badge { background: rgba(0, 0, 0, 0.3); padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.1); }
     .live-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px #ef4444; animation: pulse-red 1.5s infinite; }
-
-    .temp-big {
-        font-size: 5.5rem; font-weight: 800; line-height: 1;
-        background: linear-gradient(180deg, #ffffff 20%, rgba(255,255,255,0.6) 100%);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2)); margin: 10px 0;
-    }
+    .temp-big { font-size: 5.5rem; font-weight: 800; line-height: 1; background: linear-gradient(180deg, #ffffff 20%, rgba(255,255,255,0.6) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2)); margin: 10px 0; }
     .weather-icon-3d { font-size: 4rem; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3)); animation: float-weather 6s ease-in-out infinite; }
-
     .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; margin-top: auto; padding-top: 15px; }
-    .detail-item {
-        background: rgba(255, 255, 255, 0.15); border-radius: 15px; padding: 10px; text-align: center;
-        border: 1px solid rgba(255,255,255,0.1); transition: background 0.2s;
-    }
-    .detail-item:hover { background: rgba(255, 255, 255, 0.25); }
+    .detail-item { background: rgba(255, 255, 255, 0.15); border-radius: 15px; padding: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
     .detail-label { font-size: 0.75rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 1px; }
     .detail-val { font-size: 1.1rem; font-weight: 700; color: white; }
 
@@ -171,27 +138,54 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. MODEL LOADING (FIXED - NO AUTO CHECK) ---
+# --- 4. NEW MODEL LOADING (MACHINE LEARNING) ---
 @st.cache_resource
-def load_model():
+def load_ml_model():
     try:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        
-        # --- FIXED PATH: Direct folder name ---
-        model_path = "mera_potato_model"
-            
-        model = AutoModelForImageClassification.from_pretrained(model_path).to(device)
-        processor = AutoImageProcessor.from_pretrained(model_path)
-        model.eval() 
-        return model, processor, device
+        data = joblib.load("potato_disease_model.pkl") 
+        return data['model'], data['scaler'], data['class_names']
     except Exception as e:
-        # Error print karega agar phir bhi masla hua
-        print(f"Error: {e}")
-        return None, None, "cpu"
+        st.error(f"Error loading model: {e}")
+        return None, None, None
 
-model, processor, device = load_model()
+rf_model, scaler, class_names = load_ml_model()
 
-# --- 5. SIDEBAR ---
+# --- 5. THE 4 DETECTIVES (Feature Extractors) ---
+def extract_all_features(image_bytes):
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    img = cv2.resize(img, (128, 128))
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # Jasoos 1: Color
+    hist_bgr = cv2.calcHist([img], [0,1,2], None, [8,8,8], [0,256,0,256,0,256])
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    hist_hsv = cv2.calcHist([hsv], [0,1,2], None, [8,8,8], [0,180,0,256,0,256])
+    f_color = np.hstack([hist_bgr.flatten(), hist_hsv.flatten()])
+
+    # Jasoos 2: HOG
+    f_hog = hog(gray_img, orientations=9, pixels_per_cell=(8, 8), cells_per_block=(2, 2), visualize=False)
+
+    # Jasoos 3: LBP
+    radius = 2
+    n_points = 8 * radius
+    lbp = local_binary_pattern(gray_img, n_points, radius, method='uniform')
+    hist, _ = np.histogram(lbp.ravel(), bins=np.arange(0, n_points + 3), range=(0, n_points + 2))
+    hist = hist.astype("float")
+    f_lbp = hist / (hist.sum() + 1e-7)
+
+    # Jasoos 4: GLCM
+    glcm = graycomatrix(gray_img, distances=[1, 2], angles=[0, np.pi/4, np.pi/2, 3*np.pi/4], levels=256, symmetric=True, normed=True)
+    contrast = graycoprops(glcm, 'contrast').mean()
+    correlation = graycoprops(glcm, 'correlation').mean()
+    energy = graycoprops(glcm, 'energy').mean()
+    homogeneity = graycoprops(glcm, 'homogeneity').mean()
+    dissimilarity = graycoprops(glcm, 'dissimilarity').mean()
+    f_glcm = np.array([contrast, correlation, energy, homogeneity, dissimilarity])
+
+    return np.hstack([f_color, f_hog, f_lbp, f_glcm])
+
+# --- 6. SIDEBAR ---
 st.sidebar.markdown("""
     <div style="display: flex; justify-content: center; margin-bottom: 25px; margin-top: 10px;">
         <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png" 
@@ -213,7 +207,7 @@ with st.sidebar.expander("📸 Tips for Best Results"):
 st.sidebar.write("---")
 st.sidebar.info("**Developers:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engineer)\n\n👨‍💻 **Raheel Chishti**\n(Team Member)")
 
-# --- 6. MAIN LOGIC ---
+# --- 7. MAIN LOGIC ---
 if nav == "🏠 Home Page":
     st.markdown("""
     <div class="hero-container">
@@ -287,7 +281,7 @@ if nav == "🏠 Home Page":
 
     st.markdown("<br>", unsafe_allow_html=True)
     c1, c2, c3, c4 = st.columns(4)
-    stats = [("🌱", "15K+", "Images Trained"), ("🎯", "98%", "Accuracy"), ("⚡", "< 1s", "Fast Prediction"), ("👨‍🌾", "Expert", "Farmer Approved")]
+    stats = [("🌱", "15K+", "Images Trained"), ("🎯", "97%", "Accuracy"), ("⚡", "Fast", "ML Prediction"), ("👨‍🌾", "Expert", "Farmer Approved")]
     for col, (icon, val, lbl) in zip([c1,c2,c3,c4], stats):
         with col:
             st.markdown(f"""
@@ -326,13 +320,13 @@ if nav == "🏠 Home Page":
     st.markdown("""
     <hr style="border-top: 2px solid #a7f3d0; margin-top: 80px;">
     <div style="text-align:center; padding:30px; color:#555;">
-        <p style="font-weight:700; font-size: 1.1rem;">© 2025 Plant Doctor AI</p>
+        <p style="font-weight:700; font-size: 1.1rem;">© 2026 Plant Doctor AI</p>
         <p style="font-size:0.9rem; margin-top: 10px;">
             Built with ❤️ using 
             <span style="background:#fce7f3; padding:4px 8px; border-radius:5px; color:#be185d; font-weight:600;">Streamlit</span>
-            <span style="background:#e0e7ff; padding:4px 8px; border-radius:5px; color:#4338ca; font-weight:600;">PyTorch</span>
+            <span style="background:#e0e7ff; padding:4px 8px; border-radius:5px; color:#4338ca; font-weight:600;">Scikit-Learn</span>
             & 
-            <span style="background:#fef3c7; padding:4px 8px; border-radius:5px; color:#b45309; font-weight:600;">Transformers (ViT)</span>
+            <span style="background:#fef3c7; padding:4px 8px; border-radius:5px; color:#b45309; font-weight:600;">Random Forest</span>
         </p>
         <p style="font-size:0.8rem; margin-top: 10px; opacity: 0.8;">Developed by <b>Saqlain Khan</b> & <b>Raheel Chishti</b></p>
     </div>
@@ -341,12 +335,11 @@ if nav == "🏠 Home Page":
 elif nav == "🥔 Potato (Aloo)":
     st.header("🥔 Aloo Ki Bimari Check Karein", anchor="alookibimaricheckkarein")
     
-    if not model:
-        st.error("⚠️ **Model Folder Missing!**")
-        st.info("Ensure `config.json` and `model.safetensors` are in the same folder as `app.py` or in `mera_potato_model` folder.")
+    if not rf_model:
+        st.error("⚠️ **Model File Missing!**")
+        st.info("Ensure `potato_disease_model.pkl` is in the same folder as `app.py`.")
         st.stop()
     
-    # --- HERE IS THE FIX: Added "jpeg" and "webp" and "jfif" ---
     uploaded_file = st.file_uploader("Upload Leaf Photo", type=["jpg", "png", "jpeg", "webp", "jfif"])
     
     if uploaded_file is not None and uploaded_file.size > 5*1024*1024:
@@ -358,29 +351,33 @@ elif nav == "🥔 Potato (Aloo)":
             st.image(display_image, caption="Uploaded Photo", use_column_width=True)
         
         with col2:
-            with st.spinner("Analyzing..."):
+            with st.spinner("Analyzing features (HOG, LBP, Color, GLCM)..."):
                 time.sleep(1) 
                 
-                import torch
-                model_image = display_image.resize((224, 224)) 
-                inputs = processor(images=model_image, return_tensors="pt").to(device)
+                try:
+                    # ML Engine Logic
+                    image_bytes = uploaded_file.getvalue()
+                    features = extract_all_features(image_bytes)
+                    features = np.nan_to_num(features).reshape(1, -1)
+                    features_scaled = scaler.transform(features)
+                    
+                    pred_idx = rf_model.predict(features_scaled)[0]
+                    probs = rf_model.predict_proba(features_scaled)[0]
+                    conf = probs[pred_idx] * 100
+                    
+                    label = class_names[pred_idx].replace("_", " ").title()
+                    prob_dict = {l: p*100 for l, p in zip(class_names, probs)}
+                    
+                except Exception as e:
+                    st.error(f"Analysis failed: {e}")
+                    st.stop()
                 
-                with torch.no_grad():
-                    outputs = model(**inputs)
-                    logits = outputs.logits
-                    idx = logits.argmax(-1).item()
-                    conf = torch.softmax(logits, dim=1)[0][idx].item() * 100
-                    label = model.config.id2label[idx].replace("_", " ").title()
-                    probs = torch.softmax(logits, dim=1)[0].tolist()
-                    labels = [model.config.id2label[i].replace("_", " ").title() for i in range(len(probs))]
-                    prob_dict = {l: p*100 for l, p in zip(labels, probs)}
-                
-                if conf < 90:
+                if conf < 60:
                     st.error("⚠️ **Photo Clear Nahi Hai!**")
-                    st.warning(f"Confidence: {conf:.1f}% (Low)\n\nYe Aloo ka patta nahi lag raha. Saaf photo upload karein.")
+                    st.warning(f"Confidence: {conf:.1f}% (Low)\n\nYe Aloo ka patta nahi lag raha ya model ko samajh nahi aa raha. Saaf photo upload karein.")
                     st.stop()
 
-            is_healthy = "healthy" in label.lower() or "healty" in label.lower()
+            is_healthy = "healthy" in label.lower()
             
             bg_color = "#ecfdf5" if is_healthy else "#fef2f2"
             border_color = "#059669" if is_healthy else "#dc2626"
@@ -394,7 +391,8 @@ elif nav == "🥔 Potato (Aloo)":
             
             st.write("### 📊 Analysis Breakdown")
             for l, p in prob_dict.items():
-                st.write(f"**{l}**")
+                l_clean = l.replace("_", " ").title()
+                st.write(f"**{l_clean}**")
                 st.progress(int(p))
             
             report_text = f"Plant Doctor AI Report\nDate: {datetime.datetime.now()}\n\nDiagnosis: {label}\nConfidence: {conf:.1f}%\n\nStatus: {'Healthy' if is_healthy else 'Action Needed'}"
@@ -442,3 +440,4 @@ elif nav == "🥔 Potato (Aloo)":
 
 elif nav in ["🍅 Tomato Check", "🌽 Corn Field"]:
     st.info("🚧 Coming Soon...") 
+    
