@@ -6,119 +6,504 @@ import joblib
 import time
 import datetime
 import requests
-import os 
+import os
 from skimage.feature import hog, local_binary_pattern, graycomatrix, graycoprops
-
+ 
 # --- 1. PAGE SETUP ---
 st.set_page_config(
-    page_title="Plant Doctor AI", 
-    page_icon="🌿", 
+    page_title="Plant Doctor AI",
+    page_icon="🌿",
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
+ 
 # Handle nav override from crop cards
 if 'nav_override' in st.session_state:
     nav_default = st.session_state.pop('nav_override')
 else:
     nav_default = "🏠 Home Page"
-
+ 
+# Handle quick scan target
+quick_scan_target = st.session_state.pop('quick_scan_target', None)
+ 
 # --- 2. WEATHER ---
 def get_real_weather():
     try:
         url = "https://api.open-meteo.com/v1/forecast?latitude=31.5204&longitude=74.3587&current_weather=true"
-        response = requests.get(url, timeout=3) 
+        response = requests.get(url, timeout=3)
         data = response.json()
         return data['current_weather']['temperature'], data['current_weather']['windspeed']
     except:
         return 28, 12
-
+ 
 temp, wind = get_real_weather()
-
-# --- 3. CSS ---
+ 
+# --- 3. PREMIUM CSS ---
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap');
-    
-    html, body, [class*="css"] { font-family: 'Outfit', sans-serif; scroll-behavior: smooth; }
-
-    @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-    @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255,50,50,0.7); } 70% { box-shadow: 0 0 0 10px rgba(255,50,50,0); } 100% { box-shadow: 0 0 0 0 rgba(255,50,50,0); } }
-    @keyframes float-weather { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
-    @keyframes diamond-wind { 0% { transform: translateY(0) translateX(0); } 100% { transform: translateY(100px) translateX(-100px); } }
-    @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-    @keyframes float-logo { 0%,100% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16,185,129,0.4); } 50% { transform: translateY(-8px); box-shadow: 0 0 30px rgba(16,185,129,0.7); } }
-    @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
-    @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 6)); } }
-
-    h1, h2, h3, p, span, a, div.stMarkdown { animation: fadeInUp 0.8s ease-out both; }
-
-    .stApp::before {
-        content: ""; position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
-        background-image: radial-gradient(circle at 20px 30px, rgba(4,120,87,0.5) 0px, transparent 2px), radial-gradient(circle at 40px 70px, rgba(16,185,129,0.6) 0px, transparent 2px), radial-gradient(circle at 50px 160px, rgba(5,150,105,0.5) 0px, transparent 2px), radial-gradient(circle at 90px 40px, rgba(52,211,153,0.7) 0px, transparent 3px), radial-gradient(circle at 130px 80px, rgba(6,78,59,0.6) 0px, transparent 2px);
-        background-repeat: repeat; background-size: 200px 200px; animation: diamond-wind 25s linear infinite; pointer-events: none; z-index: 0;
-    }
-
-    [data-testid="stSidebar"] { background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%); border-right: none; }
-    [data-testid="stSidebar"] * { color: #ecfdf5 !important; }
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label { background: rgba(0,0,0,0.25); padding: 15px 20px; border-radius: 15px; margin-bottom: 12px !important; border: 1px solid rgba(255,255,255,0.1); width: 100%; display: flex; align-items: center; transition: all 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer; }
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover { background: rgba(255,255,255,0.15); transform: scale(1.02); border-color: #34d399; }
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label { background: linear-gradient(90deg, #059669, #10b981) !important; border: 1px solid #a7f3d0 !important; font-weight: 800; transform: scale(1.03); box-shadow: 0 0 20px rgba(16,185,129,0.6) !important; color: white !important; }
-    [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[role="radio"] { display: none; }
-
-    .hero-container { text-align: center; padding: 50px 20px 40px; border-radius: 35px; background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7); background-size: 400% 400%; animation: gradientBG 15s ease infinite, popIn 1s ease-out; box-shadow: 0 20px 60px rgba(0,0,0,0.15); margin-bottom: 20px; border: 2px solid rgba(255,255,255,0.8); position: relative; z-index: 1; }
-
-    .slider-wrapper { position: relative; }
-    .slider-container { width: 100%; overflow: hidden; border-radius: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.7); background: #000; height: 420px; }
-    .slide-track { display: flex; width: calc(600px * 12); animation: scroll 60s linear infinite; }
-    .slide-track:hover { animation-play-state: paused; }
-    .slide { width: 600px; height: 420px; flex-shrink: 0; padding: 0 5px; }
-    .slide img { width: 100%; height: 100%; object-fit: cover; border-radius: 15px; transition: transform 0.4s; }
-    .slide img:hover { transform: scale(1.08); filter: brightness(1.1); }
-
-    .weather-container { position: relative; border-radius: 25px; padding: 25px; overflow: hidden; transition: transform 0.3s ease; height: 420px; display: flex; flex-direction: column; justify-content: space-between; }
-    .weather-container:hover { transform: translateY(-5px); }
-    .weather-glow { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%); z-index: 0; pointer-events: none; }
-    .weather-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; height: 100%; }
-    .weather-header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .live-badge { background: rgba(0,0,0,0.3); padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.1); }
-    .live-dot { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px #ef4444; animation: pulse-red 1.5s infinite; }
-    .temp-big { font-size: 5rem; font-weight: 800; line-height: 1; background: linear-gradient(180deg, #ffffff 20%, rgba(255,255,255,0.6) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.2)); margin: 10px 0; }
-    .weather-icon-3d { font-size: 3.5rem; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3)); animation: float-weather 6s ease-in-out infinite; }
-    .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-top: auto; padding-top: 15px; }
-    .detail-item { background: rgba(255,255,255,0.15); border-radius: 15px; padding: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
-    .detail-label { font-size: 0.7rem; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 1px; }
-    .detail-val { font-size: 1.1rem; font-weight: 700; color: white; }
-
-    .feature-card { background: rgba(255,255,255,0.9); backdrop-filter: blur(25px); padding: 30px; border-radius: 30px; text-align: center; border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 10px 30px rgba(0,0,0,0.08); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: transform 0.4s ease, box-shadow 0.4s ease; position: relative; z-index: 1; }
-    .feature-card:hover { transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateY(-15px); box-shadow: 0 30px 60px rgba(16,185,129,0.3); border-color: #34d399; }
-
-    .crop-card { background: rgba(255,255,255,0.92); backdrop-filter: blur(25px); padding: 35px 25px; border-radius: 30px; text-align: center; border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 10px 30px rgba(0,0,0,0.08); min-height: 220px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: all 0.35s ease; position: relative; overflow: hidden; margin-top:10px; }
-    .crop-card:hover { transform: translateY(-10px); box-shadow: 0 30px 60px rgba(16,185,129,0.25); border-color: #34d399; }
-    .crop-card-soon { border: 2px dashed #f59e0b; background: rgba(254,243,199,0.7); }
-    .crop-card-dev { border: 2px dashed #8b5cf6; background: rgba(237,233,254,0.7); }
-
-    .badge-live { display: inline-block; background: linear-gradient(90deg, #059669, #10b981); color: white; padding: 5px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px; margin-top: 10px; }
-    .badge-soon { display: inline-block; background: linear-gradient(90deg, #f59e0b, #ef4444); background-size: 200% auto; color: white; padding: 5px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; margin-top: 10px; animation: shimmer 2s infinite linear; }
-    .badge-dev { display: inline-block; background: linear-gradient(90deg, #6366f1, #8b5cf6); color: white; padding: 5px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; margin-top: 10px; }
-
-    .result-box { padding: 30px; border-radius: 25px; text-align: center; background: rgba(255,255,255,0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.1); animation: popIn 0.6s ease-out; border: 2px solid white; }
-    img { border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: transform 0.3s; }
-    .urdu-name { font-family: 'Noto Nastaliq Urdu', serif; font-size: 1.4rem; direction: rtl; line-height: 2; }
-    .local-name { font-family: 'Noto Nastaliq Urdu', serif; font-size: 1.1rem; direction: rtl; color: #666; }
-
-    .tech-tag { display: inline-block; padding: 5px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; margin: 3px; }
-    </style>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Noto+Nastaliq+Urdu&family=Space+Mono:wght@400;700&display=swap');
+ 
+/* ===== ROOT VARIABLES ===== */
+:root {
+    --emerald-900: #064e3b;
+    --emerald-800: #065f46;
+    --emerald-700: #047857;
+    --emerald-600: #059669;
+    --emerald-500: #10b981;
+    --emerald-400: #34d399;
+    --emerald-300: #6ee7b7;
+    --emerald-100: #d1fae5;
+    --emerald-50:  #ecfdf5;
+    --amber-500:   #f59e0b;
+    --red-600:     #dc2626;
+    --red-500:     #ef4444;
+    --glass-white: rgba(255,255,255,0.85);
+    --glass-border: rgba(255,255,255,0.6);
+    --shadow-soft: 0 8px 32px rgba(6,78,59,0.12);
+    --shadow-card: 0 20px 60px rgba(6,78,59,0.15);
+    --shadow-glow: 0 0 40px rgba(16,185,129,0.25);
+    --radius-xl:   28px;
+    --radius-lg:   20px;
+    --radius-md:   14px;
+    --radius-sm:   10px;
+}
+ 
+/* ===== BASE ===== */
+html, body, [class*="css"] {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    scroll-behavior: smooth;
+}
+ 
+/* ===== KEYFRAMES ===== */
+@keyframes fadeInUp    { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeInScale { from { opacity:0; transform:scale(0.92); } to { opacity:1; transform:scale(1); } }
+@keyframes floatY      { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
+@keyframes floatLogo   { 0%,100% { transform:translateY(0); box-shadow:0 0 20px rgba(16,185,129,0.35); } 50% { transform:translateY(-8px); box-shadow:0 0 40px rgba(16,185,129,0.6); } }
+@keyframes pulseRed    { 0% { box-shadow:0 0 0 0 rgba(239,68,68,0.7); } 70% { box-shadow:0 0 0 10px rgba(239,68,68,0); } 100% { box-shadow:0 0 0 0 rgba(239,68,68,0); } }
+@keyframes shimmer     { 0% { background-position:-200% center; } 100% { background-position:200% center; } }
+@keyframes scroll      { 0% { transform:translateX(0); } 100% { transform:translateX(calc(-600px * 6)); } }
+@keyframes gradBG      { 0% { background-position:0% 50%; } 50% { background-position:100% 50%; } 100% { background-position:0% 50%; } }
+@keyframes particleDrift { 0% { transform:translateY(0) translateX(0) rotate(0deg); opacity:0.6; } 100% { transform:translateY(120px) translateX(-80px) rotate(180deg); opacity:0; } }
+@keyframes rotateOrbit { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+@keyframes scanLine    { 0% { top:-5%; } 100% { top:105%; } }
+@keyframes countUp     { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes borderGlow  { 0%,100% { border-color:rgba(52,211,153,0.3); } 50% { border-color:rgba(52,211,153,0.8); } }
+@keyframes reportSlide { from { opacity:0; transform:translateX(-20px); } to { opacity:1; transform:translateX(0); } }
+ 
+/* ===== PARTICLE BG ===== */
+.stApp::before {
+    content:""; position:fixed; top:-50%; left:-50%; width:200%; height:200%;
+    background-image:
+        radial-gradient(circle at 20px 30px,  rgba(16,185,129,0.35) 0, transparent 2px),
+        radial-gradient(circle at 60px 90px,  rgba(52,211,153,0.45) 0, transparent 2px),
+        radial-gradient(circle at 100px 50px, rgba(6,78,59,0.4)     0, transparent 3px),
+        radial-gradient(circle at 140px 130px,rgba(4,120,87,0.35)   0, transparent 2px),
+        radial-gradient(circle at 30px 160px, rgba(110,231,183,0.3) 0, transparent 2px);
+    background-repeat:repeat; background-size:200px 200px;
+    animation:particleDrift 30s linear infinite; pointer-events:none; z-index:0;
+}
+ 
+/* ===== SIDEBAR ===== */
+[data-testid="stSidebar"] {
+    background: linear-gradient(160deg, #022c22 0%, #064e3b 50%, #047857 100%);
+    border-right: 1px solid rgba(52,211,153,0.15);
+}
+[data-testid="stSidebar"] * { color: #ecfdf5 !important; }
+[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
+    background: rgba(255,255,255,0.06);
+    padding: 14px 18px; border-radius: 14px; margin-bottom: 10px !important;
+    border: 1px solid rgba(255,255,255,0.08); width:100%; display:flex; align-items:center;
+    transition: all 0.3s ease; cursor:pointer; letter-spacing:0.3px;
+}
+[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
+    background: rgba(52,211,153,0.15); border-color:rgba(52,211,153,0.4);
+    transform:translateX(4px);
+}
+[data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[aria-checked="true"] + div + label {
+    background: linear-gradient(90deg, rgba(5,150,105,0.7), rgba(16,185,129,0.5)) !important;
+    border:1px solid rgba(110,231,183,0.5) !important; font-weight:700;
+    box-shadow:0 4px 20px rgba(16,185,129,0.3) !important;
+}
+[data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[role="radio"] { display:none; }
+[data-testid="stSidebar"] hr { border-color: rgba(52,211,153,0.2) !important; }
+ 
+/* ===== HERO ===== */
+.hero-wrapper {
+    position:relative; border-radius:var(--radius-xl); overflow:hidden;
+    margin-bottom:24px; animation:fadeInScale 0.9s ease-out both;
+    border:1px solid rgba(255,255,255,0.7);
+    box-shadow:var(--shadow-card), inset 0 1px 0 rgba(255,255,255,0.8);
+}
+.hero-bg {
+    background: linear-gradient(-45deg, #a7f3d0, #d1fae5, #ecfdf5, #6ee7b7, #34d399);
+    background-size:400% 400%; animation:gradBG 12s ease infinite;
+    padding:56px 32px 48px; text-align:center; position:relative;
+}
+.hero-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    background:rgba(4,120,87,0.12); border:1px solid rgba(5,150,105,0.3);
+    color:var(--emerald-800); padding:6px 18px; border-radius:50px;
+    font-size:0.78rem; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+    margin-bottom:18px; backdrop-filter:blur(10px);
+}
+.hero-title {
+    font-size:clamp(2.8rem, 6vw, 5rem); font-weight:900; color:var(--emerald-900);
+    line-height:1.05; margin:0 0 14px; letter-spacing:-1.5px;
+    text-shadow:0 2px 20px rgba(255,255,255,0.8), 0 4px 40px rgba(6,78,59,0.15);
+}
+.hero-sub {
+    font-size:clamp(1rem,2vw,1.2rem); color:var(--emerald-800); font-weight:600;
+    margin:0 0 8px;
+}
+.hero-desc {
+    font-size:0.95rem; color:var(--emerald-700); max-width:520px; margin:0 auto;
+    line-height:1.7; opacity:0.85;
+}
+.hero-orb {
+    position:absolute; border-radius:50%; pointer-events:none;
+    background:radial-gradient(circle, rgba(52,211,153,0.25), transparent 70%);
+}
+.orb-1 { width:300px; height:300px; top:-80px; right:-60px; animation:rotateOrbit 20s linear infinite; }
+.orb-2 { width:200px; height:200px; bottom:-40px; left:-40px; animation:rotateOrbit 15s linear infinite reverse; }
+ 
+/* ===== STAT CARDS ===== */
+.stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+.stat-card {
+    background:var(--glass-white); backdrop-filter:blur(20px);
+    border:1px solid var(--glass-border); border-radius:var(--radius-lg);
+    padding:20px 16px; text-align:center;
+    box-shadow:var(--shadow-soft); transition:all 0.3s ease;
+    animation:fadeInUp 0.8s ease-out both;
+    position:relative; overflow:hidden;
+}
+.stat-card::before {
+    content:""; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg, var(--emerald-500), var(--emerald-300));
+    border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+}
+.stat-card:hover { transform:translateY(-6px); box-shadow:var(--shadow-card); }
+.stat-val { font-size:2.2rem; font-weight:900; color:var(--emerald-900); letter-spacing:-1px; }
+.stat-lbl { font-size:0.78rem; color:var(--emerald-700); font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-top:4px; }
+ 
+/* ===== IMAGE SLIDER ===== */
+.slider-container {
+    width:100%; overflow:hidden; border-radius:var(--radius-xl);
+    box-shadow:var(--shadow-card); border:2px solid rgba(255,255,255,0.7);
+    background:#000; height:400px; position:relative;
+}
+.slider-container::after {
+    content:""; position:absolute; top:0; left:0; right:0; bottom:0;
+    background:linear-gradient(90deg,rgba(0,0,0,0.3) 0%, transparent 15%, transparent 85%, rgba(0,0,0,0.3) 100%);
+    pointer-events:none; border-radius:var(--radius-xl); z-index:1;
+}
+.slide-track { display:flex; width:calc(600px * 12); animation:scroll 60s linear infinite; }
+.slide-track:hover { animation-play-state:paused; }
+.slide { width:600px; height:400px; flex-shrink:0; padding:0 4px; }
+.slide img { width:100%; height:100%; object-fit:cover; border-radius:14px; transition:transform 0.5s, filter 0.5s; }
+.slide img:hover { transform:scale(1.05); filter:brightness(1.08) saturate(1.1); }
+ 
+/* ===== WEATHER CARD ===== */
+.weather-container {
+    border-radius:var(--radius-xl); padding:24px; overflow:hidden;
+    transition:transform 0.3s ease, box-shadow 0.3s ease; height:400px;
+    display:flex; flex-direction:column; justify-content:space-between;
+    position:relative;
+}
+.weather-container:hover { transform:translateY(-6px); box-shadow:0 30px 70px rgba(0,0,0,0.2); }
+.weather-glow {
+    position:absolute; top:-50%; left:-50%; width:200%; height:200%;
+    background:radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 60%);
+    pointer-events:none;
+}
+.weather-content { position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; height:100%; }
+.live-badge {
+    background:rgba(0,0,0,0.25); padding:5px 14px; border-radius:50px;
+    font-size:0.72rem; font-weight:700; letter-spacing:1.5px;
+    display:flex; align-items:center; gap:7px;
+    border:1px solid rgba(255,255,255,0.12);
+}
+.live-dot { width:7px; height:7px; background:#ef4444; border-radius:50%; animation:pulseRed 1.5s infinite; }
+.temp-big {
+    font-size:4.8rem; font-weight:900; line-height:1; letter-spacing:-3px;
+    background:linear-gradient(180deg,#fff 20%, rgba(255,255,255,0.55) 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 4px 12px rgba(0,0,0,0.2)); margin:12px 0 4px;
+}
+.weather-icon-3d { font-size:3.2rem; filter:drop-shadow(0 8px 16px rgba(0,0,0,0.25)); animation:floatY 5s ease-in-out infinite; }
+.details-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%; margin-top:auto; }
+.detail-item {
+    background:rgba(255,255,255,0.14); border-radius:12px; padding:10px 8px;
+    text-align:center; border:1px solid rgba(255,255,255,0.1);
+    transition:background 0.2s;
+}
+.detail-item:hover { background:rgba(255,255,255,0.22); }
+.detail-label { font-size:0.65rem; color:rgba(255,255,255,0.75); text-transform:uppercase; letter-spacing:1px; }
+.detail-val { font-size:1.05rem; font-weight:700; color:white; margin-top:3px; }
+ 
+/* ===== HOW IT WORKS CARDS ===== */
+.hiw-card {
+    background:var(--glass-white); backdrop-filter:blur(25px);
+    padding:32px 24px; border-radius:var(--radius-xl); text-align:center;
+    border:1px solid var(--glass-border); box-shadow:var(--shadow-soft);
+    height:100%; display:flex; flex-direction:column; align-items:center;
+    transition:all 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+    animation:fadeInUp 0.8s ease-out both; position:relative; overflow:hidden;
+}
+.hiw-card::before {
+    content:""; position:absolute; inset:0; border-radius:var(--radius-xl);
+    background:linear-gradient(135deg, rgba(52,211,153,0.06), transparent);
+    opacity:0; transition:opacity 0.4s;
+}
+.hiw-card:hover { transform:translateY(-14px) scale(1.02); box-shadow:var(--shadow-card), var(--shadow-glow); }
+.hiw-card:hover::before { opacity:1; }
+.hiw-icon-wrap {
+    width:72px; height:72px; border-radius:24px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg, var(--emerald-100), var(--emerald-50));
+    border:2px solid rgba(52,211,153,0.3); font-size:2rem; margin-bottom:18px;
+    box-shadow:0 8px 24px rgba(16,185,129,0.15);
+    transition:transform 0.3s, box-shadow 0.3s;
+}
+.hiw-card:hover .hiw-icon-wrap { transform:scale(1.1) rotate(-5deg); box-shadow:0 12px 32px rgba(16,185,129,0.3); }
+.hiw-step {
+    position:absolute; top:16px; right:18px; font-family:'Space Mono', monospace;
+    font-size:0.7rem; color:var(--emerald-400); font-weight:700; letter-spacing:2px;
+}
+ 
+/* ===== CROP CARDS ===== */
+.crop-section { position:relative; }
+.crop-card-wrapper {
+    animation:fadeInUp 0.8s ease-out both;
+}
+.crop-card {
+    background:var(--glass-white); backdrop-filter:blur(25px);
+    padding:32px 24px 28px; border-radius:var(--radius-xl);
+    border:1.5px solid var(--glass-border);
+    box-shadow:var(--shadow-soft); min-height:200px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    transition:all 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
+    position:relative; overflow:hidden; text-align:center;
+}
+.crop-card::after {
+    content:""; position:absolute; bottom:0; left:0; right:0; height:4px;
+    background:linear-gradient(90deg, var(--emerald-500), var(--emerald-300));
+    transform:scaleX(0); transition:transform 0.35s ease; border-radius:0 0 var(--radius-xl) var(--radius-xl);
+}
+.crop-card:hover { transform:translateY(-10px); box-shadow:var(--shadow-card), var(--shadow-glow); border-color:rgba(52,211,153,0.5); }
+.crop-card:hover::after { transform:scaleX(1); }
+.crop-card-soon  { border:2px dashed rgba(245,158,11,0.5); background:rgba(255,251,235,0.85); }
+.crop-card-dev   { border:2px dashed rgba(139,92,246,0.5); background:rgba(245,243,255,0.85); }
+.crop-emoji { font-size:3.8rem; margin-bottom:12px; filter:drop-shadow(0 6px 12px rgba(0,0,0,0.1)); transition:transform 0.3s; }
+.crop-card:hover .crop-emoji { transform:scale(1.15) rotate(-5deg); }
+ 
+/* ===== SCAN CTA ===== */
+.scan-cta-wrap {
+    background:linear-gradient(135deg, var(--emerald-900), var(--emerald-700));
+    border-radius:var(--radius-xl); padding:40px 32px; text-align:center;
+    box-shadow:var(--shadow-card); position:relative; overflow:hidden;
+    border:1px solid rgba(52,211,153,0.2); margin:32px 0;
+    animation:fadeInUp 0.8s ease-out both;
+}
+.scan-cta-wrap::before {
+    content:""; position:absolute; top:-40%; right:-10%; width:350px; height:350px;
+    border-radius:50%; background:radial-gradient(circle, rgba(52,211,153,0.15), transparent 70%);
+    pointer-events:none;
+}
+.scan-cta-wrap::after {
+    content:""; position:absolute; bottom:-50%; left:-5%; width:280px; height:280px;
+    border-radius:50%; background:radial-gradient(circle, rgba(110,231,183,0.1), transparent 70%);
+    pointer-events:none;
+}
+ 
+/* ===== BADGES ===== */
+.badge-live {
+    display:inline-flex; align-items:center; gap:6px;
+    background:linear-gradient(90deg, var(--emerald-600), var(--emerald-500));
+    color:white; padding:5px 16px; border-radius:50px;
+    font-size:0.78rem; font-weight:700; margin-top:12px;
+    box-shadow:0 4px 14px rgba(16,185,129,0.35);
+}
+.badge-soon {
+    display:inline-flex; align-items:center; gap:6px;
+    background:linear-gradient(90deg, #f59e0b, #ef4444); background-size:200% auto;
+    color:white; padding:5px 16px; border-radius:50px;
+    font-size:0.78rem; font-weight:700; margin-top:12px;
+    animation:shimmer 2s infinite linear;
+}
+.badge-dev {
+    display:inline-flex; align-items:center; gap:6px;
+    background:linear-gradient(90deg, #6366f1, #8b5cf6);
+    color:white; padding:5px 16px; border-radius:50px;
+    font-size:0.78rem; font-weight:700; margin-top:12px;
+}
+ 
+/* ===== UPLOAD PAGE ===== */
+.page-header {
+    background:var(--glass-white); backdrop-filter:blur(20px);
+    border:1px solid var(--glass-border); border-radius:var(--radius-xl);
+    padding:28px 32px; margin-bottom:28px;
+    box-shadow:var(--shadow-soft); animation:fadeInUp 0.6s ease-out both;
+    display:flex; align-items:center; gap:20px;
+}
+.page-header-icon {
+    width:64px; height:64px; border-radius:20px; display:flex; align-items:center;
+    justify-content:center; font-size:2rem;
+    background:linear-gradient(135deg, var(--emerald-100), var(--emerald-50));
+    border:2px solid rgba(52,211,153,0.3); flex-shrink:0;
+    box-shadow:0 8px 24px rgba(16,185,129,0.15);
+}
+ 
+/* ===== RESULT: MEDICAL REPORT STYLE ===== */
+.report-wrapper {
+    background:white; border-radius:var(--radius-xl);
+    box-shadow:var(--shadow-card); overflow:hidden;
+    animation:reportSlide 0.6s ease-out both;
+    border:1px solid rgba(6,78,59,0.08);
+}
+.report-header {
+    padding:28px 32px; position:relative; overflow:hidden;
+}
+.report-header::before {
+    content:""; position:absolute; top:0; right:0; width:200px; height:200px;
+    border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,0.15), transparent 70%);
+    transform:translate(40%, -40%);
+}
+.report-scan-line {
+    position:absolute; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+    animation:scanLine 2s ease-in-out 0.5s;
+}
+.report-id {
+    font-family:'Space Mono', monospace; font-size:0.68rem; color:rgba(255,255,255,0.7);
+    letter-spacing:2px; text-transform:uppercase; margin-bottom:8px;
+}
+.report-disease { font-size:1.8rem; font-weight:900; color:white; margin:0 0 4px; letter-spacing:-0.5px; }
+.report-urdu { font-family:'Noto Nastaliq Urdu', serif; font-size:1.5rem; direction:rtl; color:rgba(255,255,255,0.9); line-height:2; }
+.report-local { font-family:'Noto Nastaliq Urdu', serif; font-size:1rem; direction:rtl; color:rgba(255,255,255,0.75); }
+.conf-bar-wrap { margin-top:16px; }
+.conf-label { font-size:0.72rem; color:rgba(255,255,255,0.8); font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+.conf-bar-bg { background:rgba(255,255,255,0.2); border-radius:50px; height:10px; overflow:hidden; }
+.conf-bar-fill { height:100%; border-radius:50px; background:rgba(255,255,255,0.9); transition:width 1.5s cubic-bezier(0.4,0,0.2,1); }
+.conf-pct { font-size:2rem; font-weight:900; color:white; margin-top:8px; font-family:'Space Mono', monospace; }
+ 
+.report-body { padding:24px 32px; }
+.report-meta { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:24px; }
+.report-meta-item {
+    background:var(--emerald-50); border-radius:var(--radius-md);
+    padding:14px 16px; border:1px solid rgba(52,211,153,0.15);
+}
+.report-meta-label { font-size:0.65rem; color:var(--emerald-700); font-weight:700; text-transform:uppercase; letter-spacing:1.5px; }
+.report-meta-val { font-size:0.92rem; font-weight:700; color:var(--emerald-900); margin-top:4px; }
+ 
+/* Breakdown bars */
+.breakdown-section { margin-bottom:24px; }
+.breakdown-title {
+    font-size:0.75rem; font-weight:700; color:var(--emerald-800); text-transform:uppercase;
+    letter-spacing:2px; margin-bottom:14px; display:flex; align-items:center; gap:8px;
+}
+.breakdown-title::after { content:""; flex:1; height:1px; background:rgba(6,78,59,0.1); }
+.breakdown-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.breakdown-lbl { font-size:0.82rem; font-weight:600; color:#374151; min-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.breakdown-track { flex:1; background:#f3f4f6; border-radius:50px; height:8px; overflow:hidden; }
+.breakdown-fill { height:100%; border-radius:50px; transition:width 1.2s cubic-bezier(0.4,0,0.2,1); }
+.breakdown-pct { font-family:'Space Mono', monospace; font-size:0.75rem; font-weight:700; color:#6b7280; min-width:42px; text-align:right; }
+ 
+/* Treatment card */
+.treatment-section {
+    background:linear-gradient(135deg, #f8fffe, #ecfdf5);
+    border-radius:var(--radius-lg); padding:24px 28px;
+    border:1.5px solid rgba(52,211,153,0.25);
+    box-shadow:0 4px 20px rgba(16,185,129,0.08);
+}
+.treatment-section.danger {
+    background:linear-gradient(135deg, #fff8f8, #fef2f2);
+    border-color:rgba(220,38,38,0.2);
+    box-shadow:0 4px 20px rgba(220,38,38,0.06);
+}
+.treatment-section.warning {
+    background:linear-gradient(135deg, #fffbf0, #fef3c7);
+    border-color:rgba(245,158,11,0.2);
+    box-shadow:0 4px 20px rgba(245,158,11,0.06);
+}
+.treatment-title { font-size:1.05rem; font-weight:800; margin-bottom:16px; display:flex; align-items:center; gap:10px; }
+.treatment-item {
+    display:flex; gap:12px; align-items:flex-start;
+    padding:12px 0; border-bottom:1px solid rgba(0,0,0,0.05);
+}
+.treatment-item:last-child { border-bottom:none; padding-bottom:0; }
+.treat-icon { width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:0.95rem; flex-shrink:0; }
+.treat-label { font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; opacity:0.6; margin-bottom:2px; }
+.treat-val { font-size:0.88rem; font-weight:600; line-height:1.5; }
+ 
+/* ===== QUICK SCAN HERO ===== */
+.quick-scan-hero {
+    background: linear-gradient(135deg, var(--emerald-900) 0%, var(--emerald-700) 100%);
+    border-radius: var(--radius-xl); padding: 48px 32px; text-align: center;
+    position: relative; overflow: hidden; margin-bottom: 28px;
+    box-shadow: var(--shadow-card);
+    animation: fadeInScale 0.7s ease-out both;
+}
+.quick-scan-hero::before {
+    content:""; position:absolute; top:-30%; right:-10%;
+    width:400px; height:400px; border-radius:50%;
+    background:radial-gradient(circle,rgba(52,211,153,0.12),transparent 70%);
+    pointer-events:none;
+}
+ 
+/* ===== TECH TAGS ===== */
+.tech-tag {
+    display:inline-block; padding:5px 13px; border-radius:8px;
+    font-size:0.82rem; font-weight:600; margin:3px;
+}
+ 
+/* ===== COMING SOON PAGE ===== */
+.coming-page {
+    min-height:60vh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    padding:60px 20px; animation:fadeInScale 0.8s ease-out both;
+}
+.coming-pulse {
+    font-size:5rem; margin-bottom:20px;
+    animation:floatY 4s ease-in-out infinite;
+    filter:drop-shadow(0 10px 20px rgba(0,0,0,0.1));
+}
+ 
+/* ===== GLOBAL BUTTONS ===== */
+.stButton > button {
+    border-radius: var(--radius-md) !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-weight: 700 !important; letter-spacing: 0.3px !important;
+    transition: all 0.3s ease !important;
+}
+.stButton > button[kind="primary"] {
+    background: linear-gradient(90deg, var(--emerald-700), var(--emerald-500)) !important;
+    border: none !important;
+    box-shadow: 0 4px 20px rgba(16,185,129,0.35) !important;
+}
+.stButton > button[kind="primary"]:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 8px 30px rgba(16,185,129,0.45) !important;
+}
+ 
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .hero-title { font-size: 2.4rem !important; }
+    .stat-grid  { grid-template-columns: repeat(2, 1fr); }
+    .report-meta { grid-template-columns: 1fr 1fr; }
+    .slider-container { height: 280px; }
+    .weather-container { height: auto; min-height: 360px; }
+    .breakdown-lbl { min-width: 130px; }
+}
+ 
+img { border-radius: var(--radius-lg); box-shadow: var(--shadow-soft); transition: transform 0.3s; }
+</style>
 """, unsafe_allow_html=True)
-
+ 
 # --- URDU NAMES ---
 TOMATO_URDU_NAMES = {"Bacterial Spot": "بیکٹیریل دھبے", "Early Blight": "اگیتی جھلس", "Late Blight": "پچھیتی جھلس", "Leaf Mold": "پتے کی پھپھوندی", "Septoria Leaf Spot": "سیپٹوریا دھبے", "Target Spot": "ہدف دھبے", "Yellow Leaf Curl Virus": "پیلا پتہ مروڑ وائرس", "Mosaic Virus": "موزیک وائرس", "Healthy": "صحت مند"}
 TOMATO_LOCAL_NAMES = {"Bacterial Spot": "ٹماٹر تے کالے داغ", "Early Blight": "اگیتی سڑن", "Late Blight": "پچھیتی سڑن", "Leaf Mold": "پتیاں تے پھپھوند", "Septoria Leaf Spot": "پتیاں تے چھوٹے داغ", "Target Spot": "گول داغ روگ", "Yellow Leaf Curl Virus": "پیلا پتہ وائرس", "Mosaic Virus": "چتکبری بیماری", "Healthy": "تندرست فصل"}
 POTATO_URDU_NAMES = {"Early Blight": "اگیتی جھلس", "Late Blight": "پچھیتی جھلس", "Healthy": "صحت مند"}
 POTATO_LOCAL_NAMES = {"Early Blight": "اگیتی سڑن", "Late Blight": "پچھیتی سڑن", "Healthy": "تندرست فصل"}
-
+ 
 # --- MODEL LOADING ---
 @st.cache_resource
 def load_ml_model():
@@ -127,19 +512,22 @@ def load_ml_model():
         return data['model'], data['scaler'], data['class_names']
     except Exception as e:
         return None, None, None
-
+ 
 @st.cache_resource
 def load_tomato_model():
     try:
         data = joblib.load("tomato_disease_model_9_classes.pkl")
-        return data['model'], data['scaler'], data['class_names']
+        # YAHAN DATA['CLASS_NAMES'] NAHI, DATA['CLASSES'] RETURN KARNA THA CLAUDE NE
+        # YA PHIR APP MEIN LABEL KI LIST THIK KARNI HAI.
+        # Main ne yahan direct `class_names` return kiya hai jo theek hai
+        return data['model'], data['scaler'], data['class_names'] 
     except Exception as e:
         return None, None, None
-
+ 
 rf_model, scaler, class_names = load_ml_model()
 t_model, t_scaler, t_class_names = load_tomato_model()
-
-# --- FEATURE EXTRACTION ---
+ 
+# --- FEATURE EXTRACTION (UNCHANGED) ---
 def extract_all_features(image_bytes):
     nparr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -157,56 +545,260 @@ def extract_all_features(image_bytes):
     glcm = graycomatrix(gray_img, distances=[1,2], angles=[0, np.pi/4, np.pi/2, 3*np.pi/4], levels=256, symmetric=True, normed=True)
     f_glcm = np.array([graycoprops(glcm, p).mean() for p in ['contrast','correlation','energy','homogeneity','dissimilarity']])
     return np.hstack([f_color, f_hog, f_lbp, f_glcm])
-
-# --- SIDEBAR ---
+ 
+# ===== SIDEBAR =====
 st.sidebar.markdown("""
-<div style="display:flex;justify-content:center;margin-bottom:25px;margin-top:10px;">
-    <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png" 
-         style="width:150px;border-radius:50%;padding:10px;background:rgba(255,255,255,0.15);border:3px solid rgba(255,255,255,0.4);animation:float-logo 3s ease-in-out infinite;">
+<div style="display:flex;justify-content:center;margin:10px 0 22px;">
+    <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png"
+         style="width:120px;border-radius:50%;padding:10px;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.25);animation:floatLogo 3s ease-in-out infinite;">
 </div>
 """, unsafe_allow_html=True)
-
-st.sidebar.markdown("<h1 style='text-align:center;color:white;font-weight:800;margin-top:-10px;font-size:2.2rem;text-shadow:0 2px 10px rgba(0,0,0,0.2);'>Plant Doctor</h1>", unsafe_allow_html=True)
-st.sidebar.markdown("<p style='text-align:center;font-size:0.9rem;opacity:0.9;margin-bottom:30px;letter-spacing:2px;font-weight:600;'>AI DIAGNOSTICS</p>", unsafe_allow_html=True)
+ 
+st.sidebar.markdown("""
+<h1 style='text-align:center;color:white;font-weight:900;margin-top:-6px;font-size:1.9rem;letter-spacing:-0.5px;'>Plant Doctor</h1>
+<p style='text-align:center;font-size:0.72rem;opacity:0.7;margin-bottom:22px;letter-spacing:3px;font-weight:600;'>AI DIAGNOSTICS v2.0</p>
+""", unsafe_allow_html=True)
+ 
 st.sidebar.write("---")
-
-nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field", "🫑 Pepper (Mirch)"], index=["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field", "🫑 Pepper (Mirch)"].index(nav_default))
-
+nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field", "🫑 Pepper (Mirch)"],
+    index=["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field", "🫑 Pepper (Mirch)"].index(nav_default))
+ 
 st.sidebar.write("---")
+ 
+# Sidebar weather mini widget
+if temp > 30:  sw_color = "#f59e0b"; sw_icon = "☀️"
+elif temp < 20: sw_color = "#6366f1"; sw_icon = "❄️"
+else:           sw_color = "#10b981"; sw_icon = "⛅"
+st.sidebar.markdown(f"""
+<div style="background:rgba(255,255,255,0.07);border-radius:14px;padding:14px 16px;border:1px solid rgba(255,255,255,0.1);margin-bottom:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <span style="font-size:0.7rem;opacity:0.7;letter-spacing:1px;font-weight:600;text-transform:uppercase;">📍 Punjab Live</span>
+        <div style="display:flex;align-items:center;gap:5px;"><div class="live-dot" style="width:6px;height:6px;background:#ef4444;border-radius:50%;animation:pulseRed 1.5s infinite;"></div><span style="font-size:0.65rem;opacity:0.7;font-weight:700;">LIVE</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:2rem;">{sw_icon}</span>
+        <div>
+            <div style="font-size:1.6rem;font-weight:900;color:white;line-height:1;">{temp}°C</div>
+            <div style="font-size:0.72rem;opacity:0.65;margin-top:2px;">💨 {wind} km/h wind</div>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+ 
 with st.sidebar.expander("📸 Tips for Best Results"):
-    st.markdown("* ☀️ **Lighting:** Use bright daylight.\n* 🍃 **Focus:** Capture only the leaf.\n* 🖼️ **Background:** Keep it plain.")
+    st.markdown("* ☀️ **Lighting:** Bright daylight\n* 🍃 **Focus:** Leaf only\n* 🖼️ **Background:** Plain\n* 📏 **Distance:** 20–30 cm")
 st.sidebar.write("---")
-st.sidebar.info("**Developers:**\n\n👨‍💻 **Saqlain Khan**\n(Data Engineer)\n\n👨‍💻 **Raheel Chishti**\n(Team Member)")
-
-# ==================== HOME PAGE ====================
+st.sidebar.markdown("""
+<div style="background:rgba(255,255,255,0.06);border-radius:12px;padding:14px 16px;border:1px solid rgba(255,255,255,0.08);">
+    <p style="font-size:0.72rem;opacity:0.6;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px;font-weight:700;">Developers</p>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:800;color:white;">SK</div>
+        <div><div style="font-size:0.85rem;font-weight:700;color:white;">Saqlain Khan</div><div style="font-size:0.7rem;opacity:0.6;">Data Engineer</div></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:800;color:white;">RC</div>
+        <div><div style="font-size:0.85rem;font-weight:700;color:white;">Raheel Chishti</div><div style="font-size:0.7rem;opacity:0.6;">Team Member</div></div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+ 
+ 
+# ===== HELPER: RENDER DIAGNOSTIC REPORT =====
+def render_report(label, conf, prob_dict, urdu_name, local_name, crop_name, timestamp_str):
+    is_healthy = "healthy" in label.lower()
+ 
+    if is_healthy:
+        hdr_bg = "linear-gradient(135deg, #059669, #10b981)"
+        sev = "✅ Sehat Mand"; sev_color = "#059669"
+    elif any(k in label.lower() for k in ["late blight", "virus", "mosaic", "curl"]):
+        hdr_bg = "linear-gradient(135deg, #dc2626, #ef4444)"
+        sev = "🔴 High Severity"; sev_color = "#dc2626"
+    else:
+        hdr_bg = "linear-gradient(135deg, #d97706, #f59e0b)"
+        sev = "🟡 Moderate Severity"; sev_color = "#d97706"
+ 
+    bar_color = "#059669" if is_healthy else ("#dc2626" if "high" in sev.lower() else "#d97706")
+ 
+    st.markdown(f"""
+    <div class="report-wrapper">
+        <div class="report-header" style="background:{hdr_bg};">
+            <div class="report-scan-line"></div>
+            <div class="report-id">🔬 DIAGNOSTIC REPORT · {timestamp_str} · {crop_name.upper()}</div>
+            <div class="report-disease">{label}</div>
+            <div class="report-urdu">{urdu_name}</div>
+            <div class="report-local">🌾 مقامی نام: {local_name}</div>
+            <div class="conf-bar-wrap">
+                <div class="conf-label">Detection Confidence</div>
+                <div class="conf-pct">{conf:.1f}%</div>
+                <div class="conf-bar-bg"><div class="conf-bar-fill" style="width:{conf}%;background:rgba(255,255,255,0.9);"></div></div>
+            </div>
+        </div>
+        <div class="report-body">
+            <div class="report-meta">
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Crop / فصل</div>
+                    <div class="report-meta-val">{crop_name}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Severity</div>
+                    <div class="report-meta-val" style="color:{sev_color};">{sev}</div>
+                </div>
+                <div class="report-meta-item">
+                    <div class="report-meta-label">Method</div>
+                    <div class="report-meta-val">HOG+LBP+GLCM</div>
+                </div>
+            </div>
+    """, unsafe_allow_html=True)
+ 
+    # Breakdown bars
+    st.markdown('<div class="breakdown-section"><div class="breakdown-title">📊 Probability Distribution</div>', unsafe_allow_html=True)
+    sorted_probs = sorted(prob_dict.items(), key=lambda x: x[1], reverse=True)
+    for i, (lbl, pct) in enumerate(sorted_probs):
+        clean_lbl = lbl.replace('_', ' ').title()
+        alpha = max(0.2, 1 - i * 0.12)
+        fill_color = f"rgba({int(int(bar_color[1:3],16) * alpha + 200*(1-alpha))},{int(int(bar_color[3:5],16)*alpha+200*(1-alpha))},{int(int(bar_color[5:7],16)*alpha)}, 1)" if len(bar_color) == 7 else bar_color
+        fill_color = bar_color if i == 0 else "#d1d5db"
+        st.markdown(f"""
+        <div class="breakdown-row">
+            <div class="breakdown-lbl">{clean_lbl}</div>
+            <div class="breakdown-track"><div class="breakdown-fill" style="width:{pct:.1f}%;background:{'linear-gradient(90deg,'+bar_color+','+bar_color+'aa)' if i==0 else '#d1d5db'};"></div></div>
+            <div class="breakdown-pct">{pct:.1f}%</div>
+        </div>
+        """, unsafe_allow_html=True)
+    st.markdown('</div></div>', unsafe_allow_html=True)
+ 
+    return is_healthy, sev
+ 
+ 
+def render_treatment(label, is_healthy, crop="potato"):
+    if is_healthy:
+        st.markdown("""
+        <div class="treatment-section">
+            <div class="treatment-title" style="color:#059669;">🎉 Mubarak Ho! | مبارک ہو — Fasal Sehat Mand Hai</div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#d1fae5;">💧</div>
+                <div><div class="treat-label">Aabpashi / Irrigation</div><div class="treat-val">Regular pani dein — mitti dry na honay dein. Drip irrigation best hai.</div></div>
+            </div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#d1fae5;">👁️</div>
+                <div><div class="treat-label">Monitoring / Nigrani</div><div class="treat-val">Rozana subah pattay check karein. Koi daag diken to foran scan karein.</div></div>
+            </div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#d1fae5;">🌿</div>
+                <div><div class="treat-label">Prevention / Ehtiaat</div><div class="treat-val">Potassium-rich fertilizer use karein. Poudon ke darmiyan hawa aane dein.</div></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+ 
+    elif crop == "potato" and "late" in label.lower():
+        st.markdown("""
+        <div class="treatment-section danger">
+            <div class="treatment-title" style="color:#dc2626;">💊 Late Blight Ka Ilaj | پچھیتی جھلس کا علاج</div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fee2e2;">🧪</div>
+                <div><div class="treat-label">Chemical Spray / Kimiyai Spray</div><div class="treat-val">Metalaxyl + Mancozeb — 2.5g per Liter pani mein milaen. Subah ya sham spray karein.</div></div>
+            </div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fee2e2;">🔁</div>
+                <div><div class="treat-label">Frequency / Waqfah</div><div class="treat-val">Har 7–10 din baad spray dohraen. Barish ke baad dobara zaroor karein.</div></div>
+            </div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fee2e2;">🌿</div>
+                <div><div class="treat-label">Organic Option</div><div class="treat-val">Copper Fungicide (Bordeaux Mixture) bhi kaafi effective hai.</div></div>
+            </div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fee2e2;">⚠️</div>
+                <div><div class="treat-label">Important / Zaroori</div><div class="treat-val">Mutasira (affected) pattay hata kar jala dein. Khet mein paani khari na honay dein.</div></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+ 
+    elif crop == "potato" and "early" in label.lower():
+        st.markdown("""
+        <div class="treatment-section warning">
+            <div class="treatment-title" style="color:#d97706;">💊 Early Blight Ka Ilaj | اگیتی جھلس کا علاج</div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fef3c7;">🧪</div>
+                <div><div class="treat-label">Fungicide Spray</div><div class="treat-val">Chlorothalonil ya Azoxystrobin — label ki hidayat ke mutabiq use karein.</div></div>
+            </div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fef3c7;">🌱</div>
+                <div><div class="treat-label">Organic Option</div><div class="treat-val">Neem Oil (5ml per Liter) — 10–14 din ke waqfe par spray karein.</div></div>
+            </div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fef3c7;">✂️</div>
+                <div><div class="treat-label">Field Management</div><div class="treat-val">Neeche ke purane, mutasira pattay kaat kar hatayein. Hawa ki rawani badhayein.</div></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+ 
+    elif crop == "tomato" and ("virus" in label.lower() or "mosaic" in label.lower() or "curl" in label.lower()):
+        st.markdown("""
+        <div class="treatment-section danger">
+            <div class="treatment-title" style="color:#dc2626;">⚠️ Viral Disease Alert | وائرس بیماری</div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fee2e2;">🚨</div>
+                <div><div class="treat-label">Emergency Action / Faori Qadam</div><div class="treat-val">Mutasira poudon ko fauran ukhad kar jala dein. Virus spread rokna zaroori hai.</div></div>
+            </div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fee2e2;">🦟</div>
+                <div><div class="treat-label">Vector Control</div><div class="treat-val">Safaid Makhi (Whitefly) se phailta hai — Imidacloprid ya Yellow Sticky Traps use karein.</div></div>
+            </div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fee2e2;">🛡️</div>
+                <div><div class="treat-label">Prevention Next Season</div><div class="treat-val">Virus-resistant varieties lagaen. Neem oil spray preventive ke tor par karein.</div></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+ 
+    else:
+        st.markdown("""
+        <div class="treatment-section warning">
+            <div class="treatment-title" style="color:#d97706;">💊 Fungal / Bacterial Treatment | پھپھوندی علاج</div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fef3c7;">🧪</div>
+                <div><div class="treat-label">Fungicide / Spray</div><div class="treat-val">Copper Fungicide ya Neem Oil (5ml/L) — 10 din ke waqfe par spray karein.</div></div>
+            </div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fef3c7;">💧</div>
+                <div><div class="treat-label">Irrigation / Aabpashi</div><div class="treat-val">Sirf jaron (roots) mein pani dein. Pattay bilkul gelay na karein.</div></div>
+            </div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fef3c7;">🌱</div>
+                <div><div class="treat-label">Spacing / Fasla</div><div class="treat-val">Poudon ke darmiyan fasla rakhein taake hawa aata rahe. Bheed na ho.</div></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+ 
+ 
+# ===================== HOME PAGE =====================
 if nav == "🏠 Home Page":
-
+ 
+    # Hero
     st.markdown("""
-    <div class="hero-container">
-        <p style="color:#047857;font-size:0.95rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">🌿 AI-Powered Agriculture</p>
-        <h1 style="font-size:4.5rem;font-weight:900;color:#064e3b;margin:0;text-shadow: 2px 2px 4px rgba(255,255,255,0.6);">Plant Doctor AI</h1>
-        <p style="color:#065f46;font-size:1.2rem;font-weight:600;margin:12px 0 5px;">Apni Fasal Ki Bimari Seconds Mein Pehchanein</p>
-        <p style="color:#047857;font-size:1rem;max-width:600px;margin:auto;line-height:1.6;opacity:0.9;">Pattay ki photo upload karein — AI fauran bimari detect karke ilaj batayega</p>
+    <div class="hero-wrapper">
+        <div class="hero-bg">
+            <div class="hero-orb orb-1"></div>
+            <div class="hero-orb orb-2"></div>
+            <div class="hero-badge">🌿 AI-Powered Agriculture</div>
+            <h1 class="hero-title">Plant Doctor AI</h1>
+            <p class="hero-sub">Apni Fasal Ki Bimari Seconds Mein Pehchanein</p>
+            <p class="hero-desc">Pattay ki photo upload karein — AI fauran bimari detect karke ilaj batayega. Punjab ke kisan ke liye, Urdu mein.</p>
+        </div>
     </div>
     """, unsafe_allow_html=True)
-
-    # Native Streamlit Columns for Stats
-    s1, s2, s3, s4 = st.columns(4)
-    for col, val, lbl in zip(
-        [s1, s2, s3, s4],
-        ["97%", "18K+", "4", "<3s"],
-        ["Accuracy", "Images Trained", "Crops", "Result Time"]
-    ):
-        with col:
-            st.markdown(f"""
-            <div style="text-align:center;padding:15px;background:rgba(255,255,255,0.7);border-radius:15px;border:1px solid rgba(6,78,59,0.1);">
-                <div style="font-size:2rem;font-weight:800;color:#064e3b;">{val}</div>
-                <div style="font-size:0.85rem;color:#047857;font-weight:600;">{lbl}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
+ 
+    # Stats
+    st.markdown("""
+    <div class="stat-grid">
+        <div class="stat-card" style="animation-delay:0.1s"><div class="stat-val">97%</div><div class="stat-lbl">Accuracy</div></div>
+        <div class="stat-card" style="animation-delay:0.2s"><div class="stat-val">18K+</div><div class="stat-lbl">Images Trained</div></div>
+        <div class="stat-card" style="animation-delay:0.3s"><div class="stat-val">4</div><div class="stat-lbl">Crops</div></div>
+        <div class="stat-card" style="animation-delay:0.4s"><div class="stat-val">&lt;3s</div><div class="stat-lbl">Result Time</div></div>
+    </div>
+    """, unsafe_allow_html=True)
+ 
+    # Slider + Weather
     col1, col2 = st.columns([2, 1])
     with col1:
         st.markdown("""
@@ -226,260 +818,329 @@ if nav == "🏠 Home Page":
                 <div class="slide"><img src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=800"></div>
             </div>
         </div>
-        <p style="text-align:center;font-size:0.8rem;color:#aaa;margin-top:8px;">🖱️ Hover karo to pause karein</p>
+        <p style="text-align:center;font-size:0.78rem;color:#aaa;margin-top:8px;font-style:italic;">🖱️ Hover to pause the gallery</p>
         """, unsafe_allow_html=True)
-
+ 
     with col2:
         if temp > 30:
-            card_bg = "linear-gradient(145deg, #f59e0b 0%, #ea580c 100%)"
-            weather_icon = "☀️"; condition = "Sunny / Dhoop"
+            card_bg = "linear-gradient(145deg, #ea580c, #f59e0b)"; weather_icon = "☀️"; condition = "Sunny / Dhoop"
         elif temp < 20:
-            card_bg = "linear-gradient(145deg, #6366f1 0%, #3b82f6 100%)"
-            weather_icon = "❄️"; condition = "Chilly / Thanda"
+            card_bg = "linear-gradient(145deg, #3b82f6, #6366f1)"; weather_icon = "❄️"; condition = "Chilly / Thanda"
         else:
-            card_bg = "linear-gradient(145deg, #10b981 0%, #059669 100%)"
-            weather_icon = "⛅"; condition = "Pleasant / Khushgawar"
-
+            card_bg = "linear-gradient(145deg, #059669, #10b981)"; weather_icon = "⛅"; condition = "Pleasant / Khushgawar"
+ 
         st.markdown(f"""
         <div class="weather-container" style="background:{card_bg};">
             <div class="weather-glow"></div>
             <div class="weather-content">
-                <div class="weather-header">
+                <div style="width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                     <div class="live-badge"><div class="live-dot"></div> LIVE</div>
-                    <div style="font-weight:600;font-size:0.9rem;color:rgba(255,255,255,0.9);">📍 Punjab, PK</div>
+                    <div style="font-weight:600;font-size:0.82rem;color:rgba(255,255,255,0.85);">📍 Punjab, PK</div>
                 </div>
                 <div class="weather-icon-3d">{weather_icon}</div>
                 <div class="temp-big">{temp}°C</div>
-                <div style="font-size:1.1rem;font-weight:600;color:rgba(255,255,255,0.95);margin-bottom:5px;">{condition}</div>
-                <div style="font-size:0.8rem;color:rgba(255,255,255,0.7);margin-bottom:10px;">Fasal ke liye mausam</div>
+                <div style="font-size:1rem;font-weight:700;color:rgba(255,255,255,0.95);margin-bottom:3px;">{condition}</div>
+                <div style="font-size:0.75rem;color:rgba(255,255,255,0.65);margin-bottom:12px;">Fasal ke liye mausam ki report</div>
                 <div class="details-grid">
                     <div class="detail-item"><div class="detail-label">Wind / Hawa</div><div class="detail-val">{wind} km/h</div></div>
                     <div class="detail-item"><div class="detail-label">Humidity / Nam</div><div class="detail-val">65%</div></div>
-                    <div class="detail-item"><div class="detail-label">Spray Time?</div><div class="detail-val">{"❌ Na Karein" if wind > 20 else "✅ Theek Hai"}</div></div>
+                    <div class="detail-item"><div class="detail-label">Spray Safe?</div><div class="detail-val">{"❌ Na Karein" if wind > 20 else "✅ Theek Hai"}</div></div>
                     <div class="detail-item"><div class="detail-label">Bimari Risk</div><div class="detail-val">{"🔴 Zyada" if temp > 28 else "🟢 Kam"}</div></div>
                 </div>
             </div>
         </div>
         """, unsafe_allow_html=True)
-
+ 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("<h2 id='how-it-works' style='text-align:center;color:#064e3b;font-weight:900;margin-top:50px;font-size:2.2rem;'>How It Works | Kaise Kaam Karta Hai</h2>", unsafe_allow_html=True)
-    c1, c2, c3 = st.columns(3)
-    steps = [("📸", "Photo Upload Karein", "Pattay ki saaf tasveer lein aur upload karein. Background sada hona chahiye."), ("🤖", "AI Analysis", "Hamara Random Forest model HOG, LBP, GLCM aur Color features se bimari dhundta hai."), ("💊", "Ilaj Payein", "Fauran result + Urdu mein ilaj ki hidayat milegi.")]
-    for col, (icon, title, desc) in zip([c1,c2,c3], steps):
-        with col:
-            st.markdown(f"""
-            <div class="feature-card">
-                <div style="font-size:3.5rem;margin-bottom:15px;">{icon}</div>
-                <h3 style="color:#064e3b;font-weight:700;margin-bottom:8px;">{title}</h3>
-                <p style="color:#555;font-size:0.9rem;line-height:1.6;">{desc}</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("<h2 id='supported-crops' style='text-align:center;color:#064e3b;font-weight:900;margin-top:50px;font-size:2.2rem;'>Supported Crops | Faslain</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center;color:#555;font-size:1rem;margin-bottom:30px;'>Apni fasal ka button dabayen aur check karein!</p>", unsafe_allow_html=True)
-
+ 
+    # Quick Scan CTA
+    st.markdown("""
+    <div class="scan-cta-wrap">
+        <p style="color:rgba(255,255,255,0.65);font-size:0.75rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">🔬 Quick Scan</p>
+        <h2 style="color:white;font-size:1.9rem;font-weight:900;margin:0 0 10px;letter-spacing:-0.5px;">Koi bhi fasal — ek hi jagah scan karein</h2>
+        <p style="color:rgba(255,255,255,0.7);font-size:0.95rem;max-width:500px;margin:0 auto 24px;line-height:1.6;">Below main crop select karein aur seedha scanning page par jaen</p>
+    </div>
+    """, unsafe_allow_html=True)
+ 
+    # Crop cards with integrated buttons
+    st.markdown("<h2 style='text-align:center;color:#064e3b;font-weight:900;font-size:2rem;margin-bottom:6px;'>Supported Crops | Faslain</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center;color:#6b7280;font-size:0.9rem;margin-bottom:24px;'>Apni fasal chunein — AI fauran diagnose karega</p>", unsafe_allow_html=True)
+ 
     cc1, cc2 = st.columns(2)
     with cc1:
-        if st.button("🥔 Potato Check Karein →", use_container_width=True, type="primary"):
+        st.markdown("""
+        <div class="crop-card" style="animation-delay:0.1s;">
+            <div class="crop-emoji">🥔</div>
+            <h3 style="color:#064e3b;font-weight:800;margin:0 0 4px;font-size:1.3rem;">Potato — آلو</h3>
+            <p style="color:#6b7280;font-size:0.85rem;margin:0 0 6px;">3 Diseases Detected</p>
+            <p style="color:#9ca3af;font-size:0.78rem;margin:0 0 12px;line-height:1.5;">Early Blight · Late Blight · Healthy</p>
+            <span class="badge-live">✅ Live &nbsp;|&nbsp; 97% Accuracy</span>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("🥔 Potato Scan Karein →", use_container_width=True, type="primary", key="btn_potato"):
             st.session_state['nav_override'] = "🥔 Potato (Aloo)"
             st.rerun()
+ 
+    with cc2:
         st.markdown("""
-        <div class="crop-card">
-            <div style="font-size:4.5rem;margin-bottom:12px;">🥔</div>
-            <h3 style="color:#064e3b;font-weight:800;margin:0;">Potato — آلو</h3>
-            <p style="color:#666;font-size:0.9rem;margin:6px 0;">3 Diseases | Early Blight, Late Blight, Healthy</p>
-            <span class="badge-live">✅ Live — 97% Accuracy</span>
+        <div class="crop-card" style="animation-delay:0.2s;">
+            <div class="crop-emoji">🍅</div>
+            <h3 style="color:#064e3b;font-weight:800;margin:0 0 4px;font-size:1.3rem;">Tomato — ٹماٹر</h3>
+            <p style="color:#6b7280;font-size:0.85rem;margin:0 0 6px;">9 Diseases Detected</p>
+            <p style="color:#9ca3af;font-size:0.78rem;margin:0 0 12px;line-height:1.5;">Blight · Virus · Mold · Bacterial Spot & more</p>
+            <span class="badge-live">✅ Live &nbsp;|&nbsp; 95% Accuracy</span>
         </div>
         """, unsafe_allow_html=True)
-        
-    with cc2:
-        if st.button("🍅 Tomato Check Karein →", use_container_width=True, type="primary"):
+        if st.button("🍅 Tomato Scan Karein →", use_container_width=True, type="primary", key="btn_tomato"):
             st.session_state['nav_override'] = "🍅 Tomato Check"
             st.rerun()
-        st.markdown("""
-        <div class="crop-card">
-            <div style="font-size:4.5rem;margin-bottom:12px;">🍅</div>
-            <h3 style="color:#064e3b;font-weight:800;margin:0;">Tomato — ٹماٹر</h3>
-            <p style="color:#666;font-size:0.9rem;margin:6px 0;">9 Diseases | Blight, Virus, Mold & more</p>
-            <span class="badge-live">✅ Live — 95% Accuracy</span>
-        </div>
-        """, unsafe_allow_html=True)
-
+ 
     st.markdown("<br>", unsafe_allow_html=True)
     cc3, cc4 = st.columns(2)
     with cc3:
         st.markdown("""
-        <div class="crop-card crop-card-soon">
-            <div style="font-size:4.5rem;margin-bottom:12px;">🌽</div>
-            <h3 style="color:#064e3b;font-weight:800;margin:0;">Corn — مکئی</h3>
-            <p style="color:#666;font-size:0.9rem;margin:6px 0;">Model training in progress...</p>
+        <div class="crop-card crop-card-soon" style="animation-delay:0.3s;">
+            <div class="crop-emoji">🌽</div>
+            <h3 style="color:#064e3b;font-weight:800;margin:0 0 4px;font-size:1.3rem;">Corn — مکئی</h3>
+            <p style="color:#6b7280;font-size:0.85rem;margin:0 0 12px;">Model training jari hai...</p>
             <span class="badge-soon">🚀 Launching Soon</span>
         </div>
         """, unsafe_allow_html=True)
     with cc4:
         st.markdown("""
-        <div class="crop-card crop-card-dev">
-            <div style="font-size:4.5rem;margin-bottom:12px;">🫑</div>
-            <h3 style="color:#064e3b;font-weight:800;margin:0;">Pepper — مرچ</h3>
-            <p style="color:#666;font-size:0.9rem;margin:6px 0;">Dataset preparation underway</p>
+        <div class="crop-card crop-card-dev" style="animation-delay:0.4s;">
+            <div class="crop-emoji">🫑</div>
+            <h3 style="color:#064e3b;font-weight:800;margin:0 0 4px;font-size:1.3rem;">Pepper — مرچ</h3>
+            <p style="color:#6b7280;font-size:0.85rem;margin:0 0 12px;">Dataset tayyar ho raha hai</p>
             <span class="badge-dev">🛠️ In Development</span>
         </div>
         """, unsafe_allow_html=True)
-
+ 
+    st.markdown("<br>", unsafe_allow_html=True)
+ 
+    # How It Works
+    st.markdown("<h2 style='text-align:center;color:#064e3b;font-weight:900;font-size:2rem;margin-bottom:6px;'>How It Works | Kaise Kaam Karta Hai</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center;color:#6b7280;font-size:0.9rem;margin-bottom:28px;'>Teen aasan qadam — aur result haazir</p>", unsafe_allow_html=True)
+ 
+    c1, c2, c3 = st.columns(3)
+    steps = [
+        ("📸", "01", "Photo Upload Karein", "Pattay ki saaf tasveer lein aur upload karein. Roshan jagah mein photo lein, background sada hona chahiye."),
+        ("🤖", "02", "AI Analysis", "Random Forest model HOG, LBP, GLCM aur Color features extract karke bimari identify karta hai."),
+        ("💊", "03", "Ilaj Payein", "Fauran result + Urdu mein mukammal ilaj ki hidayat. Spray schedule bhi bataya jayega.")
+    ]
+    for col, (icon, num, title, desc) in zip([c1, c2, c3], steps):
+        with col:
+            st.markdown(f"""
+            <div class="hiw-card">
+                <span class="hiw-step">STEP {num}</span>
+                <div class="hiw-icon-wrap">{icon}</div>
+                <h3 style="color:#064e3b;font-weight:800;margin:0 0 10px;font-size:1.05rem;">{title}</h3>
+                <p style="color:#6b7280;font-size:0.87rem;line-height:1.7;margin:0;">{desc}</p>
+            </div>
+            """, unsafe_allow_html=True)
+ 
+    # Footer
     st.markdown("""
-    <hr style="border-top:2px solid #a7f3d0;margin-top:80px;">
-    <div style="text-align:center;padding:30px;color:#555;">
-        <p style="font-weight:700;font-size:1.1rem;">© 2026 Plant Doctor AI — All Rights Reserved</p>
-        <p style="font-size:0.9rem;margin-top:10px;">Built with ❤️ using</p>
-        <div style="margin-top:8px;">
+    <hr style="border:none;border-top:1px solid rgba(6,78,59,0.12);margin:60px 0 30px;">
+    <div style="text-align:center;padding-bottom:40px;">
+        <p style="font-weight:800;font-size:1rem;color:#064e3b;margin-bottom:4px;">© 2026 Plant Doctor AI — All Rights Reserved</p>
+        <p style="font-size:0.85rem;color:#9ca3af;margin-bottom:12px;">Built with ❤️ for Pakistani farmers | پاکستانی کسانوں کے لیے</p>
+        <div style="margin-top:10px;">
             <span class="tech-tag" style="background:#fce7f3;color:#be185d;">🎈 Streamlit</span>
             <span class="tech-tag" style="background:#e0e7ff;color:#4338ca;">🤖 Scikit-Learn</span>
             <span class="tech-tag" style="background:#fef3c7;color:#b45309;">🌲 Random Forest</span>
             <span class="tech-tag" style="background:#d1fae5;color:#065f46;">👁️ OpenCV</span>
             <span class="tech-tag" style="background:#ede9fe;color:#5b21b6;">🖼️ Scikit-Image</span>
         </div>
-        <p style="font-size:0.8rem;margin-top:15px;opacity:0.8;">Developed by <b>Saqlain Khan</b> (Data Engineer) & <b>Raheel Chishti</b></p>
+        <p style="font-size:0.75rem;margin-top:14px;color:#cbd5e1;">Developed by <b>Saqlain Khan</b> (Data Engineer) & <b>Raheel Chishti</b></p>
     </div>
     """, unsafe_allow_html=True)
-
-
-# ==================== POTATO ====================
+ 
+ 
+# ===================== POTATO =====================
 elif nav == "🥔 Potato (Aloo)":
-    st.header("🥔 Aloo Ki Bimari Check Karein")
+    st.markdown("""
+    <div class="page-header">
+        <div class="page-header-icon">🥔</div>
+        <div>
+            <h2 style="color:#064e3b;font-weight:900;margin:0 0 4px;font-size:1.6rem;">Potato Disease Scan | آلو کی بیماری</h2>
+            <p style="color:#6b7280;margin:0;font-size:0.88rem;">Random Forest · HOG + LBP + GLCM + Color · 97% Accuracy</p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+ 
     if not rf_model:
-        st.error("⚠️ **Model File Missing!**")
+        st.error("⚠️ **Model File Missing!** Please ensure `potato_disease_model.pkl` is in the project directory.")
         st.stop()
-    uploaded_file = st.file_uploader("Upload Leaf Photo", type=["jpg","png","jpeg","webp","jfif"])
+ 
+    uploaded_file = st.file_uploader("Upload Potato Leaf Photo / آلو کا پتہ اپلوڈ کریں", type=["jpg", "png", "jpeg", "webp", "jfif"])
+ 
     if uploaded_file:
-        col1, col2 = st.columns([1, 1.5])
+        col1, col2 = st.columns([1, 1.6])
         with col1:
-            st.image(Image.open(uploaded_file).convert('RGB'), caption="Uploaded Photo", use_column_width=True)
+            pil_img = Image.open(uploaded_file).convert('RGB')
+            st.image(pil_img, caption="📷 Uploaded Leaf Photo", use_column_width=True)
+ 
+            # Image info
+            w, h = pil_img.size
+            st.markdown(f"""
+            <div style="background:var(--emerald-50);border-radius:12px;padding:14px 16px;border:1px solid rgba(52,211,153,0.2);margin-top:12px;">
+                <div style="font-size:0.65rem;color:var(--emerald-700);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Image Info</div>
+                <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                    <div><span style="font-size:0.75rem;color:#6b7280;">Size:</span> <span style="font-size:0.8rem;font-weight:700;color:#064e3b;">{w}×{h}px</span></div>
+                    <div><span style="font-size:0.75rem;color:#6b7280;">File:</span> <span style="font-size:0.8rem;font-weight:700;color:#064e3b;">{uploaded_file.name}</span></div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+ 
         with col2:
-            with st.spinner("Analyzing features (HOG, LBP, Color, GLCM)..."):
+            with st.spinner("🔬 Extracting features & running diagnostics..."):
                 time.sleep(1)
                 try:
                     features = extract_all_features(uploaded_file.getvalue())
-                    features = np.nan_to_num(features).reshape(1,-1)
+                    features = np.nan_to_num(features).reshape(1, -1)
                     features_scaled = scaler.transform(features)
-                    
                     probs = rf_model.predict_proba(features_scaled)[0]
                     max_idx = np.argmax(probs)
                     conf = probs[max_idx] * 100
-                    label = class_names[max_idx].replace("_"," ").title()
-                    prob_dict = {l: p*100 for l,p in zip(class_names, probs)}
+                    label = class_names[max_idx].replace("_", " ").title()
+                    prob_dict = {l: p * 100 for l, p in zip(class_names, probs)}
                 except Exception as e:
                     st.error(f"Analysis failed: {e}"); st.stop()
-                
-                if conf < 60:
-                    st.error("⚠️ **Photo Clear Nahi Hai!**")
-                    st.warning(f"Confidence: {conf:.1f}% (Low)\n\nYe Aloo ka patta nahi lag raha. Saaf photo upload karein.")
-                    st.stop()
-                    
-            is_healthy = "healthy" in label.lower()
-            bg_color = "#ecfdf5" if is_healthy else "#fef2f2"
-            border_color = "#059669" if is_healthy else "#dc2626"
+ 
+            if conf < 60:
+                st.markdown("""
+                <div style="background:#fef2f2;border:1.5px solid #dc2626;border-radius:16px;padding:24px;text-align:center;">
+                    <div style="font-size:2rem;margin-bottom:8px;">⚠️</div>
+                    <h3 style="color:#dc2626;font-weight:800;margin:0 0 8px;">Photo Clear Nahi Hai!</h3>
+                    <p style="color:#6b7280;font-size:0.9rem;">Confidence bohat kam hai. Ye Aloo ka patta nahi lagta ya photo blur hai. Saaf aur roshan jagah mein dobara try karein.</p>
+                </div>
+                """, unsafe_allow_html=True)
+                st.stop()
+ 
+            ts = datetime.datetime.now().strftime("%d %b %Y · %H:%M")
             urdu_name = POTATO_URDU_NAMES.get(label, label)
             local_name = POTATO_LOCAL_NAMES.get(label, label)
-            
-            st.markdown(f"""
-            <div class='result-box' style='background:{bg_color};border:2px solid {border_color};'>
-                <h2 style='color:{border_color};margin:0;font-weight:800;'>{label}</h2>
-                <p class='urdu-name' style='color:{border_color};'>{urdu_name}</p>
-                <p class='local-name'>🌾 مقامی نام: {local_name}</p>
-                <h4 style='color:{border_color};margin-top:10px;font-weight:600;'>Confidence: {conf:.1f}%</h4>
-            </div>""", unsafe_allow_html=True)
-            
-            st.write("### 📊 Analysis Breakdown")
-            for l, p in prob_dict.items():
-                st.write(f"**{l.replace('_',' ').title()}**"); st.progress(int(p))
-            
-            if is_healthy:
-                st.balloons()
-                st.markdown("<div class='result-box' style='background:white;border-left:5px solid #059669;text-align:left;'><h3 style='color:#059669;font-weight:800;'>🎉 Mubarak Ho!</h3><ul><li>💧 <b>Pani:</b> Waqt par pani dein.</li><li>👀 <b>Nigrani:</b> Rozana pattay check karein.</li></ul></div>", unsafe_allow_html=True)
-            elif "late" in label.lower():
-                st.markdown("<div class='result-box' style='background:white;border-left:5px solid #dc2626;text-align:left;'><h3 style='color:#dc2626;font-weight:800;'>💊 Late Blight Ka Ilaj | پچھیتی جھلس کا علاج</h3><ul><li><b>Spray:</b> Metalaxyl + Mancozeb (2.5g per Liter)</li><li><b>Frequency:</b> Har 7-10 din baad</li><li><b>Organic:</b> Copper Fungicide</li></ul></div>", unsafe_allow_html=True)
-            elif "early" in label.lower():
-                st.markdown("<div class='result-box' style='background:white;border-left:5px solid #d97706;text-align:left;'><h3 style='color:#d97706;font-weight:800;'>💊 Early Blight Ka Ilaj | اگیتی جھلس کا علاج</h3><ul><li><b>Spray:</b> Chlorothalonil ya Azoxystrobin</li><li><b>Organic:</b> Neem Oil spray</li><li><b>Tip:</b> Neeche wale purane patton ko hata dein</li></ul></div>", unsafe_allow_html=True)
-
-# ==================== TOMATO ====================
+ 
+            is_healthy, _ = render_report(label, conf, prob_dict, urdu_name, local_name, "Potato — آلو", ts)
+ 
+        # Treatment section (full width below)
+        st.markdown("<br>", unsafe_allow_html=True)
+        if is_healthy:
+            st.balloons()
+        render_treatment(label, is_healthy, crop="potato")
+ 
+ 
+# ===================== TOMATO =====================
 elif nav == "🍅 Tomato Check":
-    st.header("🍅 Tamatar Ki Bimari Check Karein")
+    st.markdown("""
+    <div class="page-header">
+        <div class="page-header-icon">🍅</div>
+        <div>
+            <h2 style="color:#064e3b;font-weight:900;margin:0 0 4px;font-size:1.6rem;">Tomato Disease Scan | ٹماٹر کی بیماری</h2>
+            <p style="color:#6b7280;margin:0;font-size:0.88rem;">Random Forest · HOG + LBP + GLCM + Color · 95% Accuracy · 9 Classes</p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+ 
     if not t_model:
-        st.error("⚠️ **Tomato Model File Missing!**")
+        st.error("⚠️ **Tomato Model File Missing!** Please ensure `tomato_disease_model_9_classes.pkl` is in the project directory.")
         st.stop()
-    uploaded_file = st.file_uploader("Upload Tomato Leaf Photo", type=["jpg","png","jpeg","webp","jfif"])
+ 
+    uploaded_file = st.file_uploader("Upload Tomato Leaf Photo / ٹماٹر کا پتہ اپلوڈ کریں", type=["jpg", "png", "jpeg", "webp", "jfif"])
+ 
     if uploaded_file:
-        col1, col2 = st.columns([1, 1.5])
+        col1, col2 = st.columns([1, 1.6])
         with col1:
-            st.image(Image.open(uploaded_file).convert('RGB'), caption="Uploaded Photo", use_column_width=True)
+            pil_img = Image.open(uploaded_file).convert('RGB')
+            st.image(pil_img, caption="📷 Uploaded Tomato Leaf", use_column_width=True)
+            w, h = pil_img.size
+            st.markdown(f"""
+            <div style="background:var(--emerald-50);border-radius:12px;padding:14px 16px;border:1px solid rgba(52,211,153,0.2);margin-top:12px;">
+                <div style="font-size:0.65rem;color:var(--emerald-700);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Image Info</div>
+                <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                    <div><span style="font-size:0.75rem;color:#6b7280;">Size:</span> <span style="font-size:0.8rem;font-weight:700;color:#064e3b;">{w}×{h}px</span></div>
+                    <div><span style="font-size:0.75rem;color:#6b7280;">File:</span> <span style="font-size:0.8rem;font-weight:700;color:#064e3b;">{uploaded_file.name}</span></div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+ 
         with col2:
-            with st.spinner("Analyzing Tomato features..."):
+            with st.spinner("🔬 Analyzing Tomato leaf features..."):
                 time.sleep(1)
                 try:
                     features = extract_all_features(uploaded_file.getvalue())
-                    features = np.nan_to_num(features).reshape(1,-1)
+                    features = np.nan_to_num(features).reshape(1, -1)
                     features_scaled = t_scaler.transform(features)
-                    
                     probs = t_model.predict_proba(features_scaled)[0]
                     max_idx = np.argmax(probs)
                     conf = probs[max_idx] * 100
-                    label = t_class_names[max_idx].replace("_"," ").title()
-                    prob_dict = {l: p*100 for l,p in zip(t_class_names, probs)}
+                    label = t_class_names[max_idx].replace("_", " ").title()
+                    prob_dict = {l: p * 100 for l, p in zip(t_class_names, probs)}
                 except Exception as e:
                     st.error(f"Analysis failed: {e}"); st.stop()
-                
-                if conf < 60:
-                    st.error("⚠️ **Photo Clear Nahi Hai!**")
-                    st.warning(f"Confidence: {conf:.1f}% (Low)\n\nYe Tamatar ka patta nahi lag raha. Saaf photo upload karein.")
-                    st.stop()
-                    
-            is_healthy = "healthy" in label.lower()
-            bg_color = "#ecfdf5" if is_healthy else "#fef2f2"
-            border_color = "#059669" if is_healthy else "#dc2626"
+ 
+            if conf < 60:
+                st.markdown("""
+                <div style="background:#fef2f2;border:1.5px solid #dc2626;border-radius:16px;padding:24px;text-align:center;">
+                    <div style="font-size:2rem;margin-bottom:8px;">⚠️</div>
+                    <h3 style="color:#dc2626;font-weight:800;margin:0 0 8px;">Photo Clear Nahi Hai!</h3>
+                    <p style="color:#6b7280;font-size:0.9rem;">Confidence bohat kam hai. Ye Tamatar ka patta nahi lagta ya photo blur hai. Saaf aur roshan jagah mein dobara try karein.</p>
+                </div>
+                """, unsafe_allow_html=True)
+                st.stop()
+ 
+            ts = datetime.datetime.now().strftime("%d %b %Y · %H:%M")
             urdu_name = TOMATO_URDU_NAMES.get(label, label)
             local_name = TOMATO_LOCAL_NAMES.get(label, label)
-            
-            st.markdown(f"""
-            <div class='result-box' style='background:{bg_color};border:2px solid {border_color};'>
-                <h2 style='color:{border_color};margin:0;font-weight:800;'>{label}</h2>
-                <p class='urdu-name' style='color:{border_color};'>{urdu_name}</p>
-                <p class='local-name'>🌾 مقامی نام: {local_name}</p>
-                <h4 style='color:{border_color};margin-top:10px;font-weight:600;'>Confidence: {conf:.1f}%</h4>
-            </div>""", unsafe_allow_html=True)
-            
-            st.write("### 📊 Analysis Breakdown")
-            for l, p in prob_dict.items():
-                st.write(f"**{l.replace('_',' ').title()}**"); st.progress(int(p))
-            
-            if is_healthy:
-                st.balloons()
-                st.markdown("<div class='result-box' style='background:white;border-left:5px solid #059669;text-align:left;'><h3 style='color:#059669;font-weight:800;'>🎉 Mubarak Ho! | مبارک ہو</h3><ul><li>💧 <b>Pani:</b> Waqt par pani dein.</li><li>👀 <b>Nigrani:</b> Rozana pattay check karein.</li></ul></div>", unsafe_allow_html=True)
-            elif "virus" in label.lower() or "mosaic" in label.lower():
-                st.markdown("<div class='result-box' style='background:white;border-left:5px solid #dc2626;text-align:left;'><h3 style='color:#dc2626;font-weight:800;'>⚠️ Alert (Virus) | وائرس خبردار</h3><ul><li><b>Faori Qadam:</b> Mutasira poudon ko ukhad kar jala dein.</li><li><b>Wajah:</b> Safaid makhi (Whitefly) se phailta hai.</li><li><b>Spray:</b> Insecticide ka spray karein.</li></ul></div>", unsafe_allow_html=True)
-            else:
-                st.markdown("<div class='result-box' style='background:white;border-left:5px solid #d97706;text-align:left;'><h3 style='color:#d97706;font-weight:800;'>💊 Fungal/Bacterial Treatment | پھپھوندی علاج</h3><ul><li><b>Spray:</b> Copper Fungicide ya Neem Oil</li><li><b>Ehtiyat:</b> Poudon ke darmiyan fasla rakhein.</li><li><b>Pani:</b> Sirf jaron mein pani dein.</li></ul></div>", unsafe_allow_html=True)
-
-# ==================== CORN ====================
+ 
+            is_healthy, _ = render_report(label, conf, prob_dict, urdu_name, local_name, "Tomato — ٹماٹر", ts)
+ 
+        st.markdown("<br>", unsafe_allow_html=True)
+        if is_healthy:
+            st.balloons()
+        render_treatment(label, is_healthy, crop="tomato")
+ 
+ 
+# ===================== CORN =====================
 elif nav == "🌽 Corn Field":
     st.markdown("""
-    <div style="text-align:center;padding:60px 20px;">
-        <div style="font-size:5rem;">🌽</div>
-        <h2 style="color:#064e3b;font-weight:800;">Makki — مکئی</h2>
-        <p style="color:#555;font-size:1.1rem;">Model training jari hai — jald aa raha hai!</p>
-        <span style="background:linear-gradient(90deg,#f59e0b,#ef4444);color:white;padding:8px 24px;border-radius:20px;font-weight:700;">🚀 Launching Soon</span>
+    <div class="coming-page">
+        <div class="coming-pulse">🌽</div>
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#d97706;padding:6px 18px;border-radius:50px;font-size:0.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;">🚀 Coming Soon</div>
+        <h2 style="color:#064e3b;font-weight:900;font-size:2.2rem;margin:0 0 12px;letter-spacing:-0.5px;">Makki — مکئی</h2>
+        <p style="color:#6b7280;font-size:1rem;max-width:400px;line-height:1.7;margin:0 auto 24px;">Model training jari hai. Jald hi 8 se zyada bimariyan detect karne ki salahiyat add hogi.</p>
+        <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+            <div style="background:white;border:1px solid rgba(6,78,59,0.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">8+</div>
+                <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Diseases Planned</div>
+            </div>
+            <div style="background:white;border:1px solid rgba(6,78,59,0.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">95%+</div>
+                <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Target Accuracy</div>
+            </div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
-
-# ==================== PEPPER ====================
+ 
+ 
+# ===================== PEPPER =====================
 elif nav == "🫑 Pepper (Mirch)":
     st.markdown("""
-    <div style="text-align:center;padding:60px 20px;">
-        <div style="font-size:5rem;">🫑</div>
-        <h2 style="color:#064e3b;font-weight:800;">Pepper — مرچ</h2>
-        <p style="color:#555;font-size:1.1rem;">Dataset tayyar ho raha hai — abhi development mein hai.</p>
-        <span style="background:linear-gradient(90deg,#6366f1,#8b5cf6);color:white;padding:8px 24px;border-radius:20px;font-weight:700;">🛠️ In Development</span>
+    <div class="coming-page">
+        <div class="coming-pulse">🫑</div>
+        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);color:#4338ca;padding:6px 18px;border-radius:50px;font-size:0.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;">🛠️ In Development</div>
+        <h2 style="color:#064e3b;font-weight:900;font-size:2.2rem;margin:0 0 12px;letter-spacing:-0.5px;">Pepper — مرچ</h2>
+        <p style="color:#6b7280;font-size:1rem;max-width:400px;line-height:1.7;margin:0 auto 24px;">Dataset tayyar ho raha hai. Mirch ki bimariyon ke liye AI model develop ho raha hai.</p>
+        <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+            <div style="background:white;border:1px solid rgba(6,78,59,0.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">Q3 2026</div>
+                <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Expected Launch</div>
+            </div>
+            <div style="background:white;border:1px solid rgba(6,78,59,0.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">6+</div>
+                <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Diseases Planned</div>
+            </div>
+        </div>
     </div>
-    """, unsafe_allow_html=True) 
-    
+    """, unsafe_allow_html=True)
