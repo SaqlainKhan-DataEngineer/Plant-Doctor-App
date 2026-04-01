@@ -27,7 +27,7 @@ def get_real_weather():
         wind = data['current_weather']['windspeed']
         return temp, wind
     except:
-        return 28, 12 # Fallback Data
+        return 28, 12
 
 temp, wind = get_real_weather()
 
@@ -35,10 +35,10 @@ temp, wind = get_real_weather()
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu&display=swap');
     
     html, body, [class*="css"] { font-family: 'Outfit', sans-serif; scroll-behavior: smooth; }
 
-    /* ANIMATIONS */
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
     @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 50, 50, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 50, 50, 0); } }
@@ -49,7 +49,6 @@ st.markdown("""
 
     h1, h2, h3, p, span, a, div.stMarkdown { animation: fadeInUp 0.8s ease-out both; }
 
-    /* BACKGROUND PARTICLES */
     .stApp::before {
         content: ""; position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
         background-image:
@@ -62,7 +61,6 @@ st.markdown("""
         pointer-events: none; z-index: 0;
     }
 
-    /* SIDEBAR NAVIGATION */
     [data-testid="stSidebar"] { background-image: linear-gradient(180deg, #064e3b 0%, #047857 100%); border-right: none; }
     [data-testid="stSidebar"] * { color: #ecfdf5 !important; }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] label {
@@ -77,7 +75,6 @@ st.markdown("""
     }
     [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[role="radio"] { display: none; }
 
-    /* HERO & CARDS */
     .hero-container {
         text-align: center; padding: 60px 20px; border-radius: 35px;
         background: linear-gradient(-45deg, #ccfbf1, #d1fae5, #a7f3d0, #6ee7b7);
@@ -103,7 +100,6 @@ st.markdown("""
     }
     .cta-button:hover { transform: scale(1.1) translateY(-5px); }
 
-    /* SLIDER */
     .slider-container { width: 100%; overflow: hidden; border-radius: 25px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.7); background: #000; animation: popIn 1s ease-out; }
     .slide-track { display: flex; width: calc(1000px * 10); animation: scroll 45s linear infinite; }
     .slide-track:hover { animation-play-state: paused; }
@@ -112,7 +108,6 @@ st.markdown("""
     .slide img:hover { transform: scale(1.08); filter: brightness(1.1); cursor: grab; }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 5)); } }
 
-    /* WEATHER WIDGET */
     .weather-container {
         position: relative; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(25px); 
         border-radius: 30px; padding: 25px; border: 1px solid rgba(255, 255, 255, 0.2);
@@ -135,10 +130,47 @@ st.markdown("""
 
     .result-box { padding: 30px; border-radius: 25px; text-align: center; background: rgba(255,255,255,0.95); box-shadow: 0 20px 50px rgba(0,0,0,0.1); animation: popIn 0.6s ease-out; border: 2px solid white; }
     img { border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); transition: transform 0.3s; }
+
+    .urdu-name { font-family: 'Noto Nastaliq Urdu', serif; font-size: 1.4rem; direction: rtl; line-height: 2; }
+    .local-name { font-family: 'Noto Nastaliq Urdu', serif; font-size: 1.1rem; direction: rtl; color: #666; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. MODEL LOADING (ADDING TOMATO MODEL) ---
+# ✅ NAYA: Urdu aur Local Names Dictionaries
+TOMATO_URDU_NAMES = {
+    "Bacterial Spot":         "بیکٹیریل دھبے",
+    "Early Blight":           "اگیتی جھلس",
+    "Late Blight":            "پچھیتی جھلس",
+    "Leaf Mold":              "پتے کی پھپھوندی",
+    "Septoria Leaf Spot":     "سیپٹوریا دھبے",
+    "Target Spot":            "ہدف دھبے",
+    "Yellow Leaf Curl Virus": "پیلا پتہ مروڑ وائرس",
+    "Mosaic Virus":           "موزیک وائرس",
+    "Healthy":                "صحت مند"
+}
+TOMATO_LOCAL_NAMES = {
+    "Bacterial Spot":         "ٹماٹر تے کالے داغ",
+    "Early Blight":           "اگیتی سڑن",
+    "Late Blight":            "پچھیتی سڑن",
+    "Leaf Mold":              "پتیاں تے پھپھوند",
+    "Septoria Leaf Spot":     "پتیاں تے چھوٹے داغ",
+    "Target Spot":            "گول داغ روگ",
+    "Yellow Leaf Curl Virus": "پیلا پتہ وائرس",
+    "Mosaic Virus":           "چتکبری بیماری",
+    "Healthy":                "تندرست فصل"
+}
+POTATO_URDU_NAMES = {
+    "Early Blight": "اگیتی جھلس",
+    "Late Blight":  "پچھیتی جھلس",
+    "Healthy":      "صحت مند"
+}
+POTATO_LOCAL_NAMES = {
+    "Early Blight": "اگیتی سڑن",
+    "Late Blight":  "پچھیتی سڑن",
+    "Healthy":      "تندرست فصل"
+}
+
+# --- 4. MODEL LOADING ---
 @st.cache_resource
 def load_ml_model():
     try:
@@ -160,23 +192,20 @@ def load_tomato_model():
 rf_model, scaler, class_names = load_ml_model()
 t_model, t_scaler, t_class_names = load_tomato_model()
 
-# --- 5. THE 4 DETECTIVES (Feature Extractors) ---
+# --- 5. FEATURE EXTRACTORS ---
 def extract_all_features(image_bytes):
     nparr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     img = cv2.resize(img, (128, 128))
     gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # Jasoos 1: Color
     hist_bgr = cv2.calcHist([img], [0,1,2], None, [8,8,8], [0,256,0,256,0,256])
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     hist_hsv = cv2.calcHist([hsv], [0,1,2], None, [8,8,8], [0,180,0,256,0,256])
     f_color = np.hstack([hist_bgr.flatten(), hist_hsv.flatten()])
 
-    # Jasoos 2: HOG
     f_hog = hog(gray_img, orientations=9, pixels_per_cell=(8, 8), cells_per_block=(2, 2), visualize=False)
 
-    # Jasoos 3: LBP
     radius = 2
     n_points = 8 * radius
     lbp = local_binary_pattern(gray_img, n_points, radius, method='uniform')
@@ -184,14 +213,14 @@ def extract_all_features(image_bytes):
     hist = hist.astype("float")
     f_lbp = hist / (hist.sum() + 1e-7)
 
-    # Jasoos 4: GLCM
     glcm = graycomatrix(gray_img, distances=[1, 2], angles=[0, np.pi/4, np.pi/2, 3*np.pi/4], levels=256, symmetric=True, normed=True)
-    contrast = graycoprops(glcm, 'contrast').mean()
-    correlation = graycoprops(glcm, 'correlation').mean()
-    energy = graycoprops(glcm, 'energy').mean()
-    homogeneity = graycoprops(glcm, 'homogeneity').mean()
-    dissimilarity = graycoprops(glcm, 'dissimilarity').mean()
-    f_glcm = np.array([contrast, correlation, energy, homogeneity, dissimilarity])
+    f_glcm = np.array([
+        graycoprops(glcm, 'contrast').mean(),
+        graycoprops(glcm, 'correlation').mean(),
+        graycoprops(glcm, 'energy').mean(),
+        graycoprops(glcm, 'homogeneity').mean(),
+        graycoprops(glcm, 'dissimilarity').mean()
+    ])
 
     return np.hstack([f_color, f_hog, f_lbp, f_glcm])
 
@@ -363,18 +392,17 @@ elif nav == "🥔 Potato (Aloo)":
         with col2:
             with st.spinner("Analyzing features (HOG, LBP, Color, GLCM)..."):
                 time.sleep(1) 
-                
                 try:
                     image_bytes = uploaded_file.getvalue()
                     features = extract_all_features(image_bytes)
                     features = np.nan_to_num(features).reshape(1, -1)
                     features_scaled = scaler.transform(features)
                     
-                    pred_idx = rf_model.predict(features_scaled)[0]
+                    # ✅ BUG FIX HERE FOR POTATO
                     probs = rf_model.predict_proba(features_scaled)[0]
-                    conf = probs[pred_idx] * 100
-                    
-                    label = class_names[pred_idx].replace("_", " ").title()
+                    max_idx = np.argmax(probs)
+                    conf = probs[max_idx] * 100
+                    label = class_names[max_idx].replace("_", " ").title()
                     prob_dict = {l: p*100 for l, p in zip(class_names, probs)}
                     
                 except Exception as e:
@@ -387,13 +415,17 @@ elif nav == "🥔 Potato (Aloo)":
                     st.stop()
 
             is_healthy = "healthy" in label.lower()
-            
             bg_color = "#ecfdf5" if is_healthy else "#fef2f2"
             border_color = "#059669" if is_healthy else "#dc2626"
+
+            urdu_name = POTATO_URDU_NAMES.get(label, label)
+            local_name = POTATO_LOCAL_NAMES.get(label, label)
             
             st.markdown(f"""
             <div class='result-box' style='background: {bg_color}; border: 2px solid {border_color};'>
                 <h2 style='color: {border_color}; margin:0; font-weight: 800;'>{label}</h2>
+                <p class='urdu-name' style='color: {border_color};'>{urdu_name}</p>
+                <p class='local-name'>🌾 مقامی نام: {local_name}</p>
                 <h4 style='color: {border_color}; margin-top: 10px; font-weight: 600;'>Confidence: {conf:.1f}%</h4>
             </div>
             """, unsafe_allow_html=True)
@@ -404,7 +436,7 @@ elif nav == "🥔 Potato (Aloo)":
                 st.write(f"**{l_clean}**")
                 st.progress(int(p))
             
-            report_text = f"Plant Doctor AI Report\nDate: {datetime.datetime.now()}\n\nDiagnosis: {label}\nConfidence: {conf:.1f}%\n\nStatus: {'Healthy' if is_healthy else 'Action Needed'}"
+            report_text = f"Plant Doctor AI Report\nDate: {datetime.datetime.now()}\n\nDiagnosis: {label}\nUrdu: {urdu_name}\nConfidence: {conf:.1f}%\n\nStatus: {'Healthy' if is_healthy else 'Action Needed'}"
             st.download_button(
                 label="📄 Download Report",
                 data=report_text,
@@ -427,7 +459,7 @@ elif nav == "🥔 Potato (Aloo)":
             elif "late" in label.lower():
                 st.markdown("""
                 <div class='result-box' style='background: white; border-left: 5px solid #dc2626; text-align: left;'>
-                    <h3 style='color: #dc2626; font-weight: 800;'>💊 Late Blight Ka Ilaj</h3>
+                    <h3 style='color: #dc2626; font-weight: 800;'>💊 Late Blight Ka Ilaj | پچھیتی جھلس کا علاج</h3>
                     <ul style="font-weight: 500;">
                         <li><b>Spray (Chemical):</b> Metalaxyl + Mancozeb (2.5g per Liter) spray karein.</li>
                         <li><b>Frequency:</b> Har 7-10 din baad spray dohrayein jab tak bimari khatam na ho.</li>
@@ -438,7 +470,7 @@ elif nav == "🥔 Potato (Aloo)":
             elif "early" in label.lower():
                 st.markdown("""
                 <div class='result-box' style='background: white; border-left: 5px solid #d97706; text-align: left;'>
-                    <h3 style='color: #d97706; font-weight: 800;'>💊 Early Blight Ka Ilaj</h3>
+                    <h3 style='color: #d97706; font-weight: 800;'>💊 Early Blight Ka Ilaj | اگیتی جھلس کا علاج</h3>
                     <ul style="font-weight: 500;">
                         <li><b>Spray (Chemical):</b> Chlorothalonil ya Azoxystrobin spray karein.</li>
                         <li><b>Organic:</b> Neem Oil ka spray bihtareen hai.</li>
@@ -447,9 +479,6 @@ elif nav == "🥔 Potato (Aloo)":
                 </div>
                 """, unsafe_allow_html=True)
 
-# ==========================================
-# 🍅 NAYA TOMATO WALA HISSA (Yahan se shuru)
-# ==========================================
 elif nav == "🍅 Tomato Check":
     st.header("🍅 Tamatar Ki Bimari Check Karein")
     
@@ -471,21 +500,21 @@ elif nav == "🍅 Tomato Check":
         with col2:
             with st.spinner("Analyzing Tomato features..."):
                 time.sleep(1) 
-                
                 try:
                     image_bytes = uploaded_file.getvalue()
                     features = extract_all_features(image_bytes)
                     features = np.nan_to_num(features).reshape(1, -1)
                     features_scaled = t_scaler.transform(features)
                     
+                    # ✅ BUG FIX HERE FOR TOMATO
                     probs = t_model.predict_proba(features_scaled)[0]
-                    max_prob_idx = np.argmax(probs) # Jo result sab se high hai, uska index uthao
-                    conf = probs[max_prob_idx] * 100
-                    label = t_class_names[max_prob_idx].replace("_", " ").title()
+                    max_idx = np.argmax(probs)
+                    conf = probs[max_idx] * 100
+                    label = t_class_names[max_idx].replace("_", " ").title()
                     prob_dict = {l: p*100 for l, p in zip(t_class_names, probs)}
                     
                 except Exception as e:
-                    st.error(f"Analysis failed: {e}") 
+                    st.error(f"Analysis failed: {e}")
                     st.stop()
                 
                 if conf < 60:
@@ -494,13 +523,17 @@ elif nav == "🍅 Tomato Check":
                     st.stop()
 
             is_healthy = "healthy" in label.lower()
-            
             bg_color = "#ecfdf5" if is_healthy else "#fef2f2"
             border_color = "#059669" if is_healthy else "#dc2626"
-            
+
+            urdu_name = TOMATO_URDU_NAMES.get(label, label)
+            local_name = TOMATO_LOCAL_NAMES.get(label, label)
+
             st.markdown(f"""
             <div class='result-box' style='background: {bg_color}; border: 2px solid {border_color};'>
                 <h2 style='color: {border_color}; margin:0; font-weight: 800;'>{label}</h2>
+                <p class='urdu-name' style='color: {border_color};'>{urdu_name}</p>
+                <p class='local-name'>🌾 مقامی نام: {local_name}</p>
                 <h4 style='color: {border_color}; margin-top: 10px; font-weight: 600;'>Confidence: {conf:.1f}%</h4>
             </div>
             """, unsafe_allow_html=True)
@@ -511,7 +544,7 @@ elif nav == "🍅 Tomato Check":
                 st.write(f"**{l_clean}**")
                 st.progress(int(p))
             
-            report_text = f"Plant Doctor AI Report\nDate: {datetime.datetime.now()}\n\nDiagnosis: {label}\nConfidence: {conf:.1f}%\n\nStatus: {'Healthy' if is_healthy else 'Action Needed'}"
+            report_text = f"Plant Doctor AI Report\nDate: {datetime.datetime.now()}\n\nDiagnosis: {label}\nUrdu: {urdu_name}\nConfidence: {conf:.1f}%\n\nStatus: {'Healthy' if is_healthy else 'Action Needed'}"
             st.download_button(
                 label="📄 Download Report",
                 data=report_text,
@@ -523,7 +556,7 @@ elif nav == "🍅 Tomato Check":
                 st.balloons()
                 st.markdown("""
                 <div class='result-box' style='background: white; border-left: 5px solid #059669; text-align: left;'>
-                    <h3 style='color: #059669; font-weight: 800;'>🎉 Mubarak Ho!</h3>
+                    <h3 style='color: #059669; font-weight: 800;'>🎉 Mubarak Ho! | مبارک ہو</h3>
                     <p style="font-weight: 600;">Aapki fasal bilkul theek hai. Hifazat ke liye ye karein:</p>
                     <ul style="font-weight: 500;">
                         <li>💧 <b>Pani:</b> Waqt par pani dein.</li>
@@ -534,7 +567,7 @@ elif nav == "🍅 Tomato Check":
             elif "virus" in label.lower() or "mosaic" in label.lower():
                 st.markdown("""
                 <div class='result-box' style='background: white; border-left: 5px solid #dc2626; text-align: left;'>
-                    <h3 style='color: #dc2626; font-weight: 800;'>⚠️ Alert (Virus)</h3>
+                    <h3 style='color: #dc2626; font-weight: 800;'>⚠️ Alert (Virus) | وائرس خبردار</h3>
                     <ul style="font-weight: 500;">
                         <li><b>Faori Qadam:</b> Mutasira poudon ko fauran ukhad kar jala dein ya door phaink dein.</li>
                         <li><b>Wajah:</b> Yeh aam tor par safaid makhi (Whitefly) se phailta hai.</li>
@@ -545,7 +578,7 @@ elif nav == "🍅 Tomato Check":
             else:
                 st.markdown("""
                 <div class='result-box' style='background: white; border-left: 5px solid #d97706; text-align: left;'>
-                    <h3 style='color: #d97706; font-weight: 800;'>💊 Fungal/Bacterial Treatment</h3>
+                    <h3 style='color: #d97706; font-weight: 800;'>💊 Fungal/Bacterial Treatment | پھپھوندی علاج</h3>
                     <ul style="font-weight: 500;">
                         <li><b>Spray:</b> Copper Fungicide ya Neem Oil ka spray karein.</li>
                         <li><b>Ehtiyat:</b> Poudon ke darmiyan fasla rakhein taake hawa guzar sake.</li>
