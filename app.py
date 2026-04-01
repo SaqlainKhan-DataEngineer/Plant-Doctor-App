@@ -17,7 +17,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Handle nav override from crop cards (Sab se pehle check karna zaroori hai)
+# Handle nav override from crop cards
 if 'nav_override' in st.session_state:
     nav_default = st.session_state.pop('nav_override')
 else:
@@ -51,7 +51,6 @@ st.markdown("""
     @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
     @keyframes float-logo { 0%,100% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16,185,129,0.4); } 50% { transform: translateY(-8px); box-shadow: 0 0 30px rgba(16,185,129,0.7); } }
     @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
-    @keyframes pulse-green { 0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); } 50% { box-shadow: 0 0 20px 8px rgba(16,185,129,0.2); } }
     @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-600px * 6)); } }
 
     h1, h2, h3, p, span, a, div.stMarkdown { animation: fadeInUp 0.8s ease-out both; }
@@ -96,16 +95,10 @@ st.markdown("""
     .feature-card { background: rgba(255,255,255,0.9); backdrop-filter: blur(25px); padding: 30px; border-radius: 30px; text-align: center; border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 10px 30px rgba(0,0,0,0.08); height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: transform 0.4s ease, box-shadow 0.4s ease; position: relative; z-index: 1; }
     .feature-card:hover { transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateY(-15px); box-shadow: 0 30px 60px rgba(16,185,129,0.3); border-color: #34d399; }
 
-    .crop-card { background: rgba(255,255,255,0.92); backdrop-filter: blur(25px); padding: 35px 25px; border-radius: 30px; text-align: center; border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 10px 30px rgba(0,0,0,0.08); min-height: 260px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: all 0.35s ease; cursor: pointer; position: relative; overflow: hidden; }
-    .crop-card::after { content: ""; position: absolute; inset: 0; border-radius: 30px; opacity: 0; transition: opacity 0.3s; background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(6,78,59,0.05)); }
-    .crop-card:hover { transform: translateY(-14px) scale(1.02); box-shadow: 0 30px 60px rgba(16,185,129,0.25); border-color: #34d399; }
-    .crop-card:hover::after { opacity: 1; }
+    .crop-card { background: rgba(255,255,255,0.92); backdrop-filter: blur(25px); padding: 35px 25px; border-radius: 30px; text-align: center; border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 10px 30px rgba(0,0,0,0.08); min-height: 220px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: all 0.35s ease; position: relative; overflow: hidden; margin-top:10px; }
+    .crop-card:hover { transform: translateY(-10px); box-shadow: 0 30px 60px rgba(16,185,129,0.25); border-color: #34d399; }
     .crop-card-soon { border: 2px dashed #f59e0b; background: rgba(254,243,199,0.7); }
-    .crop-card-soon:hover { border-color: #d97706; box-shadow: 0 30px 60px rgba(245,158,11,0.2); }
     .crop-card-dev { border: 2px dashed #8b5cf6; background: rgba(237,233,254,0.7); }
-    .crop-card-dev:hover { border-color: #7c3aed; box-shadow: 0 30px 60px rgba(139,92,246,0.2); }
-    .crop-arrow { font-size: 1.3rem; margin-top: 10px; opacity: 0; transform: translateX(-8px); transition: all 0.3s; }
-    .crop-card:hover .crop-arrow { opacity: 1; transform: translateX(0); }
 
     .badge-live { display: inline-block; background: linear-gradient(90deg, #059669, #10b981); color: white; padding: 5px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.5px; margin-top: 10px; }
     .badge-soon { display: inline-block; background: linear-gradient(90deg, #f59e0b, #ef4444); background-size: 200% auto; color: white; padding: 5px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; margin-top: 10px; animation: shimmer 2s infinite linear; }
@@ -177,7 +170,6 @@ st.sidebar.markdown("<h1 style='text-align:center;color:white;font-weight:800;ma
 st.sidebar.markdown("<p style='text-align:center;font-size:0.9rem;opacity:0.9;margin-bottom:30px;letter-spacing:2px;font-weight:600;'>AI DIAGNOSTICS</p>", unsafe_allow_html=True)
 st.sidebar.write("---")
 
-# Use the resolved nav value
 nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field", "🫑 Pepper (Mirch)"], index=["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field", "🫑 Pepper (Mirch)"].index(nav_default))
 
 st.sidebar.write("---")
@@ -192,7 +184,7 @@ if nav == "🏠 Home Page":
     st.markdown("""
     <div class="hero-container">
         <p style="color:#047857;font-size:0.95rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">🌿 AI-Powered Agriculture</p>
-        <h1 style="font-size:4rem;font-weight:900;background:-webkit-linear-gradient(#064e3b,#059669);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:0;">Plant Doctor AI</h1>
+        <h1 style="font-size:4.5rem;font-weight:900;color:#064e3b;margin:0;text-shadow: 2px 2px 4px rgba(255,255,255,0.6);">Plant Doctor AI</h1>
         <p style="color:#065f46;font-size:1.2rem;font-weight:600;margin:12px 0 5px;">Apni Fasal Ki Bimari Seconds Mein Pehchanein</p>
         <p style="color:#047857;font-size:1rem;max-width:600px;margin:auto;line-height:1.6;opacity:0.9;">Pattay ki photo upload karein — AI fauran bimari detect karke ilaj batayega</p>
     </div>
@@ -212,15 +204,6 @@ if nav == "🏠 Home Page":
                 <div style="font-size:0.85rem;color:#047857;font-weight:600;">{lbl}</div>
             </div>
             """, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Native Streamlit Button for Navigation
-    b1, b2, b3 = st.columns([1, 1, 1])
-    with b2:
-        if st.button("🥔 Aloo Check Karein →", use_container_width=True, type="primary"):
-            st.session_state['nav_override'] = "🥔 Potato (Aloo)"
-            st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -295,10 +278,13 @@ if nav == "🏠 Home Page":
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("<h2 id='supported-crops' style='text-align:center;color:#064e3b;font-weight:900;margin-top:50px;font-size:2.2rem;'>Supported Crops | Faslain</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center;color:#555;font-size:1rem;margin-bottom:30px;'>Sidebar se apni fasal select karein!</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center;color:#555;font-size:1rem;margin-bottom:30px;'>Apni fasal ka button dabayen aur check karein!</p>", unsafe_allow_html=True)
 
     cc1, cc2 = st.columns(2)
     with cc1:
+        if st.button("🥔 Potato Check Karein →", use_container_width=True, type="primary"):
+            st.session_state['nav_override'] = "🥔 Potato (Aloo)"
+            st.rerun()
         st.markdown("""
         <div class="crop-card">
             <div style="font-size:4.5rem;margin-bottom:12px;">🥔</div>
@@ -307,7 +293,11 @@ if nav == "🏠 Home Page":
             <span class="badge-live">✅ Live — 97% Accuracy</span>
         </div>
         """, unsafe_allow_html=True)
+        
     with cc2:
+        if st.button("🍅 Tomato Check Karein →", use_container_width=True, type="primary"):
+            st.session_state['nav_override'] = "🍅 Tomato Check"
+            st.rerun()
         st.markdown("""
         <div class="crop-card">
             <div style="font-size:4.5rem;margin-bottom:12px;">🍅</div>
@@ -492,4 +482,4 @@ elif nav == "🫑 Pepper (Mirch)":
         <span style="background:linear-gradient(90deg,#6366f1,#8b5cf6);color:white;padding:8px 24px;border-radius:20px;font-weight:700;">🛠️ In Development</span>
     </div>
     """, unsafe_allow_html=True) 
-   
+    
