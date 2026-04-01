@@ -529,5 +529,5 @@ elif nav == "🫑 Pepper (Mirch)":
         <p style="color:#555;font-size:1.1rem;">Dataset tayyar ho raha hai — abhi development mein hai.</p>
         <span style="background:linear-gradient(90deg,#6366f1,#8b5cf6);color:white;padding:8px 24px;border-radius:20px;font-weight:700;">🛠️ In Development</span>
     </div>
-    """, unsafe_allow_html=True)  
+    """, unsafe_allow_html=True) 
     
