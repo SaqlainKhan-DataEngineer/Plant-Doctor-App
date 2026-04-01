@@ -478,15 +478,14 @@ elif nav == "🍅 Tomato Check":
                     features = np.nan_to_num(features).reshape(1, -1)
                     features_scaled = t_scaler.transform(features)
                     
-                    pred_idx = t_model.predict(features_scaled)[0]
                     probs = t_model.predict_proba(features_scaled)[0]
-                    conf = probs[pred_idx] * 100
-                    
-                    label = t_class_names[pred_idx].replace("_", " ").title()
+                    max_prob_idx = np.argmax(probs) # Jo result sab se high hai, uska index uthao
+                    conf = probs[max_prob_idx] * 100
+                    label = t_class_names[max_prob_idx].replace("_", " ").title()
                     prob_dict = {l: p*100 for l, p in zip(t_class_names, probs)}
                     
                 except Exception as e:
-                    st.error(f"Analysis failed: {e}")
+                    st.error(f"Analysis failed: {e}") 
                     st.stop()
                 
                 if conf < 60:
