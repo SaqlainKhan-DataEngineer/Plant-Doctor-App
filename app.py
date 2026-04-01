@@ -46,6 +46,7 @@ st.markdown("""
     @keyframes diamond-wind { 0% { transform: translateY(0) translateX(0); } 100% { transform: translateY(100px) translateX(-100px); } }
     @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
     @keyframes float-logo { 0% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } 50% { transform: translateY(-8px); box-shadow: 0 0 30px rgba(16, 185, 129, 0.7); } 100% { transform: translateY(0px); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); } }
+    @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
 
     h1, h2, h3, p, span, a, div.stMarkdown { animation: fadeInUp 0.8s ease-out both; }
 
@@ -133,10 +134,16 @@ st.markdown("""
 
     .urdu-name { font-family: 'Noto Nastaliq Urdu', serif; font-size: 1.4rem; direction: rtl; line-height: 2; }
     .local-name { font-family: 'Noto Nastaliq Urdu', serif; font-size: 1.1rem; direction: rtl; color: #666; }
+
+    .badge-live { display: inline-block; background: linear-gradient(90deg, #059669, #10b981); color: white; padding: 4px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; letter-spacing: 1px; margin-top: 8px; }
+    .badge-soon { display: inline-block; background: linear-gradient(90deg, #f59e0b, #ef4444); color: white; padding: 4px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; letter-spacing: 1px; margin-top: 8px; animation: shimmer 2s infinite linear; background-size: 200% auto; }
+    .badge-dev { display: inline-block; background: linear-gradient(90deg, #6366f1, #8b5cf6); color: white; padding: 4px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; letter-spacing: 1px; margin-top: 8px; }
+    .crop-card { background: rgba(255,255,255,0.9); backdrop-filter: blur(25px); padding: 30px; border-radius: 30px; text-align: center; border: 1px solid rgba(255,255,255,0.6); box-shadow: 0 10px 30px rgba(0,0,0,0.08); min-height: 240px; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: transform 0.4s ease, box-shadow 0.4s ease; position: relative; z-index: 1; }
+    .crop-card:hover { transform: translateY(-12px); box-shadow: 0 30px 60px rgba(16, 185, 129, 0.25); }
     </style>
     """, unsafe_allow_html=True)
 
-# ✅ NAYA: Urdu aur Local Names Dictionaries
+# ✅ Urdu aur Local Names Dictionaries
 TOMATO_URDU_NAMES = {
     "Bacterial Spot":         "بیکٹیریل دھبے",
     "Early Blight":           "اگیتی جھلس",
@@ -320,7 +327,8 @@ if nav == "🏠 Home Page":
 
     st.markdown("<br>", unsafe_allow_html=True)
     c1, c2, c3, c4 = st.columns(4)
-    stats = [("🌱", "15K+", "Images Trained"), ("🎯", "97%", "Accuracy"), ("⚡", "Fast", "ML Prediction"), ("👨‍🌾", "Expert", "Farmer Approved")]
+    # ✅ UPDATED: Stats mein 4 crops dikhao
+    stats = [("🌱", "18K+", "Images Trained"), ("🎯", "97%", "Accuracy"), ("⚡", "Fast", "ML Prediction"), ("👨‍🌾", "4", "Crops Supported")]
     for col, (icon, val, lbl) in zip([c1,c2,c3,c4], stats):
         with col:
             st.markdown(f"""
@@ -343,18 +351,50 @@ if nav == "🏠 Home Page":
             </div>
             """, unsafe_allow_html=True)
 
+    # ✅ UPDATED: Supported Crops — 4 crops, 2 rows
     st.markdown("<h2 style='text-align:center; color:#064e3b; font-weight:900; margin-top:60px; font-size:2.5rem;'>Supported Crops</h2>", unsafe_allow_html=True)
-    c1, c2, c3 = st.columns(3)
-    crops = [("🥔", "Potato", "Fully Supported ✅"), ("🍅", "Tomato", "Fully Supported ✅"), ("🌽", "Corn", "In Development 🛠️")]
-    for col, (icon, name, status) in zip([c1,c2,c3], crops):
-        with col:
-            st.markdown(f"""
-            <div class="feature-card" style="min-height:220px;">
-                <div style="font-size:4.5rem; margin-bottom:15px;" class="feature-icon">{icon}</div>
-                <h3 style="color:#064e3b; font-weight:800;">{name}</h3>
-                <p style="font-weight:600; color:#059669;">{status}</p>
-            </div>
-            """, unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center; color:#555; font-size:1rem; margin-bottom:30px;'>Abhi 2 crops available hain — baqi jald aa rahe hain!</p>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("""
+        <div class="crop-card">
+            <div style="font-size:4.5rem; margin-bottom:12px;">🥔</div>
+            <h3 style="color:#064e3b; font-weight:800; margin:0;">Potato (Aloo)</h3>
+            <p style="color:#555; font-size:0.9rem; margin:6px 0;">3 Diseases Detected</p>
+            <span class="badge-live">✅ Live — 97% Accuracy</span>
+        </div>
+        """, unsafe_allow_html=True)
+    with c2:
+        st.markdown("""
+        <div class="crop-card">
+            <div style="font-size:4.5rem; margin-bottom:12px;">🍅</div>
+            <h3 style="color:#064e3b; font-weight:800; margin:0;">Tomato (Tamatar)</h3>
+            <p style="color:#555; font-size:0.9rem; margin:6px 0;">9 Diseases Detected</p>
+            <span class="badge-live">✅ Live — 95% Accuracy</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    c3, c4 = st.columns(2)
+    with c3:
+        st.markdown("""
+        <div class="crop-card" style="border: 2px dashed #f59e0b; background: rgba(254,243,199,0.6);">
+            <div style="font-size:4.5rem; margin-bottom:12px;">🌽</div>
+            <h3 style="color:#064e3b; font-weight:800; margin:0;">Corn (Makki)</h3>
+            <p style="color:#555; font-size:0.9rem; margin:6px 0;">Model Training in Progress</p>
+            <span class="badge-soon">🚀 Launching Soon</span>
+        </div>
+        """, unsafe_allow_html=True)
+    with c4:
+        st.markdown("""
+        <div class="crop-card" style="border: 2px dashed #8b5cf6; background: rgba(237,233,254,0.6);">
+            <div style="font-size:4.5rem; margin-bottom:12px;">🫑</div>
+            <h3 style="color:#064e3b; font-weight:800; margin:0;">Pepper (Mirch)</h3>
+            <p style="color:#555; font-size:0.9rem; margin:6px 0;">Coming to Plant Doctor</p>
+            <span class="badge-dev">🛠️ In Development</span>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("""
     <hr style="border-top: 2px solid #a7f3d0; margin-top: 80px;">
@@ -397,14 +437,11 @@ elif nav == "🥔 Potato (Aloo)":
                     features = extract_all_features(image_bytes)
                     features = np.nan_to_num(features).reshape(1, -1)
                     features_scaled = scaler.transform(features)
-                    
-                    # ✅ BUG FIX HERE FOR POTATO
                     probs = rf_model.predict_proba(features_scaled)[0]
                     max_idx = np.argmax(probs)
                     conf = probs[max_idx] * 100
                     label = class_names[max_idx].replace("_", " ").title()
                     prob_dict = {l: p*100 for l, p in zip(class_names, probs)}
-                    
                 except Exception as e:
                     st.error(f"Analysis failed: {e}")
                     st.stop()
@@ -417,7 +454,6 @@ elif nav == "🥔 Potato (Aloo)":
             is_healthy = "healthy" in label.lower()
             bg_color = "#ecfdf5" if is_healthy else "#fef2f2"
             border_color = "#059669" if is_healthy else "#dc2626"
-
             urdu_name = POTATO_URDU_NAMES.get(label, label)
             local_name = POTATO_LOCAL_NAMES.get(label, label)
             
@@ -437,12 +473,7 @@ elif nav == "🥔 Potato (Aloo)":
                 st.progress(int(p))
             
             report_text = f"Plant Doctor AI Report\nDate: {datetime.datetime.now()}\n\nDiagnosis: {label}\nUrdu: {urdu_name}\nConfidence: {conf:.1f}%\n\nStatus: {'Healthy' if is_healthy else 'Action Needed'}"
-            st.download_button(
-                label="📄 Download Report",
-                data=report_text,
-                file_name="plant_doctor_report.txt",
-                mime="text/plain"
-            )
+            st.download_button(label="📄 Download Report", data=report_text, file_name="plant_doctor_report.txt", mime="text/plain")
 
             if is_healthy:
                 st.balloons()
@@ -505,14 +536,11 @@ elif nav == "🍅 Tomato Check":
                     features = extract_all_features(image_bytes)
                     features = np.nan_to_num(features).reshape(1, -1)
                     features_scaled = t_scaler.transform(features)
-                    
-                    # ✅ BUG FIX HERE FOR TOMATO
                     probs = t_model.predict_proba(features_scaled)[0]
                     max_idx = np.argmax(probs)
                     conf = probs[max_idx] * 100
                     label = t_class_names[max_idx].replace("_", " ").title()
                     prob_dict = {l: p*100 for l, p in zip(t_class_names, probs)}
-                    
                 except Exception as e:
                     st.error(f"Analysis failed: {e}")
                     st.stop()
@@ -525,7 +553,6 @@ elif nav == "🍅 Tomato Check":
             is_healthy = "healthy" in label.lower()
             bg_color = "#ecfdf5" if is_healthy else "#fef2f2"
             border_color = "#059669" if is_healthy else "#dc2626"
-
             urdu_name = TOMATO_URDU_NAMES.get(label, label)
             local_name = TOMATO_LOCAL_NAMES.get(label, label)
 
@@ -545,12 +572,7 @@ elif nav == "🍅 Tomato Check":
                 st.progress(int(p))
             
             report_text = f"Plant Doctor AI Report\nDate: {datetime.datetime.now()}\n\nDiagnosis: {label}\nUrdu: {urdu_name}\nConfidence: {conf:.1f}%\n\nStatus: {'Healthy' if is_healthy else 'Action Needed'}"
-            st.download_button(
-                label="📄 Download Report",
-                data=report_text,
-                file_name="tomato_doctor_report.txt",
-                mime="text/plain"
-            )
+            st.download_button(label="📄 Download Report", data=report_text, file_name="tomato_doctor_report.txt", mime="text/plain")
 
             if is_healthy:
                 st.balloons()
@@ -588,4 +610,5 @@ elif nav == "🍅 Tomato Check":
                 """, unsafe_allow_html=True)
 
 elif nav == "🌽 Corn Field":
-    st.info("🚧 Coming Soon...") 
+    st.info("🚧 Coming Soon — Model Training in Progress!") 
+    
