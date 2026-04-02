@@ -1461,7 +1461,7 @@ elif nav == "🫑 Pepper (Mirch)":
         <p style="color:#6b7280;font-size:1rem;max-width:400px;line-height:1.7;margin:0 auto 24px;">Dataset tayyar ho raha hai. Mirch ki bimariyon ke liye AI model develop ho raha hai.</p>
         <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
             <div style="background:white;border:1px solid rgba(6,78,59,0.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
-                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">May 2026</div>
+                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">This Week</div>
                 <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Expected Launch</div>
             </div>
             <div style="background:white;border:1px solid rgba(6,78,59,0.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
