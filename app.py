@@ -78,31 +78,31 @@ CROP_CONFIG = {
     },
 }
 
-# --- 4. MODEL LOADING ---
+# --- 4. MODEL LOADING — Graceful degradation (v3 improvement) ---
+# App starts even if one or both model files are missing.
 @st.cache_resource
-def load_ml_model():
-    try:
-        data = joblib.load("potato_disease_model.pkl")
-        return data['model'], data['scaler'], data['class_names']
-    except Exception as e:
-        return None, None, None
+def safe_load_models():
+    """Load all crop models. Missing models show a warning, not a crash."""
+    models = {}
+    model_files = {
+        "potato": ("potato_disease_model.pkl", "potato"),
+        "tomato": ("tomato_disease_model_9_classes.pkl", "tomato"),
+    }
+    for crop_key, (file_path, _) in model_files.items():
+        try:
+            data = joblib.load(file_path)
+            models[crop_key] = (data['model'], data['scaler'], data['class_names'])
+        except FileNotFoundError:
+            models[crop_key] = (None, None, None)
+        except Exception as e:
+            models[crop_key] = (None, None, None)
+    return models
 
-@st.cache_resource
-def load_tomato_model():
-    try:
-        data = joblib.load("tomato_disease_model_9_classes.pkl")
-        return data['model'], data['scaler'], data['class_names']
-    except Exception as e:
-        return None, None, None
+MODELS = safe_load_models()
 
-rf_model, scaler, class_names = load_ml_model()
-t_model, t_scaler, t_class_names = load_tomato_model()
-
-# --- 5. MODELS DICT (for generic pipeline) ---
-MODELS = {
-    "potato": (rf_model, scaler, class_names),
-    "tomato": (t_model, t_scaler, t_class_names),
-}
+# Keep these for any legacy references
+rf_model, scaler, class_names = MODELS.get("potato", (None, None, None))
+t_model, t_scaler, t_class_names = MODELS.get("tomato", (None, None, None))
 
 # --- 6. ERROR HANDLING DECORATOR (IMPROVEMENT #2: Defensive programming) ---
 def safe_analysis(func):
@@ -161,7 +161,218 @@ def extract_all_features(image_bytes):
 
     return result
 
-# --- 8. CSS (IMPROVEMENT #4: Split into critical + component CSS) ---
+# --- 8. CROP AUTO-DETECTOR (v3: Universal upload, AI detects crop type) ---
+class CropAutoDetector:
+    """
+    Heuristic-based crop detection using color + shape analysis.
+    Farmers don't need to select crop manually — AI figures it out.
+    """
+
+    @staticmethod
+    def detect(image_bytes):
+        """
+        Returns (detected_crop_key, confidence_float, message_str)
+        detected_crop_key: 'potato' | 'tomato' | None
+        confidence: 0.0 – 1.0
+        """
+        try:
+            nparr = np.frombuffer(image_bytes, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            if img is None:
+                return None, 0.0, "Image decode failed."
+
+            img_resized = cv2.resize(img, (128, 128))
+            hsv = cv2.cvtColor(img_resized, cv2.COLOR_BGR2HSV)
+
+            mean_hue = float(np.mean(hsv[:, :, 0]))
+            mean_sat = float(np.mean(hsv[:, :, 1])) / 255.0
+            mean_val = float(np.mean(hsv[:, :, 2])) / 255.0
+
+            h, w = img.shape[:2]
+            aspect = w / max(h, 1)
+
+            scores = {"potato": 0.0, "tomato": 0.0}
+
+            # Potato: broader, rounder leaves — aspect close to 1, medium green hue
+            if 30 <= mean_hue <= 90 and 0.8 <= aspect <= 1.6:
+                scores["potato"] += 0.5
+            if mean_sat > 0.2:
+                scores["potato"] += 0.2
+            if mean_val > 0.3:
+                scores["potato"] += 0.1
+
+            # Tomato: slightly higher saturation, more yellow-green hue range
+            if 30 <= mean_hue <= 80 and mean_sat > 0.28:
+                scores["tomato"] += 0.5
+            if 0.9 <= aspect <= 1.7:
+                scores["tomato"] += 0.15
+            if mean_val > 0.35:
+                scores["tomato"] += 0.1
+
+            best = max(scores, key=scores.get)
+            conf = round(min(scores[best], 0.95), 2)
+
+            if conf < 0.4:
+                return None, conf, "Could not confidently detect crop. Please select manually."
+
+            msg = f"{'Aloo (Potato)' if best == 'potato' else 'Tamatar (Tomato)'} detect hua — {conf:.0%} confidence"
+            return best, conf, msg
+
+        except Exception:
+            return None, 0.0, "Detection error. Please select crop manually."
+
+
+def render_universal_upload():
+    """
+    Single drag-and-drop zone for any leaf.
+    AI auto-detects crop; user can override manually.
+    Returns (uploaded_file, crop_key) or (None, None).
+    """
+    st.markdown("""
+    <style>
+    .univ-upload-box {
+        border: 3px dashed #34d399;
+        border-radius: 24px;
+        padding: 40px 32px;
+        text-align: center;
+        background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
+        transition: all 0.3s ease;
+        margin-bottom: 20px;
+    }
+    .univ-upload-box:hover {
+        border-color: #059669;
+        background: linear-gradient(135deg, #d1fae5, #ecfdf5);
+    }
+    .univ-upload-title { font-size: 1.2rem; font-weight: 800; color: #064e3b; margin-bottom: 6px; }
+    .univ-upload-sub   { color: #6b7280; font-size: 0.88rem; }
+    .detect-result-box {
+        background: white; border-radius: 16px; padding: 18px 22px;
+        border: 2px solid #d1fae5; margin-top: 14px;
+        box-shadow: 0 4px 16px rgba(16,185,129,0.1);
+    }
+    .detect-label  { font-size: 0.65rem; color: #6b7280; font-weight: 700;
+                     text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .detect-crop   { font-size: 1.4rem; font-weight: 900; color: #064e3b; }
+    .detect-conf   { font-size: 0.82rem; color: #059669; font-weight: 600; margin-top: 2px; }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="univ-upload-box">
+        <div style="font-size:3rem;margin-bottom:10px;">🌿</div>
+        <div class="univ-upload-title">Koi bhi fasal ka patta drop karein</div>
+        <div class="univ-upload-sub">AI khud detect karega — Potato, Tomato · Ya manually select karein</div>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
+            <span style="background:#d1fae5;color:#065f46;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;">🥔 Potato</span>
+            <span style="background:#fee2e2;color:#991b1b;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;">🍅 Tomato</span>
+            <span style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;">🌽 Corn (Soon)</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    uploaded_file = st.file_uploader(
+        "Patta upload karein / Drop leaf photo here",
+        type=["jpg", "png", "jpeg", "webp", "jfif"],
+        key="universal_uploader"
+    )
+
+    if not uploaded_file:
+        return None, None
+
+    # Auto-detect crop
+    detected_crop, conf, msg = CropAutoDetector.detect(uploaded_file.getvalue())
+
+    col_img, col_detect = st.columns([1, 1.4])
+    with col_img:
+        pil_img = Image.open(uploaded_file).convert('RGB')
+        st.image(pil_img, caption="📷 Uploaded Leaf", use_column_width=True)
+
+    with col_detect:
+        if detected_crop and conf >= 0.5:
+            emoji = "🥔" if detected_crop == "potato" else "🍅"
+            st.markdown(f"""
+            <div class="detect-result-box">
+                <div class="detect-label">🤖 AI Detection Result</div>
+                <div class="detect-crop">{emoji} {detected_crop.title()} Detect Hua!</div>
+                <div class="detect-conf">✅ Confidence: {conf:.0%}</div>
+                <div style="font-size:0.78rem;color:#6b7280;margin-top:6px;">{msg}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="detect-result-box" style="border-color:#fde68a;">
+                <div class="detect-label">⚠️ Manual Selection Required</div>
+                <div style="font-size:0.88rem;color:#6b7280;margin-top:4px;">AI confidently detect nahi kar saka. Neeche se crop chunein.</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Manual override — always visible
+        st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
+        options = ["🥔 Potato (Aloo)", "🍅 Tomato (Tamatar)"]
+        default_idx = 0 if detected_crop == "potato" else (1 if detected_crop == "tomato" else 0)
+        manual = st.selectbox(
+            "Crop confirm karein ya change karein:",
+            options,
+            index=default_idx,
+            key="universal_crop_select"
+        )
+        final_crop = "potato" if "Potato" in manual else "tomato"
+
+        if st.button("🔬 Is Patte Ka Analysis Karein", type="primary", use_container_width=True, key="universal_analyze_btn"):
+            return uploaded_file, final_crop
+
+    return None, None
+
+
+# --- 9. MOBILE BOTTOM NAVIGATION (v3 improvement) ---
+def render_mobile_nav(active_tab="home"):
+    """
+    Fixed bottom nav bar — only visible on mobile (max-width: 768px).
+    Sidebar is hidden on mobile; this replaces it with thumb-friendly nav.
+    """
+    tabs = [
+        ("home",    "🏠", "Home"),
+        ("scan",    "📸", "Scan"),
+        ("weather", "🌤️", "Mausam"),
+    ]
+    items_html = ""
+    for key, icon, label in tabs:
+        active_class = "mob-nav-active" if active_tab == key else ""
+        items_html += f"""
+        <div class="mob-nav-item {active_class}">
+            <span class="mob-nav-icon">{icon}</span>
+            <span>{label}</span>
+        </div>"""
+
+    st.markdown(f"""
+    <style>
+    @media (min-width: 769px) {{ .mob-nav {{ display: none !important; }} }}
+    .mob-nav {{
+        position: fixed; bottom: 0; left: 0; right: 0;
+        background: rgba(255,255,255,0.96);
+        backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(6,78,59,0.1);
+        padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+        display: flex; justify-content: space-around; z-index: 9999;
+        box-shadow: 0 -4px 20px rgba(6,78,59,0.08);
+    }}
+    .mob-nav-item {{
+        display: flex; flex-direction: column; align-items: center;
+        gap: 3px; padding: 6px 20px;
+        color: #9ca3af; font-size: 0.62rem; font-weight: 700;
+        cursor: pointer; transition: color 0.2s;
+    }}
+    .mob-nav-active {{ color: #059669 !important; }}
+    .mob-nav-icon {{ font-size: 1.35rem; line-height: 1; }}
+    @media (max-width: 768px) {{
+        .main .block-container {{ padding-bottom: 80px !important; }}
+    }}
+    </style>
+    <div class="mob-nav">{items_html}</div>
+    """, unsafe_allow_html=True)
+
+
+# --- 10. CSS (Split into critical + component CSS) ---
 def get_critical_css():
     """Critical above-the-fold styles"""
     return """
@@ -995,10 +1206,48 @@ if nav == "🏠 Home Page":
     <div class="scan-cta-wrap">
         <p style="color:rgba(255,255,255,0.65);font-size:0.75rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">🔬 Quick Scan</p>
         <h2 style="color:white;font-size:1.9rem;font-weight:900;margin:0 0 10px;letter-spacing:-0.5px;">Koi bhi fasal — ek hi jagah scan karein</h2>
-        <p style="color:rgba(255,255,255,0.7);font-size:0.95rem;max-width:500px;margin:0 auto 24px;line-height:1.6;">Below main crop select karein aur seedha scanning page par jaen</p>
+        <p style="color:rgba(255,255,255,0.7);font-size:0.95rem;max-width:500px;margin:0 auto 24px;line-height:1.6;">Seedha yahan patta upload karein — AI khud crop detect karega</p>
     </div>
     """, unsafe_allow_html=True)
 
+    # Universal upload zone — AI auto-detects crop
+    uploaded_file, detected_crop = render_universal_upload()
+    if uploaded_file and detected_crop:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color:#064e3b;font-weight:800;'>📊 {detected_crop.title()} Analysis Result</h3>", unsafe_allow_html=True)
+        model, crop_scaler, crop_class_names = MODELS.get(detected_crop, (None, None, None))
+        if model:
+            with st.spinner("🔬 Analyzing..."):
+                start_time = time.time()
+                features = extract_all_features(uploaded_file.getvalue())
+                if features is not None:
+                    features = np.nan_to_num(features).reshape(1, -1)
+                    features_scaled = crop_scaler.transform(features)
+                    probs = model.predict_proba(features_scaled)[0]
+                    inference_time = time.time() - start_time
+                    max_idx = np.argmax(probs)
+                    conf = probs[max_idx] * 100
+                    label = crop_class_names[max_idx].replace("_", " ").title()
+                    prob_dict = {l: p * 100 for l, p in zip(crop_class_names, probs)}
+                    config = CROP_CONFIG[detected_crop]
+                    ts = datetime.datetime.now().strftime("%d %b %Y · %H:%M")
+                    if conf >= 60:
+                        is_healthy, _ = render_report(
+                            label, conf, prob_dict,
+                            config['urdu_names'].get(label, label),
+                            config['local_names'].get(label, label),
+                            config['display_name'], ts, inference_time
+                        )
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        if is_healthy:
+                            st.balloons()
+                        render_treatment(label, is_healthy, crop=detected_crop)
+                    else:
+                        st.warning("⚠️ Confidence bohat kam hai. Saaf aur roshan jagah mein dobara try karein.")
+        else:
+            st.error(CROP_CONFIG[detected_crop]['model_missing_msg'])
+
+    st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align:center;color:#064e3b;font-weight:900;font-size:2rem;margin-bottom:6px;'>Supported Crops | Faslain</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align:center;color:#6b7280;font-size:0.9rem;margin-bottom:24px;'>Apni fasal chunein — AI fauran diagnose karega</p>", unsafe_allow_html=True)
 
@@ -1089,16 +1338,19 @@ if nav == "🏠 Home Page":
         <p style="font-size:0.75rem;margin-top:14px;color:#cbd5e1;">Developed by <b>Saqlain Khan</b> (Data Engineer) & <b>Raheel Chishti</b></p>
     </div>
     """, unsafe_allow_html=True)
+    render_mobile_nav(active_tab="home")
 
 
 # ===================== POTATO — now uses generic function =====================
 elif nav == "🥔 Potato (Aloo)":
     render_crop_page("potato")
+    render_mobile_nav(active_tab="scan")
 
 
 # ===================== TOMATO — now uses generic function =====================
 elif nav == "🍅 Tomato Check":
     render_crop_page("tomato")
+    render_mobile_nav(active_tab="scan")
 
 
 # ===================== CORN =====================
@@ -1122,6 +1374,7 @@ elif nav == "🌽 Corn Field":
         </div>
     </div>
     """, unsafe_allow_html=True)
+    render_mobile_nav(active_tab="home")
 
 
 # ===================== PEPPER =====================
@@ -1144,5 +1397,6 @@ elif nav == "🫑 Pepper (Mirch)":
             </div>
         </div>
     </div>
-    """, unsafe_allow_html=True)  
+    """, unsafe_allow_html=True)
+    render_mobile_nav(active_tab="home") 
     
