@@ -31,15 +31,26 @@ quick_scan_target = st.session_state.pop('quick_scan_target', None)
 
 # --- 2. WEATHER ---
 def get_real_weather():
+    """Fetch live temperature, wind speed, AND real humidity from Open-Meteo."""
     try:
-        url = "https://api.open-meteo.com/v1/forecast?latitude=31.5204&longitude=74.3587&current_weather=true"
+        url = (
+            "https://api.open-meteo.com/v1/forecast"
+            "?latitude=31.5204&longitude=74.3587"
+            "&current_weather=true"
+            "&hourly=relative_humidity_2m"
+            "&forecast_days=1"
+        )
         response = requests.get(url, timeout=3)
         data = response.json()
-        return data['current_weather']['temperature'], data['current_weather']['windspeed']
+        temp = data['current_weather']['temperature']
+        wind = data['current_weather']['windspeed']
+        # Pick current hour's humidity from hourly array
+        humidity = data['hourly']['relative_humidity_2m'][datetime.datetime.now().hour]
+        return temp, wind, humidity
     except:
-        return 28, 12
+        return 28, 12, 65   # sensible fallbacks
 
-temp, wind = get_real_weather()
+temp, wind, humidity = get_real_weather()
 
 # --- 3. CROP CONFIG (IMPROVEMENT #1: Centralized config instead of scattered hardcoded values) ---
 TOMATO_URDU_NAMES = {"Bacterial Spot": "بیکٹیریل دھبے", "Early Blight": "اگیتی جھلس", "Late Blight": "پچھیتی جھلس", "Leaf Mold": "پتے کی پھپھوندی", "Septoria Leaf Spot": "سیپٹوریا دھبے", "Target Spot": "ہدف دھبے", "Yellow Leaf Curl Virus": "پیلا پتہ مروڑ وائرس", "Mosaic Virus": "موزیک وائرس", "Healthy": "صحت مند"}
@@ -212,7 +223,7 @@ class CropAutoDetector:
             best = max(scores, key=scores.get)
             conf = round(min(scores[best], 0.95), 2)
 
-            if conf < 0.4:
+            if conf < 0.5:
                 return None, conf, "Could not confidently detect crop. Please select manually."
 
             msg = f"{'Aloo (Potato)' if best == 'potato' else 'Tamatar (Tomato)'} detect hua — {conf:.0%} confidence"
@@ -324,52 +335,68 @@ def render_universal_upload():
     return None, None
 
 
-# --- 9. MOBILE BOTTOM NAVIGATION (v3 improvement) ---
+# --- 9. MOBILE BOTTOM NAVIGATION (v4: functional Streamlit buttons, not just HTML) ---
 def render_mobile_nav(active_tab="home"):
     """
-    Fixed bottom nav bar — only visible on mobile (max-width: 768px).
-    Sidebar is hidden on mobile; this replaces it with thumb-friendly nav.
+    Working mobile bottom nav using actual Streamlit buttons.
+    Only visible on screens <= 768px. Sidebar is hidden on mobile via CSS.
     """
-    tabs = [
-        ("home",    "🏠", "Home"),
-        ("scan",    "📸", "Scan"),
-        ("weather", "🌤️", "Mausam"),
-    ]
-    items_html = ""
-    for key, icon, label in tabs:
-        active_class = "mob-nav-active" if active_tab == key else ""
-        items_html += f"""
-        <div class="mob-nav-item {active_class}">
-            <span class="mob-nav-icon">{icon}</span>
-            <span>{label}</span>
-        </div>"""
-
-    st.markdown(f"""
+    st.markdown("""
     <style>
-    @media (min-width: 769px) {{ .mob-nav {{ display: none !important; }} }}
-    .mob-nav {{
-        position: fixed; bottom: 0; left: 0; right: 0;
-        background: rgba(255,255,255,0.96);
-        backdrop-filter: blur(20px);
-        border-top: 1px solid rgba(6,78,59,0.1);
-        padding: 8px 0 max(8px, env(safe-area-inset-bottom));
-        display: flex; justify-content: space-around; z-index: 9999;
-        box-shadow: 0 -4px 20px rgba(6,78,59,0.08);
-    }}
-    .mob-nav-item {{
-        display: flex; flex-direction: column; align-items: center;
-        gap: 3px; padding: 6px 20px;
-        color: #9ca3af; font-size: 0.62rem; font-weight: 700;
-        cursor: pointer; transition: color 0.2s;
-    }}
-    .mob-nav-active {{ color: #059669 !important; }}
-    .mob-nav-icon {{ font-size: 1.35rem; line-height: 1; }}
-    @media (max-width: 768px) {{
-        .main .block-container {{ padding-bottom: 80px !important; }}
-    }}
+    @media (min-width: 769px) {
+        .mob-nav-wrap { display: none !important; }
+    }
+    @media (max-width: 768px) {
+        [data-testid="stSidebar"] { display: none !important; }
+        .main .block-container { padding-bottom: 90px !important; }
+        .mob-nav-wrap {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(255,255,255,0.97);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(6,78,59,0.1);
+            padding: 6px 12px max(10px, env(safe-area-inset-bottom));
+            z-index: 9999;
+            box-shadow: 0 -4px 20px rgba(6,78,59,0.08);
+        }
+        /* Make buttons look like nav items, not default Streamlit buttons */
+        .mob-nav-wrap .stButton > button {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: #9ca3af !important;
+            font-size: 0.62rem !important;
+            font-weight: 700 !important;
+            padding: 6px 4px !important;
+            min-height: unset !important;
+            flex-direction: column;
+            gap: 2px;
+            border-radius: 10px !important;
+            transition: all 0.2s !important;
+        }
+        .mob-nav-wrap .stButton > button:hover {
+            background: rgba(6,78,59,0.06) !important;
+            color: #059669 !important;
+            transform: none !important;
+        }
+    }
     </style>
-    <div class="mob-nav">{items_html}</div>
     """, unsafe_allow_html=True)
+
+    st.markdown('<div class="mob-nav-wrap">', unsafe_allow_html=True)
+    cols = st.columns(3)
+    nav_items = [
+        ("home",    "🏠 Home",    "🏠 Home Page"),
+        ("scan",    "📸 Scan",    "🥔 Potato (Aloo)"),
+        ("weather", "🌤️ Mausam", None),
+    ]
+    for col, (key, label, nav_target) in zip(cols, nav_items):
+        with col:
+            btn_label = f"**{label}**" if active_tab == key else label
+            if st.button(btn_label, key=f"mob_nav_{key}", use_container_width=True):
+                if nav_target:
+                    st.session_state['nav_override'] = nav_target
+                    st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 # --- 10. CSS (Split into critical + component CSS) ---
@@ -1040,10 +1067,72 @@ def render_treatment(label, is_healthy, crop="potato"):
 
 
 # ===== IMPROVEMENT #9: GENERIC CROP PAGE FUNCTION (eliminates duplicate Potato/Tomato code) =====
+# --- UNIFIED ANALYSIS PIPELINE (v4: single source of truth, no duplication) ---
+def analyze_image(uploaded_file, crop_key):
+    """
+    Single function used by BOTH render_crop_page() and render_universal_upload().
+    Fixes the v3 DRY violation — one bug fix here fixes everywhere.
+    Returns a result dict, or None on failure.
+    """
+    model, crop_scaler, crop_class_names = MODELS.get(crop_key, (None, None, None))
+    if not model:
+        st.error(CROP_CONFIG[crop_key]['model_missing_msg'])
+        return None
+
+    start_time = time.time()
+    features = extract_all_features(uploaded_file.getvalue())
+    if features is None:
+        return None
+
+    features = np.nan_to_num(features).reshape(1, -1)
+    features_scaled = crop_scaler.transform(features)
+    probs = model.predict_proba(features_scaled)[0]
+    inference_time = time.time() - start_time
+
+    max_idx = np.argmax(probs)
+    conf = probs[max_idx] * 100
+    label = crop_class_names[max_idx].replace("_", " ").title()
+
+    return {
+        'conf': conf,
+        'label': label,
+        'prob_dict': {l: p * 100 for l, p in zip(crop_class_names, probs)},
+        'inference_time': inference_time,
+    }
+
+
+def show_low_confidence_warning():
+    st.markdown("""
+    <div style="background:#fef2f2;border:1.5px solid #dc2626;border-radius:16px;padding:24px;text-align:center;">
+        <div style="font-size:2rem;margin-bottom:8px;">⚠️</div>
+        <h3 style="color:#dc2626;font-weight:800;margin:0 0 8px;">Photo Clear Nahi Hai!</h3>
+        <p style="color:#6b7280;font-size:0.9rem;">Confidence bohat kam hai. Ye is fasal ka patta nahi lagta ya photo blur hai. Saaf aur roshan jagah mein dobara try karein.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def show_result(result, crop_key, config):
+    """Render report + treatment from a result dict. Used by both pages."""
+    if result['conf'] < 60:
+        show_low_confidence_warning()
+        return
+    ts = datetime.datetime.now().strftime("%d %b %Y · %H:%M")
+    urdu_name = config['urdu_names'].get(result['label'], result['label'])
+    local_name = config['local_names'].get(result['label'], result['label'])
+    is_healthy, _ = render_report(
+        result['label'], result['conf'], result['prob_dict'],
+        urdu_name, local_name, config['display_name'], ts, result['inference_time']
+    )
+    st.markdown("<br>", unsafe_allow_html=True)
+    if is_healthy:
+        st.balloons()
+    render_treatment(result['label'], is_healthy, crop=crop_key)
+
+
 def render_crop_page(crop_key):
-    """One generic function handles both Potato and Tomato — no more copy-paste code."""
+    """Crop-specific scan page — uses unified analyze_image()."""
     config = CROP_CONFIG[crop_key]
-    model, crop_scaler, crop_class_names = MODELS[crop_key]
+    model = MODELS[crop_key][0]
 
     render_persistent_header()
 
@@ -1061,9 +1150,19 @@ def render_crop_page(crop_key):
         st.error(config['model_missing_msg'])
         st.stop()
 
-    uploaded_file = st.file_uploader(config['uploader_label'], type=["jpg", "png", "jpeg", "webp", "jfif"])
+    # --- Batch upload (v4: accept_multiple_files) ---
+    uploaded_files = st.file_uploader(
+        config['uploader_label'],
+        type=["jpg", "png", "jpeg", "webp", "jfif"],
+        accept_multiple_files=True
+    )
 
-    if uploaded_file:
+    if not uploaded_files:
+        return
+
+    # Single file — full detailed report
+    if len(uploaded_files) == 1:
+        uploaded_file = uploaded_files[0]
         col1, col2 = st.columns([1, 1.6])
         with col1:
             pil_img = Image.open(uploaded_file).convert('RGB')
@@ -1078,48 +1177,49 @@ def render_crop_page(crop_key):
                 </div>
             </div>
             """, unsafe_allow_html=True)
-
         with col2:
             with st.spinner("🔬 Extracting features & running diagnostics..."):
-                # IMPROVEMENT #10: Track actual inference time, no fake time.sleep()
-                start_time = time.time()
-                features = extract_all_features(uploaded_file.getvalue())
-                if features is None:
-                    st.stop()
+                result = analyze_image(uploaded_file, crop_key)
+        if result:
+            show_result(result, crop_key, config)
 
-                features = np.nan_to_num(features).reshape(1, -1)
-                features_scaled = crop_scaler.transform(features)
-                probs = model.predict_proba(features_scaled)[0]
-                inference_time = time.time() - start_time
+    # Multiple files — compact batch results table
+    else:
+        st.markdown(f"""
+        <div style="background:var(--emerald-50);border-radius:14px;padding:14px 18px;border:1px solid rgba(52,211,153,0.2);margin-bottom:18px;">
+            <span style="font-weight:700;color:#064e3b;">📦 Batch Mode:</span>
+            <span style="color:#6b7280;font-size:0.9rem;"> {len(uploaded_files)} pattay upload hue — ek ek scan ho raha hai</span>
+        </div>
+        """, unsafe_allow_html=True)
 
-            max_idx = np.argmax(probs)
-            conf = probs[max_idx] * 100
-            label = crop_class_names[max_idx].replace("_", " ").title()
-            prob_dict = {l: p * 100 for l, p in zip(crop_class_names, probs)}
-
-            if conf < 60:
-                st.markdown("""
-                <div style="background:#fef2f2;border:1.5px solid #dc2626;border-radius:16px;padding:24px;text-align:center;">
-                    <div style="font-size:2rem;margin-bottom:8px;">⚠️</div>
-                    <h3 style="color:#dc2626;font-weight:800;margin:0 0 8px;">Photo Clear Nahi Hai!</h3>
-                    <p style="color:#6b7280;font-size:0.9rem;">Confidence bohat kam hai. Ye is fasal ka patta nahi lagta ya photo blur hai. Saaf aur roshan jagah mein dobara try karein.</p>
-                </div>
-                """, unsafe_allow_html=True)
-                st.stop()
-
-            ts = datetime.datetime.now().strftime("%d %b %Y · %H:%M")
-            urdu_name = config['urdu_names'].get(label, label)
-            local_name = config['local_names'].get(label, label)
-
-            is_healthy, _ = render_report(
-                label, conf, prob_dict, urdu_name, local_name,
-                config['display_name'], ts, inference_time
-            )
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        if is_healthy:
-            st.balloons()
-        render_treatment(label, is_healthy, crop=crop_key)
+        progress_bar = st.progress(0, text="Scanning leaves...")
+        for i, uploaded_file in enumerate(uploaded_files):
+            with st.container():
+                col_img, col_res = st.columns([1, 3])
+                with col_img:
+                    st.image(uploaded_file, width=120)
+                with col_res:
+                    result = analyze_image(uploaded_file, crop_key)
+                    if result:
+                        conf = result['conf']
+                        label = result['label']
+                        is_healthy = "healthy" in label.lower()
+                        if conf < 60:
+                            st.warning(f"**{uploaded_file.name}** — ⚠️ Low confidence ({conf:.0f}%)")
+                        else:
+                            color = "#059669" if is_healthy else ("#dc2626" if any(k in label.lower() for k in ["late","virus","mosaic","curl"]) else "#d97706")
+                            st.markdown(f"""
+                            <div style="padding:12px 16px;background:white;border-radius:12px;border-left:4px solid {color};box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:4px;">
+                                <div style="font-weight:800;color:{color};font-size:1rem;">{label}</div>
+                                <div style="font-size:0.78rem;color:#6b7280;margin-top:2px;">
+                                    Confidence: <b>{conf:.1f}%</b> &nbsp;·&nbsp; ⚡ {result['inference_time']:.2f}s
+                                    &nbsp;·&nbsp; {uploaded_file.name}
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
+            progress_bar.progress((i + 1) / len(uploaded_files), text=f"Scanning {i+1}/{len(uploaded_files)}...")
+        progress_bar.empty()
+        st.success(f"✅ Batch complete! {len(uploaded_files)} pattay scan ho gaye.")
 
 
 # ===================== HOME PAGE =====================
@@ -1192,7 +1292,7 @@ if nav == "🏠 Home Page":
                 <div style="font-size:0.75rem;color:rgba(255,255,255,0.65);margin-bottom:12px;">Fasal ke liye mausam ki report</div>
                 <div class="details-grid">
                     <div class="detail-item"><div class="detail-label">Wind / Hawa</div><div class="detail-val">{wind} km/h</div></div>
-                    <div class="detail-item"><div class="detail-label">Humidity / Nam</div><div class="detail-val">65%</div></div>
+                    <div class="detail-item"><div class="detail-label">Humidity / Nam</div><div class="detail-val">{humidity}%</div></div>
                     <div class="detail-item"><div class="detail-label">Spray Safe?</div><div class="detail-val">{"❌ Na Karein" if wind > 20 else "✅ Theek Hai"}</div></div>
                     <div class="detail-item"><div class="detail-label">Bimari Risk</div><div class="detail-val">{"🔴 Zyada" if temp > 28 else "🟢 Kam"}</div></div>
                 </div>
@@ -1215,37 +1315,10 @@ if nav == "🏠 Home Page":
     if uploaded_file and detected_crop:
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown(f"<h3 style='color:#064e3b;font-weight:800;'>📊 {detected_crop.title()} Analysis Result</h3>", unsafe_allow_html=True)
-        model, crop_scaler, crop_class_names = MODELS.get(detected_crop, (None, None, None))
-        if model:
-            with st.spinner("🔬 Analyzing..."):
-                start_time = time.time()
-                features = extract_all_features(uploaded_file.getvalue())
-                if features is not None:
-                    features = np.nan_to_num(features).reshape(1, -1)
-                    features_scaled = crop_scaler.transform(features)
-                    probs = model.predict_proba(features_scaled)[0]
-                    inference_time = time.time() - start_time
-                    max_idx = np.argmax(probs)
-                    conf = probs[max_idx] * 100
-                    label = crop_class_names[max_idx].replace("_", " ").title()
-                    prob_dict = {l: p * 100 for l, p in zip(crop_class_names, probs)}
-                    config = CROP_CONFIG[detected_crop]
-                    ts = datetime.datetime.now().strftime("%d %b %Y · %H:%M")
-                    if conf >= 60:
-                        is_healthy, _ = render_report(
-                            label, conf, prob_dict,
-                            config['urdu_names'].get(label, label),
-                            config['local_names'].get(label, label),
-                            config['display_name'], ts, inference_time
-                        )
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        if is_healthy:
-                            st.balloons()
-                        render_treatment(label, is_healthy, crop=detected_crop)
-                    else:
-                        st.warning("⚠️ Confidence bohat kam hai. Saaf aur roshan jagah mein dobara try karein.")
-        else:
-            st.error(CROP_CONFIG[detected_crop]['model_missing_msg'])
+        with st.spinner("🔬 Analyzing..."):
+            result = analyze_image(uploaded_file, detected_crop)
+        if result:
+            show_result(result, detected_crop, CROP_CONFIG[detected_crop])
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align:center;color:#064e3b;font-weight:900;font-size:2rem;margin-bottom:6px;'>Supported Crops | Faslain</h2>", unsafe_allow_html=True)
