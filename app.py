@@ -52,7 +52,7 @@ def get_real_weather():
 
 temp, wind, humidity = get_real_weather()
 
-# --- 3. CROP CONFIG (IMPROVEMENT #1: Centralized config instead of scattered hardcoded values) ---
+# --- 3. CROP CONFIG ---
 TOMATO_URDU_NAMES = {"Bacterial Spot": "بیکٹیریل دھبے", "Early Blight": "اگیتی جھلس", "Late Blight": "پچھیتی جھلس", "Leaf Mold": "پتے کی پھپھوندی", "Septoria Leaf Spot": "سیپٹوریا دھبے", "Target Spot": "ہدف دھبے", "Yellow Leaf Curl Virus": "پیلا پتہ مروڑ وائرس", "Mosaic Virus": "موزیک وائرس", "Healthy": "صحت مند"}
 TOMATO_LOCAL_NAMES = {"Bacterial Spot": "ٹماٹر تے کالے داغ", "Early Blight": "اگیتی سڑن", "Late Blight": "پچھیتی سڑن", "Leaf Mold": "پتیاں تے پھپھوند", "Septoria Leaf Spot": "پتیاں تے چھوٹے داغ", "Target Spot": "گول داغ روگ", "Yellow Leaf Curl Virus": "پیلا پتہ وائرس", "Mosaic Virus": "چتکبری بیماری", "Healthy": "تندرست فصل"}
 POTATO_URDU_NAMES = {"Early Blight": "اگیتی جھلس", "Late Blight": "پچھیتی جھلس", "Healthy": "صحت مند"}
@@ -89,8 +89,7 @@ CROP_CONFIG = {
     },
 }
 
-# --- 4. MODEL LOADING — Graceful degradation (v3 improvement) ---
-# App starts even if one or both model files are missing.
+# --- 4. MODEL LOADING ---
 @st.cache_resource
 def safe_load_models():
     """Load all crop models. Missing models show a warning, not a crash."""
@@ -115,7 +114,7 @@ MODELS = safe_load_models()
 rf_model, scaler, class_names = MODELS.get("potato", (None, None, None))
 t_model, t_scaler, t_class_names = MODELS.get("tomato", (None, None, None))
 
-# --- 6. ERROR HANDLING DECORATOR (IMPROVEMENT #2: Defensive programming) ---
+# --- 6. ERROR HANDLING DECORATOR ---
 def safe_analysis(func):
     """Decorator for safe analysis execution"""
     @functools.wraps(func)
@@ -135,10 +134,9 @@ def safe_analysis(func):
             return None
     return wrapper
 
-# --- 7. FEATURE EXTRACTION WITH ERROR HANDLING (IMPROVEMENT #3) ---
+# --- 7. FEATURE EXTRACTION ---
 @safe_analysis
 def extract_all_features(image_bytes):
-    # Input validation
     if len(image_bytes) > 10 * 1024 * 1024:
         raise ValueError("Image too large. Please use images under 10MB.")
 
@@ -166,26 +164,15 @@ def extract_all_features(image_bytes):
 
     result = np.hstack([f_color, f_hog, f_lbp, f_glcm])
 
-    # Explicit memory cleanup (IMPROVEMENT #2)
     del img, gray_img, hsv, lbp, glcm
     gc.collect()
 
     return result
 
-# --- 8. CROP AUTO-DETECTOR (v3: Universal upload, AI detects crop type) ---
+# --- 8. CROP AUTO-DETECTOR ---
 class CropAutoDetector:
-    """
-    Heuristic-based crop detection using color + shape analysis.
-    Farmers don't need to select crop manually — AI figures it out.
-    """
-
     @staticmethod
     def detect(image_bytes):
-        """
-        Returns (detected_crop_key, confidence_float, message_str)
-        detected_crop_key: 'potato' | 'tomato' | None
-        confidence: 0.0 – 1.0
-        """
         try:
             nparr = np.frombuffer(image_bytes, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -204,7 +191,6 @@ class CropAutoDetector:
 
             scores = {"potato": 0.0, "tomato": 0.0}
 
-            # Potato: broader, rounder leaves — aspect close to 1, medium green hue
             if 30 <= mean_hue <= 90 and 0.8 <= aspect <= 1.6:
                 scores["potato"] += 0.5
             if mean_sat > 0.2:
@@ -212,7 +198,6 @@ class CropAutoDetector:
             if mean_val > 0.3:
                 scores["potato"] += 0.1
 
-            # Tomato: slightly higher saturation, more yellow-green hue range
             if 30 <= mean_hue <= 80 and mean_sat > 0.28:
                 scores["tomato"] += 0.5
             if 0.9 <= aspect <= 1.7:
@@ -234,11 +219,6 @@ class CropAutoDetector:
 
 
 def render_universal_upload():
-    """
-    Single drag-and-drop zone for any leaf.
-    AI auto-detects crop; user can override manually.
-    Returns (uploaded_file, crop_key) or (None, None).
-    """
     st.markdown("""
     <style>
     .univ-upload-box {
@@ -290,7 +270,6 @@ def render_universal_upload():
     if not uploaded_file:
         return None, None
 
-    # Auto-detect crop
     detected_crop, conf, msg = CropAutoDetector.detect(uploaded_file.getvalue())
 
     col_img, col_detect = st.columns([1, 1.4])
@@ -317,7 +296,6 @@ def render_universal_upload():
             </div>
             """, unsafe_allow_html=True)
 
-        # Manual override — always visible
         st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
         options = ["🥔 Potato (Aloo)", "🍅 Tomato (Tamatar)"]
         default_idx = 0 if detected_crop == "potato" else (1 if detected_crop == "tomato" else 0)
@@ -335,46 +313,58 @@ def render_universal_upload():
     return None, None
 
 
-# --- 9. MOBILE BOTTOM NAVIGATION (v4: functional Streamlit buttons, not just HTML) ---
+# --- 9. MOBILE BOTTOM NAVIGATION (BUG FIXED) ---
 def render_mobile_nav(active_tab="home"):
     """
-    Working mobile bottom nav using actual Streamlit buttons.
-    Only visible on screens <= 768px. Sidebar is hidden on mobile via CSS.
+    Fixed Mobile Navigation. 
+    Targeting only the last horizontal block dynamically via CSS to hide on PC.
     """
     st.markdown("""
     <style>
+    /* Desktop: Hide the mobile nav block */
     @media (min-width: 769px) {
-        .mob-nav-wrap { display: none !important; }
+        div[data-testid="stHorizontalBlock"]:last-of-type {
+            display: none !important;
+        }
     }
+    
+    /* Mobile: Stick the last horizontal block to the bottom */
     @media (max-width: 768px) {
         [data-testid="stSidebar"] { display: none !important; }
         .main .block-container { padding-bottom: 90px !important; }
-        .mob-nav-wrap {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: rgba(255,255,255,0.97);
+        
+        div[data-testid="stHorizontalBlock"]:last-of-type {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.98);
             backdrop-filter: blur(20px);
             border-top: 1px solid rgba(6,78,59,0.1);
-            padding: 6px 12px max(10px, env(safe-area-inset-bottom));
+            padding: 8px 12px max(10px, env(safe-area-inset-bottom));
             z-index: 9999;
             box-shadow: 0 -4px 20px rgba(6,78,59,0.08);
+            margin: 0 !important;
+            gap: 0 !important;
         }
-        /* Make buttons look like nav items, not default Streamlit buttons */
-        .mob-nav-wrap .stButton > button {
+        
+        /* Make buttons look like mobile app tabs */
+        div[data-testid="stHorizontalBlock"]:last-of-type .stButton > button {
             background: transparent !important;
             border: none !important;
             box-shadow: none !important;
             color: #9ca3af !important;
-            font-size: 0.62rem !important;
+            font-size: 0.7rem !important;
             font-weight: 700 !important;
-            padding: 6px 4px !important;
+            padding: 8px 4px !important;
             min-height: unset !important;
-            flex-direction: column;
-            gap: 2px;
-            border-radius: 10px !important;
+            width: 100% !important;
+            border-radius: 12px !important;
             transition: all 0.2s !important;
         }
-        .mob-nav-wrap .stButton > button:hover {
-            background: rgba(6,78,59,0.06) !important;
+        div[data-testid="stHorizontalBlock"]:last-of-type .stButton > button:hover,
+        div[data-testid="stHorizontalBlock"]:last-of-type .stButton > button:active {
+            background: rgba(6,78,59,0.08) !important;
             color: #059669 !important;
             transform: none !important;
         }
@@ -382,7 +372,6 @@ def render_mobile_nav(active_tab="home"):
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="mob-nav-wrap">', unsafe_allow_html=True)
     cols = st.columns(3)
     nav_items = [
         ("home",    "🏠 Home",    "🏠 Home Page"),
@@ -396,12 +385,10 @@ def render_mobile_nav(active_tab="home"):
                 if nav_target:
                     st.session_state['nav_override'] = nav_target
                     st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 
-# --- 10. CSS (Split into critical + component CSS) ---
+# --- 10. CSS ---
 def get_critical_css():
-    """Critical above-the-fold styles"""
     return """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Noto+Nastaliq+Urdu&family=Space+Mono:wght@400;700&display=swap');
@@ -430,10 +417,7 @@ def get_critical_css():
     --radius-sm:   10px;
 }
 
-html, body, [class*="css"] {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    scroll-behavior: smooth;
-}
+html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; scroll-behavior: smooth; }
 
 @keyframes fadeInUp    { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
 @keyframes fadeInScale { from { opacity:0; transform:scale(0.92); } to { opacity:1; transform:scale(1); } }
@@ -449,7 +433,6 @@ html, body, [class*="css"] {
 @keyframes reportSlide { from { opacity:0; transform:translateX(-20px); } to { opacity:1; transform:translateX(0); } }
 @keyframes pulseDot    { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-/* Respect user's reduced-motion preference (IMPROVEMENT #5) */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -493,7 +476,6 @@ html, body, [class*="css"] {
 [data-testid="stSidebar"] .stRadio div[role="radiogroup"] div[role="radio"] { display:none; }
 [data-testid="stSidebar"] hr { border-color: rgba(52,211,153,0.2) !important; }
 
-/* Global buttons */
 .stButton > button {
     border-radius: var(--radius-md) !important;
     font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -516,7 +498,6 @@ img { border-radius: var(--radius-lg); box-shadow: var(--shadow-soft); transitio
 """
 
 def get_home_css():
-    """Home page specific styles"""
     return """
 <style>
 .hero-wrapper {
@@ -648,7 +629,6 @@ def get_home_css():
 """
 
 def get_report_css():
-    """Report/diagnosis page specific styles"""
     return """
 <style>
 .page-header {
@@ -721,7 +701,6 @@ def get_report_css():
 .treat-label { font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; opacity:0.6; margin-bottom:2px; }
 .treat-val { font-size:0.88rem; font-weight:600; line-height:1.5; }
 
-/* Inference time badge */
 .infer-badge {
     display:inline-flex; align-items:center; gap:6px;
     background:var(--emerald-50); border:1px solid rgba(52,211,153,0.3);
@@ -733,7 +712,6 @@ def get_report_css():
 """
 
 def get_badge_css():
-    """Badge and misc component styles"""
     return """
 <style>
 .badge-live {
@@ -778,7 +756,6 @@ def get_badge_css():
 .coming-page { min-height:60vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:60px 20px; animation:fadeInScale 0.8s ease-out both; }
 .coming-pulse { font-size:5rem; margin-bottom:20px; animation:floatY 4s ease-in-out infinite; filter:drop-shadow(0 10px 20px rgba(0,0,0,0.1)); }
 
-/* IMPROVEMENT #6: Persistent top header bar */
 .top-header-bar {
     position: sticky; top: 0; z-index: 999;
     background: rgba(255,255,255,0.92); backdrop-filter: blur(20px);
@@ -798,7 +775,6 @@ def get_badge_css():
 }
 .status-dot { width:5px; height:5px; background:white; border-radius:50%; animation:pulseDot 2s infinite; }
 
-/* IMPROVEMENT #7: Mobile responsive improvements */
 @media (max-width: 768px) {
     .hero-title { font-size: 2.4rem !important; }
     .stat-grid  { grid-template-columns: repeat(2, 1fr); }
@@ -821,7 +797,7 @@ st.markdown(get_home_css(), unsafe_allow_html=True)
 st.markdown(get_report_css(), unsafe_allow_html=True)
 st.markdown(get_badge_css(), unsafe_allow_html=True)
 
-# --- 9. PERSISTENT HEADER (IMPROVEMENT #6) ---
+# --- 9. PERSISTENT HEADER ---
 def render_persistent_header():
     st.markdown("""
     <div class="top-header-bar">
@@ -911,7 +887,6 @@ def render_report(label, conf, prob_dict, urdu_name, local_name, crop_name, time
 
     bar_color = "#059669" if is_healthy else ("#dc2626" if "high" in sev.lower() else "#d97706")
 
-    # IMPROVEMENT #8: Show actual inference time instead of fake sleep
     infer_badge = ""
     if inference_time is not None:
         infer_badge = f'<div class="infer-badge">⚡ {inference_time:.2f}s inference time</div>'
@@ -1066,14 +1041,8 @@ def render_treatment(label, is_healthy, crop="potato"):
         """, unsafe_allow_html=True)
 
 
-# ===== IMPROVEMENT #9: GENERIC CROP PAGE FUNCTION (eliminates duplicate Potato/Tomato code) =====
-# --- UNIFIED ANALYSIS PIPELINE (v4: single source of truth, no duplication) ---
+# --- UNIFIED ANALYSIS PIPELINE ---
 def analyze_image(uploaded_file, crop_key):
-    """
-    Single function used by BOTH render_crop_page() and render_universal_upload().
-    Fixes the v3 DRY violation — one bug fix here fixes everywhere.
-    Returns a result dict, or None on failure.
-    """
     model, crop_scaler, crop_class_names = MODELS.get(crop_key, (None, None, None))
     if not model:
         st.error(CROP_CONFIG[crop_key]['model_missing_msg'])
@@ -1112,7 +1081,6 @@ def show_low_confidence_warning():
 
 
 def show_result(result, crop_key, config):
-    """Render report + treatment from a result dict. Used by both pages."""
     if result['conf'] < 60:
         show_low_confidence_warning()
         return
@@ -1130,7 +1098,6 @@ def show_result(result, crop_key, config):
 
 
 def render_crop_page(crop_key):
-    """Crop-specific scan page — uses unified analyze_image()."""
     config = CROP_CONFIG[crop_key]
     model = MODELS[crop_key][0]
 
@@ -1150,7 +1117,6 @@ def render_crop_page(crop_key):
         st.error(config['model_missing_msg'])
         st.stop()
 
-    # --- Batch upload (v4: accept_multiple_files) ---
     uploaded_files = st.file_uploader(
         config['uploader_label'],
         type=["jpg", "png", "jpeg", "webp", "jfif"],
@@ -1160,7 +1126,6 @@ def render_crop_page(crop_key):
     if not uploaded_files:
         return
 
-    # Single file — full detailed report
     if len(uploaded_files) == 1:
         uploaded_file = uploaded_files[0]
         col1, col2 = st.columns([1, 1.6])
@@ -1183,7 +1148,6 @@ def render_crop_page(crop_key):
         if result:
             show_result(result, crop_key, config)
 
-    # Multiple files — compact batch results table
     else:
         st.markdown(f"""
         <div style="background:var(--emerald-50);border-radius:14px;padding:14px 18px;border:1px solid rgba(52,211,153,0.2);margin-bottom:18px;">
@@ -1302,25 +1266,6 @@ if nav == "🏠 Home Page":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="scan-cta-wrap">
-        <p style="color:rgba(255,255,255,0.65);font-size:0.75rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">🔬 Quick Scan</p>
-        <h2 style="color:white;font-size:1.9rem;font-weight:900;margin:0 0 10px;letter-spacing:-0.5px;">Koi bhi fasal — ek hi jagah scan karein</h2>
-        <p style="color:rgba(255,255,255,0.7);font-size:0.95rem;max-width:500px;margin:0 auto 24px;line-height:1.6;">Seedha yahan patta upload karein — AI khud crop detect karega</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Universal upload zone — AI auto-detects crop
-    uploaded_file, detected_crop = render_universal_upload()
-    if uploaded_file and detected_crop:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown(f"<h3 style='color:#064e3b;font-weight:800;'>📊 {detected_crop.title()} Analysis Result</h3>", unsafe_allow_html=True)
-        with st.spinner("🔬 Analyzing..."):
-            result = analyze_image(uploaded_file, detected_crop)
-        if result:
-            show_result(result, detected_crop, CROP_CONFIG[detected_crop])
-
-    st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align:center;color:#064e3b;font-weight:900;font-size:2rem;margin-bottom:6px;'>Supported Crops | Faslain</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align:center;color:#6b7280;font-size:0.9rem;margin-bottom:24px;'>Apni fasal chunein — AI fauran diagnose karega</p>", unsafe_allow_html=True)
 
@@ -1414,13 +1359,13 @@ if nav == "🏠 Home Page":
     render_mobile_nav(active_tab="home")
 
 
-# ===================== POTATO — now uses generic function =====================
+# ===================== POTATO =====================
 elif nav == "🥔 Potato (Aloo)":
     render_crop_page("potato")
     render_mobile_nav(active_tab="scan")
 
 
-# ===================== TOMATO — now uses generic function =====================
+# ===================== TOMATO =====================
 elif nav == "🍅 Tomato Check":
     render_crop_page("tomato")
     render_mobile_nav(active_tab="scan")
@@ -1434,10 +1379,10 @@ elif nav == "🌽 Corn Field":
         <div class="coming-pulse">🌽</div>
         <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#d97706;padding:6px 18px;border-radius:50px;font-size:0.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;">🚀 Coming Soon</div>
         <h2 style="color:#064e3b;font-weight:900;font-size:2.2rem;margin:0 0 12px;letter-spacing:-0.5px;">Makki — مکئی</h2>
-        <p style="color:#6b7280;font-size:1rem;max-width:400px;line-height:1.7;margin:0 auto 24px;">Model training jari hai. Jald hi 8 se zyada bimariyan detect karne ki salahiyat add hogi.</p>
+        <p style="color:#6b7280;font-size:1rem;max-width:400px;line-height:1.7;margin:0 auto 24px;">Model training jari hai. Jald hi 2 se zyada bimariyan detect karne ki salahiyat add hogi.</p>
         <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
             <div style="background:white;border:1px solid rgba(6,78,59,0.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
-                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">8+</div>
+                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">2+</div>
                 <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Diseases Planned</div>
             </div>
             <div style="background:white;border:1px solid rgba(6,78,59,0.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
@@ -1461,15 +1406,15 @@ elif nav == "🫑 Pepper (Mirch)":
         <p style="color:#6b7280;font-size:1rem;max-width:400px;line-height:1.7;margin:0 auto 24px;">Dataset tayyar ho raha hai. Mirch ki bimariyon ke liye AI model develop ho raha hai.</p>
         <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
             <div style="background:white;border:1px solid rgba(6,78,59,0.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
-                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">Q3 2026</div>
+                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">MAY 2026</div>
                 <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Expected Launch</div>
             </div>
             <div style="background:white;border:1px solid rgba(6,78,59,0.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
-                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">6+</div>
+                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">2+</div>
                 <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Diseases Planned</div>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
     render_mobile_nav(active_tab="home") 
-    
+  
