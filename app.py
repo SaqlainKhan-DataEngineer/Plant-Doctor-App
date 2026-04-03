@@ -374,7 +374,7 @@ def render_universal_upload():
 
         # Manual override — always visible
         st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
-        options = ["🥔 Potato ()", "🍅 Tomato (Tamatar)", "🫑 Pepper (Mirch)", "🌽 Corn (Makki)"]
+        options = ["🥔 Potato (Aloo)", "🍅 Tomato (Tamatar)", "🫑 Pepper (Mirch)", "🌽 Corn (Makki)"]
         default_idx = 0
         if detected_crop == "tomato": default_idx = 1
         elif detected_crop == "pepper": default_idx = 2
