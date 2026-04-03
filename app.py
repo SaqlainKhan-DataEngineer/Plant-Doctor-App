@@ -58,6 +58,14 @@ TOMATO_LOCAL_NAMES = {"Bacterial Spot": "ٹماٹر تے کالے داغ", "Earl
 POTATO_URDU_NAMES = {"Early Blight": "اگیتی جھلس", "Late Blight": "پچھیتی جھلس", "Healthy": "صحت مند"}
 POTATO_LOCAL_NAMES = {"Early Blight": "اگیتی سڑن", "Late Blight": "پچھیتی سڑن", "Healthy": "تندرست فصل"}
 
+# Pepper — Gemini ne model train kiya, yeh names add ki hain
+PEPPER_URDU_NAMES = {"Bacterial Spot": "بیکٹیریل دھبے", "Healthy": "صحت مند"}
+PEPPER_LOCAL_NAMES = {"Bacterial Spot": "مرچ تے کالے دھبے", "Healthy": "تندرست فصل"}
+
+# Corn — Gemini ne model train kiya, yeh names add ki hain
+CORN_URDU_NAMES = {"Blight": "جھلس روگ", "Common Rust": "کنگی روگ", "Gray Leaf Spot": "سرمئی دھبے", "Healthy": "صحت مند"}
+CORN_LOCAL_NAMES = {"Blight": "پتیاں دا سڑنا", "Common Rust": "مکئی دی کنگی", "Gray Leaf Spot": "سرمئی داغ", "Healthy": "تندرست فصل"}
+
 CROP_CONFIG = {
     "potato": {
         "model_file": "potato_disease_model.pkl",
@@ -87,6 +95,34 @@ CROP_CONFIG = {
         "header_title": "Tomato Disease Scan | ٹماٹر کی بیماری",
         "header_sub": "Random Forest · HOG + LBP + GLCM + Color · 95% Accuracy · 9 Classes",
     },
+    "pepper": {
+        "model_file": "pepper_disease_model.pkl",
+        "urdu_names": PEPPER_URDU_NAMES,
+        "local_names": PEPPER_LOCAL_NAMES,
+        "emoji": "🫑",
+        "display_name": "Pepper — مرچ",
+        "accuracy": "99%",
+        "diseases": 2,
+        "nav_key": "🫑 Pepper (Mirch)",
+        "uploader_label": "Upload Pepper Leaf Photo / مرچ کا پتہ اپلوڈ کریں",
+        "model_missing_msg": "⚠️ **Pepper Model File Missing!** Please ensure `pepper_disease_model.pkl` is in the project directory.",
+        "header_title": "Pepper Disease Scan | مرچ کی بیماری",
+        "header_sub": "Random Forest · HOG + LBP + GLCM + Color · 99% Accuracy",
+    },
+    "corn": {
+        "model_file": "corn_disease_model.pkl",
+        "urdu_names": CORN_URDU_NAMES,
+        "local_names": CORN_LOCAL_NAMES,
+        "emoji": "🌽",
+        "display_name": "Corn — مکئی",
+        "accuracy": "87%",
+        "diseases": 4,
+        "nav_key": "🌽 Corn Field",
+        "uploader_label": "Upload Corn Leaf Photo / مکئی کا پتہ اپلوڈ کریں",
+        "model_missing_msg": "⚠️ **Corn Model File Missing!** Please ensure `corn_disease_model.pkl` is in the project directory.",
+        "header_title": "Corn Disease Scan | مکئی کی بیماری",
+        "header_sub": "Random Forest · HOG + LBP + GLCM + Color · 87% Accuracy",
+    },
 }
 
 # --- 4. MODEL LOADING — Graceful degradation (v3 improvement) ---
@@ -98,6 +134,8 @@ def safe_load_models():
     model_files = {
         "potato": ("potato_disease_model.pkl", "potato"),
         "tomato": ("tomato_disease_model_9_classes.pkl", "tomato"),
+        "pepper": ("pepper_disease_model.pkl", "pepper"),
+        "corn":   ("corn_disease_model.pkl", "corn"),
     }
     for crop_key, (file_path, _) in model_files.items():
         try:
@@ -202,7 +240,7 @@ class CropAutoDetector:
             h, w = img.shape[:2]
             aspect = w / max(h, 1)
 
-            scores = {"potato": 0.0, "tomato": 0.0}
+            scores = {"potato": 0.0, "tomato": 0.0, "pepper": 0.0, "corn": 0.0}
 
             # Potato: broader, rounder leaves — aspect close to 1, medium green hue
             if 30 <= mean_hue <= 90 and 0.8 <= aspect <= 1.6:
@@ -220,13 +258,28 @@ class CropAutoDetector:
             if mean_val > 0.35:
                 scores["tomato"] += 0.1
 
+            # Pepper: similar to tomato but slightly different aspect
+            if 35 <= mean_hue <= 85 and 0.7 <= aspect <= 1.5:
+                scores["pepper"] += 0.4
+            if mean_sat > 0.3:
+                scores["pepper"] += 0.15
+            if mean_val > 0.2:
+                scores["pepper"] += 0.15
+
+            # Corn: long thin leaves — tall or wide aspect ratio
+            if 30 <= mean_hue <= 85 and (aspect > 1.8 or aspect < 0.6):
+                scores["corn"] += 0.6
+            if mean_sat > 0.15:
+                scores["corn"] += 0.1
+
             best = max(scores, key=scores.get)
             conf = round(min(scores[best], 0.95), 2)
 
             if conf < 0.5:
                 return None, conf, "Could not confidently detect crop. Please select manually."
 
-            msg = f"{'Aloo (Potato)' if best == 'potato' else 'Tamatar (Tomato)'} detect hua — {conf:.0%} confidence"
+            crop_names = {"potato": "Aloo (Potato)", "tomato": "Tamatar (Tomato)", "pepper": "Mirch (Pepper)", "corn": "Makki (Corn)"}
+            msg = f"{crop_names[best]} detect hua — {conf:.0%} confidence"
             return best, conf, msg
 
         except Exception:
@@ -272,11 +325,12 @@ def render_universal_upload():
     <div class="univ-upload-box">
         <div style="font-size:3rem;margin-bottom:10px;">🌿</div>
         <div class="univ-upload-title">Koi bhi fasal ka patta drop karein</div>
-        <div class="univ-upload-sub">AI khud detect karega — Potato, Tomato · Ya manually select karein</div>
+        <div class="univ-upload-sub">AI khud detect karega — Potato, Tomato, Pepper, Corn · Ya manually select karein</div>
         <div style="display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
             <span style="background:#d1fae5;color:#065f46;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;">🥔 Potato</span>
             <span style="background:#fee2e2;color:#991b1b;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;">🍅 Tomato</span>
-            <span style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;">🌽 Corn (Soon)</span>
+            <span style="background:#ede9fe;color:#4c1d95;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;">🫑 Pepper</span>
+            <span style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;">🌽 Corn</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -300,7 +354,8 @@ def render_universal_upload():
 
     with col_detect:
         if detected_crop and conf >= 0.5:
-            emoji = "🥔" if detected_crop == "potato" else "🍅"
+            emoji_map = {"potato": "🥔", "tomato": "🍅", "pepper": "🫑", "corn": "🌽"}
+            emoji = emoji_map.get(detected_crop, "🌿")
             st.markdown(f"""
             <div class="detect-result-box">
                 <div class="detect-label">🤖 AI Detection Result</div>
@@ -319,15 +374,21 @@ def render_universal_upload():
 
         # Manual override — always visible
         st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
-        options = ["🥔 Potato (Aloo)", "🍅 Tomato (Tamatar)"]
-        default_idx = 0 if detected_crop == "potato" else (1 if detected_crop == "tomato" else 0)
+        options = ["🥔 Potato (Aloo)", "🍅 Tomato (Tamatar)", "🫑 Pepper (Mirch)", "🌽 Corn (Makki)"]
+        default_idx = 0
+        if detected_crop == "tomato": default_idx = 1
+        elif detected_crop == "pepper": default_idx = 2
+        elif detected_crop == "corn": default_idx = 3
         manual = st.selectbox(
             "Crop confirm karein ya change karein:",
             options,
             index=default_idx,
             key="universal_crop_select"
         )
-        final_crop = "potato" if "Potato" in manual else "tomato"
+        if "Potato" in manual: final_crop = "potato"
+        elif "Tomato" in manual: final_crop = "tomato"
+        elif "Pepper" in manual: final_crop = "pepper"
+        else: final_crop = "corn"
 
         if st.button("🔬 Is Patte Ka Analysis Karein", type="primary", use_container_width=True, key="universal_analyze_btn"):
             return uploaded_file, final_crop
@@ -789,8 +850,8 @@ st.sidebar.markdown("""
 """, unsafe_allow_html=True)
 
 st.sidebar.write("---")
-nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field", "🫑 Pepper (Mirch)"],
-    index=["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🌽 Corn Field", "🫑 Pepper (Mirch)"].index(nav_default))
+nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🫑 Pepper (Mirch)", "🌽 Corn Field"],
+    index=["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🫑 Pepper (Mirch)", "🌽 Corn Field"].index(nav_default))
 
 st.sidebar.write("---")
 
@@ -978,6 +1039,70 @@ def render_treatment(label, is_healthy, crop="potato"):
             <div class="treatment-item">
                 <div class="treat-icon" style="background:#fee2e2;">🛡️</div>
                 <div><div class="treat-label">Prevention Next Season</div><div class="treat-val">Virus-resistant varieties lagaen. Neem oil spray preventive ke tor par karein.</div></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    elif crop == "pepper" and "bacterial" in label.lower():
+        st.markdown("""
+        <div class="treatment-section warning">
+            <div class="treatment-title" style="color:#d97706;">💊 Bacterial Spot Ka Ilaj | بیکٹیریل دھبوں کا علاج</div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fef3c7;">🧪</div>
+                <div><div class="treat-label">Copper Spray</div><div class="treat-val">Copper-based bactericide (Copper Hydroxide) — 3g per Liter pani mein milaen. Har 7 din baad spray karein.</div></div>
+            </div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fef3c7;">✂️</div>
+                <div><div class="treat-label">Pruning</div><div class="treat-val">Mutasira pattay aur tehniyan kaat dein. Kaat ke baad auzon ko disinfect zaroor karein.</div></div>
+            </div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fef3c7;">💧</div>
+                <div><div class="treat-label">Irrigation</div><div class="treat-val">Upar se pani dena band karein — sirf jaron mein pani dein. Pattay gelay na hon.</div></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    elif crop == "corn" and "rust" in label.lower():
+        st.markdown("""
+        <div class="treatment-section warning">
+            <div class="treatment-title" style="color:#d97706;">💊 Common Rust Ka Ilaj | کنگی روگ کا علاج</div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fef3c7;">🧪</div>
+                <div><div class="treat-label">Fungicide Spray</div><div class="treat-val">Pyraclostrobin ya Azoxystrobin — jab bimari shuru ho foran spray karein.</div></div>
+            </div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fef3c7;">🛡️</div>
+                <div><div class="treat-label">Prevention</div><div class="treat-val">Agle saal kungi ke khilaf resistant beej istemal karein.</div></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    elif crop == "corn" and "blight" in label.lower():
+        st.markdown("""
+        <div class="treatment-section danger">
+            <div class="treatment-title" style="color:#dc2626;">💊 Blight Ka Ilaj | جھلس روگ کا علاج</div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fee2e2;">🧪</div>
+                <div><div class="treat-label">Fungicide Spray</div><div class="treat-val">Mancozeb ya Chlorothalonil ka fori spray karein. 10 din ke waqfe par dohraen.</div></div>
+            </div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fee2e2;">🔄</div>
+                <div><div class="treat-label">Crop Rotation</div><div class="treat-val">Fasal ki katai ke baad baqiyat zameen mein daba dein. Agli baar alag jagah lagaen.</div></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    elif crop == "corn" and "gray" in label.lower():
+        st.markdown("""
+        <div class="treatment-section warning">
+            <div class="treatment-title" style="color:#d97706;">💊 Gray Leaf Spot Ka Ilaj | سرمئی دھبوں کا علاج</div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fef3c7;">🧪</div>
+                <div><div class="treat-label">Fungicide</div><div class="treat-val">Strobilurin-based fungicide use karein. Early season mein spray zyada effective hoti hai.</div></div>
+            </div>
+            <div class="treatment-item">
+                <div class="treat-icon" style="background:#fef3c7;">🌬️</div>
+                <div><div class="treat-label">Air Circulation</div><div class="treat-val">Poudon ke darmiyan fasla rakhein. Bheed hone se nami zyada hoti hai jo is bimari ko badhati hai.</div></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1293,22 +1418,31 @@ if nav == "🏠 Home Page":
     cc3, cc4 = st.columns(2)
     with cc3:
         st.markdown("""
-        <div class="crop-card crop-card-soon" style="animation-delay:0.3s;">
-            <div class="crop-emoji">🌽</div>
-            <h3 style="color:#064e3b;font-weight:800;margin:0 0 4px;font-size:1.3rem;">Corn — مکئی</h3>
-            <p style="color:#6b7280;font-size:0.85rem;margin:0 0 12px;">Model training jari hai...</p>
-            <span class="badge-soon">🚀 Launching Soon</span>
-        </div>
-        """, unsafe_allow_html=True)
-    with cc4:
-        st.markdown("""
-        <div class="crop-card crop-card-dev" style="animation-delay:0.4s;">
+        <div class="crop-card" style="animation-delay:0.3s;">
             <div class="crop-emoji">🫑</div>
             <h3 style="color:#064e3b;font-weight:800;margin:0 0 4px;font-size:1.3rem;">Pepper — مرچ</h3>
-            <p style="color:#6b7280;font-size:0.85rem;margin:0 0 12px;">Dataset tayyar ho raha hai</p>
-            <span class="badge-dev">🛠️ In Development</span>
+            <p style="color:#6b7280;font-size:0.85rem;margin:0 0 6px;">2 Diseases Detected</p>
+            <p style="color:#9ca3af;font-size:0.78rem;margin:0 0 12px;line-height:1.5;">Bacterial Spot · Healthy</p>
+            <span class="badge-live">✅ Live &nbsp;|&nbsp; 99% Accuracy</span>
         </div>
         """, unsafe_allow_html=True)
+        if st.button("🫑 Pepper Scan Karein →", use_container_width=True, type="primary", key="btn_pepper"):
+            st.session_state['nav_override'] = "🫑 Pepper (Mirch)"
+            st.rerun()
+
+    with cc4:
+        st.markdown("""
+        <div class="crop-card" style="animation-delay:0.4s;">
+            <div class="crop-emoji">🌽</div>
+            <h3 style="color:#064e3b;font-weight:800;margin:0 0 4px;font-size:1.3rem;">Corn — مکئی</h3>
+            <p style="color:#6b7280;font-size:0.85rem;margin:0 0 6px;">4 Diseases Detected</p>
+            <p style="color:#9ca3af;font-size:0.78rem;margin:0 0 12px;line-height:1.5;">Blight · Common Rust · Gray Leaf Spot · Healthy</p>
+            <span class="badge-live">✅ Live &nbsp;|&nbsp; 87% Accuracy</span>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("🌽 Corn Scan Karein →", use_container_width=True, type="primary", key="btn_corn"):
+            st.session_state['nav_override'] = "🌽 Corn Field"
+            st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1359,47 +1493,12 @@ elif nav == "🍅 Tomato Check":
     render_crop_page("tomato")
 
 
-# ===================== CORN =====================
-elif nav == "🌽 Corn Field":
-    render_persistent_header()
-    st.markdown("""
-    <div class="coming-page">
-        <div class="coming-pulse">🌽</div>
-        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#d97706;padding:6px 18px;border-radius:50px;font-size:0.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;">🚀 Coming Soon</div>
-        <h2 style="color:#064e3b;font-weight:900;font-size:2.2rem;margin:0 0 12px;letter-spacing:-0.5px;">Makki — مکئی</h2>
-        <p style="color:#6b7280;font-size:1rem;max-width:400px;line-height:1.7;margin:0 auto 24px;">Model training jari hai. Jald hi 8 se zyada bimariyan detect karne ki salahiyat add hogi.</p>
-        <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
-            <div style="background:white;border:1px solid rgba(6,78,59,0.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
-                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">8+</div>
-                <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Diseases Planned</div>
-            </div>
-            <div style="background:white;border:1px solid rgba(6,78,59,0.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
-                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">95%+</div>
-                <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Target Accuracy</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# ===================== PEPPER =====================
+# ===================== PEPPER — uses generic function =====================
 elif nav == "🫑 Pepper (Mirch)":
-    render_persistent_header()
-    st.markdown("""
-    <div class="coming-page">
-        <div class="coming-pulse">🫑</div>
-        <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);color:#4338ca;padding:6px 18px;border-radius:50px;font-size:0.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;">🛠️ In Development</div>
-        <h2 style="color:#064e3b;font-weight:900;font-size:2.2rem;margin:0 0 12px;letter-spacing:-0.5px;">Pepper — مرچ</h2>
-        <p style="color:#6b7280;font-size:1rem;max-width:400px;line-height:1.7;margin:0 auto 24px;">Dataset tayyar ho raha hai. Mirch ki bimariyon ke liye AI model develop ho raha hai.</p>
-        <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
-            <div style="background:white;border:1px solid rgba(6,78,59,0.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
-                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">Q3 2026</div>
-                <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Expected Launch</div>
-            </div>
-            <div style="background:white;border:1px solid rgba(6,78,59,0.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
-                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">6+</div>
-                <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Diseases Planned</div>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    render_crop_page("pepper")
+
+
+# ===================== CORN — uses generic function =====================
+elif nav == "🌽 Corn Field":
+    render_crop_page("corn") 
+    
