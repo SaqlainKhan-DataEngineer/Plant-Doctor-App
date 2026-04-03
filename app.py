@@ -16,7 +16,7 @@ from skimage.feature import hog, local_binary_pattern, graycomatrix, graycoprops
 st.set_page_config(
     page_title="Plant Doctor AI",
     page_icon="🌿",
-    layout="wide",
+    layout="wide", 
     initial_sidebar_state="expanded"
 )
 
@@ -75,7 +75,7 @@ CROP_CONFIG = {
         "display_name": "Potato — آلو",
         "accuracy": "97%",
         "diseases": 3,
-        "nav_key": "🥔 Potato (Aloo)",
+        "nav_key": "🥔 Potato (آلو)",
         "uploader_label": "Upload Potato Leaf Photo / آلو کا پتہ اپلوڈ کریں",
         "model_missing_msg": "⚠️ **Model File Missing!** Please ensure `potato_disease_model.pkl` is in the project directory.",
         "header_title": "Potato Disease Scan | آلو کی بیماری",
@@ -89,7 +89,7 @@ CROP_CONFIG = {
         "display_name": "Tomato — ٹماٹر",
         "accuracy": "95%",
         "diseases": 9,
-        "nav_key": "🍅 Tomato Check",
+        "nav_key": "🍅 Tomato (ٹماٹر)",
         "uploader_label": "Upload Tomato Leaf Photo / ٹماٹر کا پتہ اپلوڈ کریں",
         "model_missing_msg": "⚠️ **Tomato Model File Missing!** Please ensure `tomato_disease_model_9_classes.pkl` is in the project directory.",
         "header_title": "Tomato Disease Scan | ٹماٹر کی بیماری",
@@ -103,7 +103,7 @@ CROP_CONFIG = {
         "display_name": "Pepper — مرچ",
         "accuracy": "99%",
         "diseases": 2,
-        "nav_key": "🫑 Pepper (Mirch)",
+        "nav_key": "🫑 Pepper (مرچ)",
         "uploader_label": "Upload Pepper Leaf Photo / مرچ کا پتہ اپلوڈ کریں",
         "model_missing_msg": "⚠️ **Pepper Model File Missing!** Please ensure `pepper_disease_model.pkl` is in the project directory.",
         "header_title": "Pepper Disease Scan | مرچ کی بیماری",
@@ -117,7 +117,7 @@ CROP_CONFIG = {
         "display_name": "Corn — مکئی",
         "accuracy": "87%",
         "diseases": 4,
-        "nav_key": "🌽 Corn Field",
+        "nav_key": "🌽 Corn (مکئی)",
         "uploader_label": "Upload Corn Leaf Photo / مکئی کا پتہ اپلوڈ کریں",
         "model_missing_msg": "⚠️ **Corn Model File Missing!** Please ensure `corn_disease_model.pkl` is in the project directory.",
         "header_title": "Corn Disease Scan | مکئی کی بیماری",
@@ -1332,7 +1332,7 @@ if nav == "🏠 Home Page":
         """, unsafe_allow_html=True)
 
     with col2:
-        if temp > 30:
+        if temp > 30:   
             card_bg = "linear-gradient(145deg, #ea580c, #f59e0b)"; weather_icon = "☀️"; condition = "Sunny / Dhoop"
         elif temp < 20:
             card_bg = "linear-gradient(145deg, #3b82f6, #6366f1)"; weather_icon = "❄️"; condition = "Chilly / Thanda"
