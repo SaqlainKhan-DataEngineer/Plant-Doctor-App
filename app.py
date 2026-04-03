@@ -335,75 +335,6 @@ def render_universal_upload():
     return None, None
 
 
-# --- 9. MOBILE BOTTOM NAVIGATION (v4: functional Streamlit buttons, not just HTML) ---
-def render_mobile_nav(active_tab="home"):
-    """
-    Mobile-only bottom nav bar.
-    On desktop: completely hidden via CSS (display:none on min-width 769px).
-    On mobile: shows fixed bottom bar. Tapping items sets session_state and reruns.
-    Uses st.markdown injection trick — buttons are inside a CSS-hidden wrapper on desktop.
-    """
-    # Inject the wrapper CSS — this ACTUALLY hides on desktop
-    st.markdown("""
-    <style>
-    /* Hide entire mob-nav-wrap on desktop */
-    @media (min-width: 769px) {
-        .mob-nav-wrap,
-        .mob-nav-wrap + div,
-        [data-testid="stHorizontalBlock"]:has(.mob-nav-btn) {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-            overflow: hidden !important;
-        }
-    }
-    @media (max-width: 768px) {
-        [data-testid="stSidebar"] { display: none !important; }
-        .main .block-container { padding-bottom: 90px !important; }
-        .mob-nav-fixed {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: rgba(255,255,255,0.97);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(6,78,59,0.12);
-            padding: 8px 16px max(10px, env(safe-area-inset-bottom));
-            display: flex; justify-content: space-around;
-            z-index: 9999;
-            box-shadow: 0 -4px 20px rgba(6,78,59,0.08);
-        }
-        .mob-nav-item {
-            display: flex; flex-direction: column; align-items: center;
-            gap: 3px; padding: 6px 18px; cursor: pointer;
-            color: #9ca3af; font-size: 0.62rem; font-weight: 700;
-            border-radius: 12px; transition: all 0.2s;
-            text-decoration: none;
-        }
-        .mob-nav-item:hover { background: rgba(6,78,59,0.06); color: #059669; }
-        .mob-nav-item.mob-active { color: #059669; }
-        .mob-nav-icon { font-size: 1.3rem; line-height: 1; }
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-    # Pure HTML nav — completely invisible on desktop via CSS
-    home_active   = "mob-active" if active_tab == "home"    else ""
-    scan_active   = "mob-active" if active_tab == "scan"    else ""
-    weather_active = "mob-active" if active_tab == "weather" else ""
-
-    st.markdown(f"""
-    <div class="mob-nav-fixed">
-        <div class="mob-nav-item {home_active}">
-            <span class="mob-nav-icon">🏠</span><span>Home</span>
-        </div>
-        <div class="mob-nav-item {scan_active}">
-            <span class="mob-nav-icon">📸</span><span>Scan</span>
-        </div>
-        <div class="mob-nav-item {weather_active}">
-            <span class="mob-nav-icon">🌤️</span><span>Mausam</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
 # --- 10. CSS (Split into critical + component CSS) ---
 def get_critical_css():
     """Critical above-the-fold styles"""
@@ -1416,19 +1347,16 @@ if nav == "🏠 Home Page":
         <p style="font-size:0.75rem;margin-top:14px;color:#cbd5e1;">Developed by <b>Saqlain Khan</b> (Data Engineer) & <b>Raheel Chishti</b></p>
     </div>
     """, unsafe_allow_html=True)
-    render_mobile_nav(active_tab="home")
 
 
 # ===================== POTATO — now uses generic function =====================
 elif nav == "🥔 Potato (Aloo)":
     render_crop_page("potato")
-    render_mobile_nav(active_tab="scan")
 
 
 # ===================== TOMATO — now uses generic function =====================
 elif nav == "🍅 Tomato Check":
     render_crop_page("tomato")
-    render_mobile_nav(active_tab="scan")
 
 
 # ===================== CORN =====================
@@ -1452,7 +1380,6 @@ elif nav == "🌽 Corn Field":
         </div>
     </div>
     """, unsafe_allow_html=True)
-    render_mobile_nav(active_tab="home")
 
 
 # ===================== PEPPER =====================
@@ -1476,6 +1403,3 @@ elif nav == "🫑 Pepper (Mirch)":
         </div>
     </div>
     """, unsafe_allow_html=True)
-    render_mobile_nav(active_tab="home") 
-     
-   
