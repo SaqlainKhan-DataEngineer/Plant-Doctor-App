@@ -826,7 +826,7 @@ def render_persistent_header():
             <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png">
             <div>
                 <div class="top-header-brand-name">Plant Doctor AI</div>
-                <div class="top-header-brand-sub">v2.0 · Punjab Edition</div>
+                <div class="top-header-brand-sub"> Punjab Edition</div>
             </div>
         </div>
         <div class="top-header-status">
