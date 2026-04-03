@@ -851,7 +851,7 @@ st.sidebar.markdown("""
 
 st.sidebar.write("---")
 nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🫑 Pepper (Mirch)", "🌽 Corn Field"],
-    index=["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🫑 Pepper (Mirch)", "🌽 Corn Field"].index(nav_default))
+    index=["🏠 Home Page", "🥔 Potato ()", "🍅 Tomato Check", "🫑 Pepper (Mirch)", "🌽 Corn Field"].index(nav_default))
 
 st.sidebar.write("---")
 
