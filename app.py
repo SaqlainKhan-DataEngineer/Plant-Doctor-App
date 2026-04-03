@@ -58,11 +58,11 @@ TOMATO_LOCAL_NAMES = {"Bacterial Spot": "ٹماٹر تے کالے داغ", "Earl
 POTATO_URDU_NAMES = {"Early Blight": "اگیتی جھلس", "Late Blight": "پچھیتی جھلس", "Healthy": "صحت مند"}
 POTATO_LOCAL_NAMES = {"Early Blight": "اگیتی سڑن", "Late Blight": "پچھیتی سڑن", "Healthy": "تندرست فصل"}
 
-# Pepper — Gemini ne model train kiya, yeh names add ki hain
+# Pepper 
 PEPPER_URDU_NAMES = {"Bacterial Spot": "بیکٹیریل دھبے", "Healthy": "صحت مند"}
 PEPPER_LOCAL_NAMES = {"Bacterial Spot": "مرچ تے کالے دھبے", "Healthy": "تندرست فصل"}
 
-# Corn — Gemini ne model train kiya, yeh names add ki hain
+# Corn 
 CORN_URDU_NAMES = {"Blight": "جھلس روگ", "Common Rust": "کنگی روگ", "Gray Leaf Spot": "سرمئی دھبے", "Healthy": "صحت مند"}
 CORN_LOCAL_NAMES = {"Blight": "پتیاں دا سڑنا", "Common Rust": "مکئی دی کنگی", "Gray Leaf Spot": "سرمئی داغ", "Healthy": "تندرست فصل"}
 
@@ -374,7 +374,7 @@ def render_universal_upload():
 
         # Manual override — always visible
         st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
-        options = ["🥔 Potato (Aloo)", "🍅 Tomato (Tamatar)", "🫑 Pepper (Mirch)", "🌽 Corn (Makki)"]
+        options = ["🥔 Potato ()", "🍅 Tomato (Tamatar)", "🫑 Pepper (Mirch)", "🌽 Corn (Makki)"]
         default_idx = 0
         if detected_crop == "tomato": default_idx = 1
         elif detected_crop == "pepper": default_idx = 2
