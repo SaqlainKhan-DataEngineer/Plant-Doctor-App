@@ -383,7 +383,7 @@ def render_universal_upload():
             "Crop confirm karein ya change karein:",
             options,
             index=default_idx,
-            key="universal_crop_select"
+            key="universal_crop_select" 
         )
         if "Potato" in manual: final_crop = "potato"
         elif "Tomato" in manual: final_crop = "tomato"
@@ -576,7 +576,7 @@ def get_home_css():
 .slide-track:hover { animation-play-state:paused; }
 .slide { width:600px; height:400px; flex-shrink:0; padding:0 4px; }
 .slide img { width:100%; height:100%; object-fit:cover; border-radius:14px; transition:transform 0.5s, filter 0.5s; }
-.slide img:hover { transform:scale(1.05); filter:brightness(1.08) saturate(1.1); }
+.slide img:hover { transform:scale(1.05); filter:brightness(1.08) saturate(1.1); } 
 
 .scan-cta-wrap {
     background:linear-gradient(135deg, var(--emerald-900), var(--emerald-700));
@@ -1302,8 +1302,8 @@ if nav == "🏠 Home Page":
 
     st.markdown("""
     <div class="stat-grid">
-        <div class="stat-card" style="animation-delay:0.1s"><div class="stat-val">97%</div><div class="stat-lbl">Accuracy</div></div>
-        <div class="stat-card" style="animation-delay:0.2s"><div class="stat-val">18K+</div><div class="stat-lbl">Images Trained</div></div>
+        <div class="stat-card" style="animation-delay:0.1s"><div class="stat-val">95%</div><div class="stat-lbl">Accuracy</div></div>
+        <div class="stat-card" style="animation-delay:0.2s"><div class="stat-val">24K+</div><div class="stat-lbl">Images Trained</div></div>
         <div class="stat-card" style="animation-delay:0.3s"><div class="stat-val">4</div><div class="stat-lbl">Crops</div></div>
         <div class="stat-card" style="animation-delay:0.4s"><div class="stat-val">&lt;3s</div><div class="stat-lbl">Result Time</div></div>
     </div>
