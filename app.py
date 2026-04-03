@@ -338,65 +338,70 @@ def render_universal_upload():
 # --- 9. MOBILE BOTTOM NAVIGATION (v4: functional Streamlit buttons, not just HTML) ---
 def render_mobile_nav(active_tab="home"):
     """
-    Working mobile bottom nav using actual Streamlit buttons.
-    Only visible on screens <= 768px. Sidebar is hidden on mobile via CSS.
+    Mobile-only bottom nav bar.
+    On desktop: completely hidden via CSS (display:none on min-width 769px).
+    On mobile: shows fixed bottom bar. Tapping items sets session_state and reruns.
+    Uses st.markdown injection trick — buttons are inside a CSS-hidden wrapper on desktop.
     """
+    # Inject the wrapper CSS — this ACTUALLY hides on desktop
     st.markdown("""
     <style>
+    /* Hide entire mob-nav-wrap on desktop */
     @media (min-width: 769px) {
-        .mob-nav-wrap { display: none !important; }
+        .mob-nav-wrap,
+        .mob-nav-wrap + div,
+        [data-testid="stHorizontalBlock"]:has(.mob-nav-btn) {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
     }
     @media (max-width: 768px) {
         [data-testid="stSidebar"] { display: none !important; }
         .main .block-container { padding-bottom: 90px !important; }
-        .mob-nav-wrap {
+        .mob-nav-fixed {
             position: fixed; bottom: 0; left: 0; right: 0;
             background: rgba(255,255,255,0.97);
             backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(6,78,59,0.1);
-            padding: 6px 12px max(10px, env(safe-area-inset-bottom));
+            border-top: 1px solid rgba(6,78,59,0.12);
+            padding: 8px 16px max(10px, env(safe-area-inset-bottom));
+            display: flex; justify-content: space-around;
             z-index: 9999;
             box-shadow: 0 -4px 20px rgba(6,78,59,0.08);
         }
-        /* Make buttons look like nav items, not default Streamlit buttons */
-        .mob-nav-wrap .stButton > button {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            color: #9ca3af !important;
-            font-size: 0.62rem !important;
-            font-weight: 700 !important;
-            padding: 6px 4px !important;
-            min-height: unset !important;
-            flex-direction: column;
-            gap: 2px;
-            border-radius: 10px !important;
-            transition: all 0.2s !important;
+        .mob-nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 3px; padding: 6px 18px; cursor: pointer;
+            color: #9ca3af; font-size: 0.62rem; font-weight: 700;
+            border-radius: 12px; transition: all 0.2s;
+            text-decoration: none;
         }
-        .mob-nav-wrap .stButton > button:hover {
-            background: rgba(6,78,59,0.06) !important;
-            color: #059669 !important;
-            transform: none !important;
-        }
+        .mob-nav-item:hover { background: rgba(6,78,59,0.06); color: #059669; }
+        .mob-nav-item.mob-active { color: #059669; }
+        .mob-nav-icon { font-size: 1.3rem; line-height: 1; }
     }
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="mob-nav-wrap">', unsafe_allow_html=True)
-    cols = st.columns(3)
-    nav_items = [
-        ("home",    "🏠 Home",    "🏠 Home Page"),
-        ("scan",    "📸 Scan",    "🥔 Potato (Aloo)"),
-        ("weather", "🌤️ Mausam", None),
-    ]
-    for col, (key, label, nav_target) in zip(cols, nav_items):
-        with col:
-            btn_label = f"**{label}**" if active_tab == key else label
-            if st.button(btn_label, key=f"mob_nav_{key}", use_container_width=True):
-                if nav_target:
-                    st.session_state['nav_override'] = nav_target
-                    st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Pure HTML nav — completely invisible on desktop via CSS
+    home_active   = "mob-active" if active_tab == "home"    else ""
+    scan_active   = "mob-active" if active_tab == "scan"    else ""
+    weather_active = "mob-active" if active_tab == "weather" else ""
+
+    st.markdown(f"""
+    <div class="mob-nav-fixed">
+        <div class="mob-nav-item {home_active}">
+            <span class="mob-nav-icon">🏠</span><span>Home</span>
+        </div>
+        <div class="mob-nav-item {scan_active}">
+            <span class="mob-nav-icon">📸</span><span>Scan</span>
+        </div>
+        <div class="mob-nav-item {weather_active}">
+            <span class="mob-nav-icon">🌤️</span><span>Mausam</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 # --- 10. CSS (Split into critical + component CSS) ---
@@ -1461,15 +1466,16 @@ elif nav == "🫑 Pepper (Mirch)":
         <p style="color:#6b7280;font-size:1rem;max-width:400px;line-height:1.7;margin:0 auto 24px;">Dataset tayyar ho raha hai. Mirch ki bimariyon ke liye AI model develop ho raha hai.</p>
         <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
             <div style="background:white;border:1px solid rgba(6,78,59,0.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
-                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">This Week</div>
+                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">Q3 2026</div>
                 <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Expected Launch</div>
             </div>
             <div style="background:white;border:1px solid rgba(6,78,59,0.1);border-radius:14px;padding:16px 20px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
-                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">2+</div>
+                <div style="font-size:1.5rem;font-weight:900;color:#064e3b;">6+</div>
                 <div style="font-size:0.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Diseases Planned</div>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
     render_mobile_nav(active_tab="home") 
-    
+     
+   
