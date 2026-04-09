@@ -58,11 +58,11 @@ TOMATO_LOCAL_NAMES = {"Bacterial Spot": "ٹماٹر تے کالے داغ", "Earl
 POTATO_URDU_NAMES = {"Early Blight": "اگیتی جھلس", "Late Blight": "پچھیتی جھلس", "Healthy": "صحت مند"}
 POTATO_LOCAL_NAMES = {"Early Blight": "اگیتی سڑن", "Late Blight": "پچھیتی سڑن", "Healthy": "تندرست فصل"}
 
-# Pepper 
+# Pepper — Gemini ne model train kiya, yeh names add ki hain
 PEPPER_URDU_NAMES = {"Bacterial Spot": "بیکٹیریل دھبے", "Healthy": "صحت مند"}
 PEPPER_LOCAL_NAMES = {"Bacterial Spot": "مرچ تے کالے دھبے", "Healthy": "تندرست فصل"}
 
-# Corn 
+# Corn — Gemini ne model train kiya, yeh names add ki hain
 CORN_URDU_NAMES = {"Blight": "جھلس روگ", "Common Rust": "کنگی روگ", "Gray Leaf Spot": "سرمئی دھبے", "Healthy": "صحت مند"}
 CORN_LOCAL_NAMES = {"Blight": "پتیاں دا سڑنا", "Common Rust": "مکئی دی کنگی", "Gray Leaf Spot": "سرمئی داغ", "Healthy": "تندرست فصل"}
 
@@ -129,21 +129,22 @@ CROP_CONFIG = {
 # App starts even if one or both model files are missing.
 @st.cache_resource
 def safe_load_models():
-    """Load all crop models. Missing models show a warning, not a crash."""
+    """Load all crop models + master crop detector. Missing models don't crash app."""
     models = {}
     model_files = {
-        "potato": ("potato_disease_model.pkl", "potato"),
-        "tomato": ("tomato_disease_model_9_classes.pkl", "tomato"),
-        "pepper": ("pepper_disease_model.pkl", "pepper"),
-        "corn":   ("corn_disease_model.pkl", "corn"),
+        "potato": ("potato_disease_model.pkl",          "class_names"),
+        "tomato": ("tomato_disease_model_9_classes.pkl", "class_names"),
+        "pepper": ("pepper_disease_model.pkl",           "class_names"),
+        "corn":   ("corn_disease_model.pkl",             "class_names"),
+        "master": ("crop_detector_model.pkl",            "classes"),   # ML crop detector
     }
-    for crop_key, (file_path, _) in model_files.items():
+    for crop_key, (file_path, cls_key) in model_files.items():
         try:
             data = joblib.load(file_path)
-            models[crop_key] = (data['model'], data['scaler'], data['class_names'])
+            models[crop_key] = (data['model'], data['scaler'], data[cls_key])
         except FileNotFoundError:
             models[crop_key] = (None, None, None)
-        except Exception as e:
+        except Exception:
             models[crop_key] = (None, None, None)
     return models
 
@@ -213,17 +214,38 @@ def extract_all_features(image_bytes):
 # --- 8. CROP AUTO-DETECTOR (v3: Universal upload, AI detects crop type) ---
 class CropAutoDetector:
     """
-    Heuristic-based crop detection using color + shape analysis.
-    Farmers don't need to select crop manually — AI figures it out.
+    ML-based crop detection using the Master Crop Detector model (93% accuracy).
+    Falls back to color/shape heuristics if master model is unavailable.
     """
 
     @staticmethod
     def detect(image_bytes):
         """
-        Returns (detected_crop_key, confidence_float, message_str)
-        detected_crop_key: 'potato' | 'tomato' | None
-        confidence: 0.0 – 1.0
+        Returns (detected_crop_key, confidence_float, message_str).
+        First tries ML master model, then falls back to heuristics.
         """
+        # --- Try ML Master Model first ---
+        master_model, master_scaler, master_classes = MODELS.get("master", (None, None, None))
+        if master_model:
+            try:
+                features = extract_all_features(image_bytes)
+                if features is not None:
+                    features = np.nan_to_num(features).reshape(1, -1)
+                    features_scaled = master_scaler.transform(features)
+                    probs = master_model.predict_proba(features_scaled)[0]
+                    max_idx = np.argmax(probs)
+                    conf = float(probs[max_idx])
+                    best_crop = master_classes[max_idx]
+
+                    if conf >= 0.5:
+                        crop_names = {"potato": "Aloo (Potato)", "tomato": "Tamatar (Tomato)",
+                                      "pepper": "Mirch (Pepper)", "corn": "Makki (Corn)"}
+                        msg = f"{crop_names.get(best_crop, best_crop.title())} detect hua — {conf:.0%} confidence"
+                        return best_crop, conf, msg
+            except Exception:
+                pass  # Fall through to heuristics
+
+        # --- Fallback: Color + Shape Heuristics ---
         try:
             nparr = np.frombuffer(image_bytes, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -232,45 +254,32 @@ class CropAutoDetector:
 
             img_resized = cv2.resize(img, (128, 128))
             hsv = cv2.cvtColor(img_resized, cv2.COLOR_BGR2HSV)
-
             mean_hue = float(np.mean(hsv[:, :, 0]))
             mean_sat = float(np.mean(hsv[:, :, 1])) / 255.0
             mean_val = float(np.mean(hsv[:, :, 2])) / 255.0
-
             h, w = img.shape[:2]
             aspect = w / max(h, 1)
 
             scores = {"potato": 0.0, "tomato": 0.0, "pepper": 0.0, "corn": 0.0}
 
-            # Potato: broader, rounder leaves — aspect close to 1, medium green hue
             if 30 <= mean_hue <= 90 and 0.8 <= aspect <= 1.6:
                 scores["potato"] += 0.5
-            if mean_sat > 0.2:
-                scores["potato"] += 0.2
-            if mean_val > 0.3:
-                scores["potato"] += 0.1
+            if mean_sat > 0.2:   scores["potato"] += 0.2
+            if mean_val > 0.3:   scores["potato"] += 0.1
 
-            # Tomato: slightly higher saturation, more yellow-green hue range
             if 30 <= mean_hue <= 80 and mean_sat > 0.28:
                 scores["tomato"] += 0.5
-            if 0.9 <= aspect <= 1.7:
-                scores["tomato"] += 0.15
-            if mean_val > 0.35:
-                scores["tomato"] += 0.1
+            if 0.9 <= aspect <= 1.7: scores["tomato"] += 0.15
+            if mean_val > 0.35:      scores["tomato"] += 0.1
 
-            # Pepper: similar to tomato but slightly different aspect
             if 35 <= mean_hue <= 85 and 0.7 <= aspect <= 1.5:
                 scores["pepper"] += 0.4
-            if mean_sat > 0.3:
-                scores["pepper"] += 0.15
-            if mean_val > 0.2:
-                scores["pepper"] += 0.15
+            if mean_sat > 0.3:   scores["pepper"] += 0.15
+            if mean_val > 0.2:   scores["pepper"] += 0.15
 
-            # Corn: long thin leaves — tall or wide aspect ratio
             if 30 <= mean_hue <= 85 and (aspect > 1.8 or aspect < 0.6):
                 scores["corn"] += 0.6
-            if mean_sat > 0.15:
-                scores["corn"] += 0.1
+            if mean_sat > 0.15:  scores["corn"] += 0.1
 
             best = max(scores, key=scores.get)
             conf = round(min(scores[best], 0.95), 2)
@@ -278,7 +287,8 @@ class CropAutoDetector:
             if conf < 0.5:
                 return None, conf, "Could not confidently detect crop. Please select manually."
 
-            crop_names = {"potato": "Aloo (Potato)", "tomato": "Tamatar (Tomato)", "pepper": "Mirch (Pepper)", "corn": "Makki (Corn)"}
+            crop_names = {"potato": "Aloo (Potato)", "tomato": "Tamatar (Tomato)",
+                          "pepper": "Mirch (Pepper)", "corn": "Makki (Corn)"}
             msg = f"{crop_names[best]} detect hua — {conf:.0%} confidence"
             return best, conf, msg
 
@@ -383,7 +393,7 @@ def render_universal_upload():
             "Crop confirm karein ya change karein:",
             options,
             index=default_idx,
-            key="universal_crop_select" 
+            key="universal_crop_select"
         )
         if "Potato" in manual: final_crop = "potato"
         elif "Tomato" in manual: final_crop = "tomato"
@@ -576,7 +586,7 @@ def get_home_css():
 .slide-track:hover { animation-play-state:paused; }
 .slide { width:600px; height:400px; flex-shrink:0; padding:0 4px; }
 .slide img { width:100%; height:100%; object-fit:cover; border-radius:14px; transition:transform 0.5s, filter 0.5s; }
-.slide img:hover { transform:scale(1.05); filter:brightness(1.08) saturate(1.1); } 
+.slide img:hover { transform:scale(1.05); filter:brightness(1.08) saturate(1.1); }
 
 .scan-cta-wrap {
     background:linear-gradient(135deg, var(--emerald-900), var(--emerald-700));
@@ -826,7 +836,7 @@ def render_persistent_header():
             <img src="https://cdn-icons-png.flaticon.com/512/11698/11698467.png">
             <div>
                 <div class="top-header-brand-name">Plant Doctor AI</div>
-                <div class="top-header-brand-sub"> Punjab Edition</div>
+                <div class="top-header-brand-sub">v2.0 · Punjab Edition</div>
             </div>
         </div>
         <div class="top-header-status">
@@ -846,7 +856,7 @@ st.sidebar.markdown("""
 
 st.sidebar.markdown("""
 <h1 style='text-align:center;color:white;font-weight:900;margin-top:-6px;font-size:1.9rem;letter-spacing:-0.5px;'>Plant Doctor</h1>
-<p style='text-align:center;font-size:0.72rem;opacity:0.7;margin-bottom:22px;letter-spacing:3px;font-weight:600;'>AI DIAGNOSTICS </p>
+<p style='text-align:center;font-size:0.72rem;opacity:0.7;margin-bottom:22px;letter-spacing:3px;font-weight:600;'>AI DIAGNOSTICS v2.0</p>
 """, unsafe_allow_html=True)
 
 st.sidebar.write("---")
@@ -1302,8 +1312,8 @@ if nav == "🏠 Home Page":
 
     st.markdown("""
     <div class="stat-grid">
-        <div class="stat-card" style="animation-delay:0.1s"><div class="stat-val">95%</div><div class="stat-lbl">Accuracy</div></div>
-        <div class="stat-card" style="animation-delay:0.2s"><div class="stat-val">24K+</div><div class="stat-lbl">Images Trained</div></div>
+        <div class="stat-card" style="animation-delay:0.1s"><div class="stat-val">97%</div><div class="stat-lbl">Accuracy</div></div>
+        <div class="stat-card" style="animation-delay:0.2s"><div class="stat-val">18K+</div><div class="stat-lbl">Images Trained</div></div>
         <div class="stat-card" style="animation-delay:0.3s"><div class="stat-val">4</div><div class="stat-lbl">Crops</div></div>
         <div class="stat-card" style="animation-delay:0.4s"><div class="stat-val">&lt;3s</div><div class="stat-lbl">Result Time</div></div>
     </div>
@@ -1362,6 +1372,14 @@ if nav == "🏠 Home Page":
         """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="scan-cta-wrap">
+        <p style="color:rgba(255,255,255,0.65);font-size:0.75rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">🔬 Quick Scan</p>
+        <h2 style="color:white;font-size:1.9rem;font-weight:900;margin:0 0 10px;letter-spacing:-0.5px;">Koi bhi fasal — ek hi jagah scan karein</h2>
+        <p style="color:rgba(255,255,255,0.7);font-size:0.95rem;max-width:500px;margin:0 auto 24px;line-height:1.6;">Seedha yahan patta upload karein — AI khud crop detect karega</p>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Universal upload zone — AI auto-detects crop
     uploaded_file, detected_crop = render_universal_upload()
