@@ -1312,8 +1312,8 @@ if nav == "🏠 Home Page":
 
     st.markdown("""
     <div class="stat-grid">
-        <div class="stat-card" style="animation-delay:0.1s"><div class="stat-val">97%</div><div class="stat-lbl">Accuracy</div></div>
-        <div class="stat-card" style="animation-delay:0.2s"><div class="stat-val">18K+</div><div class="stat-lbl">Images Trained</div></div>
+        <div class="stat-card" style="animation-delay:0.1s"><div class="stat-val">95%</div><div class="stat-lbl">Accuracy</div></div>
+        <div class="stat-card" style="animation-delay:0.2s"><div class="stat-val">24K+</div><div class="stat-lbl">Images Trained</div></div>
         <div class="stat-card" style="animation-delay:0.3s"><div class="stat-val">4</div><div class="stat-lbl">Crops</div></div>
         <div class="stat-card" style="animation-delay:0.4s"><div class="stat-val">&lt;3s</div><div class="stat-lbl">Result Time</div></div>
     </div>
@@ -1372,14 +1372,6 @@ if nav == "🏠 Home Page":
         """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="scan-cta-wrap">
-        <p style="color:rgba(255,255,255,0.65);font-size:0.75rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">🔬 Quick Scan</p>
-        <h2 style="color:white;font-size:1.9rem;font-weight:900;margin:0 0 10px;letter-spacing:-0.5px;">Koi bhi fasal — ek hi jagah scan karein</h2>
-        <p style="color:rgba(255,255,255,0.7);font-size:0.95rem;max-width:500px;margin:0 auto 24px;line-height:1.6;">Seedha yahan patta upload karein — AI khud crop detect karega</p>
-    </div>
-    """, unsafe_allow_html=True)
 
     # Universal upload zone — AI auto-detects crop
     uploaded_file, detected_crop = render_universal_upload()
