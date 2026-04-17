@@ -136,7 +136,7 @@ def safe_load_models():
         "tomato": ("tomato_disease_model_9_classes.pkl", "class_names"),
         "pepper": ("pepper_disease_model.pkl",           "class_names"),
         "corn":   ("corn_disease_model.pkl",             "class_names"),
-        "master": ("crop_detector_model.pkl",            "classes"),   # ML crop detector
+        "master": ("robust_crop_detector_model.pkl", "class_names"),# ML crop detector
     }
     for crop_key, (file_path, cls_key) in model_files.items():
         try:
@@ -1503,3 +1503,5 @@ elif nav == "🫑 Pepper (Mirch)":
 # ===================== CORN — uses generic function =====================
 elif nav == "🌽 Corn Field":
     render_crop_page("corn") 
+ 
+
