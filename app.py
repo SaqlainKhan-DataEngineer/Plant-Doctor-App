@@ -213,14 +213,30 @@ def extract_all_features(image_bytes):
 
 @safe_analysis
 def extract_potato_features(image_bytes):
-    """Naya Extractor (Sirf Potato Expert ke liye jisme GLCM nahi hai)"""
+    """Naya Extractor (Potato Expert ke liye + Auto-Zoom + Sharpening)"""
     if len(image_bytes) > 10 * 1024 * 1024: raise ValueError("Image too large.")
     nparr = np.frombuffer(image_bytes, np.uint8)
     if nparr.size == 0: raise ValueError("Empty image data.")
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     if img is None: raise cv2.error("Could not decode image.")
     
+    # --- 1. AUTO-ZOOM (Center Crop - Extra background hatane ke liye) ---
+    h, w = img.shape[:2]
+    # Tasveer ke darmiyan wala 80% hissa rakhein, kinaray kaat dein
+    crop_h, crop_w = int(h * 0.8), int(w * 0.8)  
+    start_y, start_x = (h - crop_h) // 2, (w - crop_w) // 2
+    img = img[start_y:start_y+crop_h, start_x:start_x+crop_w]
+    
+    # --- 2. AUTO-SHARPEN (Blur khatam karne ke liye) ---
+    # Halki si sharpening taake edges aur daag (spots) wazeh ho jayen jese dataset mein hotay hain
+    kernel = np.array([[0, -0.5, 0], 
+                       [-0.5, 3, -0.5], 
+                       [0, -0.5, 0]], dtype=np.float32)
+    img = cv2.filter2D(img, -1, kernel)
+
+    # Baki code same hai... Resize to exact dataset size
     img = cv2.resize(img, (128, 128))
+    
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     hist_hsv = cv2.calcHist([hsv], [0, 1, 2], None, [8, 8, 8], [0, 180, 0, 256, 0, 256])
     cv2.normalize(hist_hsv, hist_hsv) 
@@ -237,7 +253,7 @@ def extract_potato_features(image_bytes):
     result = np.hstack([f_color, f_hog, f_lbp])
     del img, gray_img, hsv, lbp
     gc.collect()
-    return result 
+    return result
 # --- 8. CROP AUTO-DETECTOR (v3: Universal upload, AI detects crop type) ---
 class CropAutoDetector:
     """
