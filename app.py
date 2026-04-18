@@ -132,7 +132,7 @@ def safe_load_models():
     """Load all crop models + master crop detector. Missing models don't crash app."""
     models = {}
     model_files = {
-        "potato": ("potato_disease_model.pkl",          "class_names"),
+        "potato": ("potato_disease_expert.pkl",          "class_names"),
         "tomato": ("tomato_disease_model_9_classes.pkl", "class_names"),
         "pepper": ("pepper_disease_model.pkl",           "class_names"),
         "corn":   ("corn_disease_model.pkl",             "class_names"),
@@ -211,6 +211,49 @@ def extract_all_features(image_bytes):
 
     return result
 
+@safe_analysis
+def extract_potato_features(image_bytes):
+    """Naya Extractor (Potato Expert ke liye + Auto-Zoom + Sharpening)"""
+    if len(image_bytes) > 10 * 1024 * 1024: raise ValueError("Image too large.")
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    if nparr.size == 0: raise ValueError("Empty image data.")
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if img is None: raise cv2.error("Could not decode image.")
+    
+    # --- 1. AUTO-ZOOM (Center Crop - Extra background hatane ke liye) ---
+    h, w = img.shape[:2]
+    # Tasveer ke darmiyan wala 80% hissa rakhein, kinaray kaat dein
+    crop_h, crop_w = int(h * 0.8), int(w * 0.8)  
+    start_y, start_x = (h - crop_h) // 2, (w - crop_w) // 2
+    img = img[start_y:start_y+crop_h, start_x:start_x+crop_w]
+    
+    # --- 2. AUTO-SHARPEN (Blur khatam karne ke liye) ---
+    # Halki si sharpening taake edges aur daag (spots) wazeh ho jayen jese dataset mein hotay hain
+    kernel = np.array([[0, -0.5, 0], 
+                       [-0.5, 3, -0.5], 
+                       [0, -0.5, 0]], dtype=np.float32)
+    img = cv2.filter2D(img, -1, kernel)
+
+    # Baki code same hai... Resize to exact dataset size
+    img = cv2.resize(img, (128, 128))
+    
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    hist_hsv = cv2.calcHist([hsv], [0, 1, 2], None, [8, 8, 8], [0, 180, 0, 256, 0, 256])
+    cv2.normalize(hist_hsv, hist_hsv) 
+    f_color = hist_hsv.flatten()
+    
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    f_hog = hog(gray_img, orientations=9, pixels_per_cell=(8,8), cells_per_block=(2,2), visualize=False)
+    
+    radius, n_points = 2, 16
+    lbp = local_binary_pattern(gray_img, n_points, radius, method='uniform')
+    hist_lbp, _ = np.histogram(lbp.ravel(), bins=np.arange(0, n_points+3), range=(0, n_points+2))
+    f_lbp = hist_lbp.astype("float") / (hist_lbp.sum() + 1e-7)
+
+    result = np.hstack([f_color, f_hog, f_lbp])
+    del img, gray_img, hsv, lbp
+    gc.collect()
+    return result
 # --- 8. CROP AUTO-DETECTOR (v3: Universal upload, AI detects crop type) ---
 class CropAutoDetector:
     """
@@ -1151,12 +1194,16 @@ def analyze_image(uploaded_file, crop_key):
         return None
 
     start_time = time.time()
-    features = extract_all_features(uploaded_file.getvalue())
+    # SMART LOGIC: Potato ke liye naya function, baqi sab ke liye purana
+    if crop_key == "potato":
+        features = extract_potato_features(uploaded_file.getvalue())
+    else:
+        features = extract_all_features(uploaded_file.getvalue())
     if features is None:
         return None
 
     features = np.nan_to_num(features).reshape(1, -1)
-    features_scaled = crop_scaler.transform(features)
+    features_scaled = crop_scaler.transform(features) if crop_scaler is not None else features
     probs = model.predict_proba(features_scaled)[0]
     inference_time = time.time() - start_time
 
@@ -1184,7 +1231,7 @@ def show_low_confidence_warning():
 
 def show_result(result, crop_key, config):
     """Render report + treatment from a result dict. Used by both pages."""
-    if result['conf'] < 40:
+    if result['conf'] < 50:
         show_low_confidence_warning()
         return
     ts = datetime.datetime.now().strftime("%d %b %Y · %H:%M")
@@ -1503,4 +1550,4 @@ elif nav == "🫑 Pepper (Mirch)":
 # ===================== CORN — uses generic function =====================
 elif nav == "🌽 Corn Field":
     render_crop_page("corn") 
- 
+
