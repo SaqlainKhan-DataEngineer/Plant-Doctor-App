@@ -211,6 +211,33 @@ def extract_all_features(image_bytes):
 
     return result
 
+@safe_analysis
+def extract_potato_features(image_bytes):
+    """Naya Extractor (Sirf Potato Expert ke liye jisme GLCM nahi hai)"""
+    if len(image_bytes) > 10 * 1024 * 1024: raise ValueError("Image too large.")
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    if nparr.size == 0: raise ValueError("Empty image data.")
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if img is None: raise cv2.error("Could not decode image.")
+    
+    img = cv2.resize(img, (128, 128))
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    hist_hsv = cv2.calcHist([hsv], [0, 1, 2], None, [8, 8, 8], [0, 180, 0, 256, 0, 256])
+    cv2.normalize(hist_hsv, hist_hsv) 
+    f_color = hist_hsv.flatten()
+    
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    f_hog = hog(gray_img, orientations=9, pixels_per_cell=(8,8), cells_per_block=(2,2), visualize=False)
+    
+    radius, n_points = 2, 16
+    lbp = local_binary_pattern(gray_img, n_points, radius, method='uniform')
+    hist_lbp, _ = np.histogram(lbp.ravel(), bins=np.arange(0, n_points+3), range=(0, n_points+2))
+    f_lbp = hist_lbp.astype("float") / (hist_lbp.sum() + 1e-7)
+
+    result = np.hstack([f_color, f_hog, f_lbp])
+    del img, gray_img, hsv, lbp
+    gc.collect()
+    return result 
 # --- 8. CROP AUTO-DETECTOR (v3: Universal upload, AI detects crop type) ---
 class CropAutoDetector:
     """
@@ -1151,7 +1178,11 @@ def analyze_image(uploaded_file, crop_key):
         return None
 
     start_time = time.time()
-    features = extract_all_features(uploaded_file.getvalue())
+    # SMART LOGIC: Potato ke liye naya function, baqi sab ke liye purana
+    if crop_key == "potato":
+        features = extract_potato_features(uploaded_file.getvalue())
+    else:
+        features = extract_all_features(uploaded_file.getvalue())
     if features is None:
         return None
 
