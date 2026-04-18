@@ -1187,7 +1187,7 @@ def analyze_image(uploaded_file, crop_key):
         return None
 
     features = np.nan_to_num(features).reshape(1, -1)
-    features_scaled = crop_scaler.transform(features)
+    features_scaled = crop_scaler.transform(features) if crop_scaler is not None else features
     probs = model.predict_proba(features_scaled)[0]
     inference_time = time.time() - start_time
 
