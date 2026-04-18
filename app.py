@@ -132,7 +132,7 @@ def safe_load_models():
     """Load all crop models + master crop detector. Missing models don't crash app."""
     models = {}
     model_files = {
-        "potato": ("potato_disease_model.pkl",          "class_names"),
+        "potato": ("potato_disease_exert.pkl",          "class_names"),
         "tomato": ("tomato_disease_model_9_classes.pkl", "class_names"),
         "pepper": ("pepper_disease_model.pkl",           "class_names"),
         "corn":   ("corn_disease_model.pkl",             "class_names"),
@@ -189,24 +189,32 @@ def extract_all_features(image_bytes):
     if img is None:
         raise cv2.error("Could not decode image. File may be corrupted.")
 
+    # Resize to match training
     img = cv2.resize(img, (128, 128))
-    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    hist_bgr = cv2.calcHist([img], [0,1,2], None, [8,8,8], [0,256,0,256,0,256])
+    
+    # 1. Color Features (Only HSV - better for real-world lighting)
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    hist_hsv = cv2.calcHist([hsv], [0,1,2], None, [8,8,8], [0,180,0,256,0,256])
-    f_color = np.hstack([hist_bgr.flatten(), hist_hsv.flatten()])
+    hist_hsv = cv2.calcHist([hsv], [0, 1, 2], None, [8, 8, 8], [0, 180, 0, 256, 0, 256])
+    cv2.normalize(hist_hsv, hist_hsv)  # Normalize to handle brightness
+    f_color = hist_hsv.flatten()
+    
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    
+    # 2. HOG (Shape)
     f_hog = hog(gray_img, orientations=9, pixels_per_cell=(8,8), cells_per_block=(2,2), visualize=False)
+    
+    # 3. LBP (Texture)
     radius, n_points = 2, 16
     lbp = local_binary_pattern(gray_img, n_points, radius, method='uniform')
-    hist, _ = np.histogram(lbp.ravel(), bins=np.arange(0, n_points+3), range=(0, n_points+2))
-    hist = hist.astype("float"); f_lbp = hist / (hist.sum() + 1e-7)
-    glcm = graycomatrix(gray_img, distances=[1,2], angles=[0, np.pi/4, np.pi/2, 3*np.pi/4], levels=256, symmetric=True, normed=True)
-    f_glcm = np.array([graycoprops(glcm, p).mean() for p in ['contrast','correlation','energy','homogeneity','dissimilarity']])
+    hist_lbp, _ = np.histogram(lbp.ravel(), bins=np.arange(0, n_points+3), range=(0, n_points+2))
+    hist_lbp = hist_lbp.astype("float")
+    f_lbp = hist_lbp / (hist_lbp.sum() + 1e-7)
 
-    result = np.hstack([f_color, f_hog, f_lbp, f_glcm])
+    # Combine exact features used in potato_expert_training.py
+    result = np.hstack([f_color, f_hog, f_lbp])
 
-    # Explicit memory cleanup (IMPROVEMENT #2)
-    del img, gray_img, hsv, lbp, glcm
+    # Memory cleanup
+    del img, gray_img, hsv, lbp
     gc.collect()
 
     return result
@@ -1502,4 +1510,4 @@ elif nav == "🫑 Pepper (Mirch)":
 
 # ===================== CORN — uses generic function =====================
 elif nav == "🌽 Corn Field":
-    render_crop_page("corn") 
+    render_crop_page("corn")  
