@@ -132,7 +132,7 @@ def safe_load_models():
     """Load all crop models + master crop detector. Missing models don't crash app."""
     models = {}
     model_files = {
-        "potato": ("potato_disease_exert.pkl",          "class_names"),
+        "potato": ("potato_disease_expert.pkl",          "class_names"),
         "tomato": ("tomato_disease_model_9_classes.pkl", "class_names"),
         "pepper": ("pepper_disease_model.pkl",           "class_names"),
         "corn":   ("corn_disease_model.pkl",             "class_names"),
