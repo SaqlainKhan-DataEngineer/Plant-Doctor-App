@@ -132,11 +132,11 @@ def safe_load_models():
     """Load all crop models + master crop detector. Missing models don't crash app."""
     models = {}
     model_files = {
-        "potato": ("potato_disease_expert.pkl",          "class_names"),
+        "potato": ("potato_disease_model_v2.pkl",          "class_names"),
         "tomato": ("tomato_disease_model_9_classes.pkl", "class_names"),
         "pepper": ("pepper_disease_model.pkl",           "class_names"),
         "corn":   ("corn_disease_model.pkl",             "class_names"),
-        "master": ("robust_crop_detector_model.pkl", "class_names"),# ML crop detector
+        "master": ("crop_detector_model.pkl",            "classes"),   # ML crop detector
     }
     for crop_key, (file_path, cls_key) in model_files.items():
         try:
@@ -177,7 +177,6 @@ def safe_analysis(func):
 # --- 7. FEATURE EXTRACTION WITH ERROR HANDLING (IMPROVEMENT #3) ---
 @safe_analysis
 def extract_all_features(image_bytes):
-    # Input validation
     if len(image_bytes) > 10 * 1024 * 1024:
         raise ValueError("Image too large. Please use images under 10MB.")
 
@@ -187,73 +186,65 @@ def extract_all_features(image_bytes):
 
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     if img is None:
-        raise cv2.error("Could not decode image. File may be corrupted.")
+        raise cv2.error("Could not decode image.")
 
     img = cv2.resize(img, (128, 128))
+
+    # ✅ STEP 1: CLAHE — lighting normalize karo
+    # Real photos mein lighting uneven hoti hai
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    lab[:, :, 0] = clahe.apply(lab[:, :, 0])
+    img = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+
+    # ✅ STEP 2: Color Normalization
+    # Dataset images ka color balance alag hota hai real se
+    img = img.astype(np.float32)
+    for c in range(3):
+        ch = img[:, :, c]
+        mn, mx = ch.min(), ch.max()
+        if mx > mn:
+            img[:, :, c] = (ch - mn) / (mx - mn) * 255
+    img = img.astype(np.uint8)
+
     gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    hist_bgr = cv2.calcHist([img], [0,1,2], None, [8,8,8], [0,256,0,256,0,256])
+
+    # Features — same as before
+    hist_bgr = cv2.calcHist([img], [0,1,2], None,
+                             [8,8,8], [0,256,0,256,0,256])
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    hist_hsv = cv2.calcHist([hsv], [0,1,2], None, [8,8,8], [0,180,0,256,0,256])
+    hist_hsv = cv2.calcHist([hsv], [0,1,2], None,
+                             [8,8,8], [0,180,0,256,0,256])
     f_color = np.hstack([hist_bgr.flatten(), hist_hsv.flatten()])
-    f_hog = hog(gray_img, orientations=9, pixels_per_cell=(8,8), cells_per_block=(2,2), visualize=False)
+
+    f_hog = hog(gray_img, orientations=9,
+                pixels_per_cell=(8, 8),
+                cells_per_block=(2, 2),
+                visualize=False)
+
     radius, n_points = 2, 16
     lbp = local_binary_pattern(gray_img, n_points, radius, method='uniform')
-    hist, _ = np.histogram(lbp.ravel(), bins=np.arange(0, n_points+3), range=(0, n_points+2))
-    hist = hist.astype("float"); f_lbp = hist / (hist.sum() + 1e-7)
-    glcm = graycomatrix(gray_img, distances=[1,2], angles=[0, np.pi/4, np.pi/2, 3*np.pi/4], levels=256, symmetric=True, normed=True)
-    f_glcm = np.array([graycoprops(glcm, p).mean() for p in ['contrast','correlation','energy','homogeneity','dissimilarity']])
+    hist, _ = np.histogram(lbp.ravel(),
+                           bins=np.arange(0, n_points + 3),
+                           range=(0, n_points + 2))
+    hist = hist.astype("float")
+    f_lbp = hist / (hist.sum() + 1e-7)
+
+    glcm = graycomatrix(gray_img, distances=[1, 2],
+                        angles=[0, np.pi/4, np.pi/2, 3*np.pi/4],
+                        levels=256, symmetric=True, normed=True)
+    f_glcm = np.array([
+        graycoprops(glcm, p).mean()
+        for p in ['contrast','correlation','energy',
+                  'homogeneity','dissimilarity']
+    ])
 
     result = np.hstack([f_color, f_hog, f_lbp, f_glcm])
-
-    # Explicit memory cleanup (IMPROVEMENT #2)
     del img, gray_img, hsv, lbp, glcm
     gc.collect()
 
     return result
 
-@safe_analysis
-def extract_potato_features(image_bytes):
-    """Naya Extractor (Potato Expert ke liye + Auto-Zoom + Sharpening)"""
-    if len(image_bytes) > 10 * 1024 * 1024: raise ValueError("Image too large.")
-    nparr = np.frombuffer(image_bytes, np.uint8)
-    if nparr.size == 0: raise ValueError("Empty image data.")
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    if img is None: raise cv2.error("Could not decode image.")
-    
-    # --- 1. AUTO-ZOOM (Center Crop - Extra background hatane ke liye) ---
-    h, w = img.shape[:2]
-    # Tasveer ke darmiyan wala 80% hissa rakhein, kinaray kaat dein
-    crop_h, crop_w = int(h * 0.8), int(w * 0.8)  
-    start_y, start_x = (h - crop_h) // 2, (w - crop_w) // 2
-    img = img[start_y:start_y+crop_h, start_x:start_x+crop_w]
-    
-    # --- 2. AUTO-SHARPEN (Blur khatam karne ke liye) ---
-    # Halki si sharpening taake edges aur daag (spots) wazeh ho jayen jese dataset mein hotay hain
-    kernel = np.array([[0, -0.5, 0], 
-                       [-0.5, 3, -0.5], 
-                       [0, -0.5, 0]], dtype=np.float32)
-    img = cv2.filter2D(img, -1, kernel)
-
-    # Baki code same hai... Resize to exact dataset size
-    img = cv2.resize(img, (128, 128))
-    
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    hist_hsv = cv2.calcHist([hsv], [0, 1, 2], None, [8, 8, 8], [0, 180, 0, 256, 0, 256])
-    cv2.normalize(hist_hsv, hist_hsv) 
-    f_color = hist_hsv.flatten()
-    
-    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    f_hog = hog(gray_img, orientations=9, pixels_per_cell=(8,8), cells_per_block=(2,2), visualize=False)
-    
-    radius, n_points = 2, 16
-    lbp = local_binary_pattern(gray_img, n_points, radius, method='uniform')
-    hist_lbp, _ = np.histogram(lbp.ravel(), bins=np.arange(0, n_points+3), range=(0, n_points+2))
-    f_lbp = hist_lbp.astype("float") / (hist_lbp.sum() + 1e-7)
-
-    result = np.hstack([f_color, f_hog, f_lbp])
-    del img, gray_img, hsv, lbp
-    gc.collect()
-    return result
 # --- 8. CROP AUTO-DETECTOR (v3: Universal upload, AI detects crop type) ---
 class CropAutoDetector:
     """
@@ -1194,11 +1185,7 @@ def analyze_image(uploaded_file, crop_key):
         return None
 
     start_time = time.time()
-    # SMART LOGIC: Potato ke liye naya function, baqi sab ke liye purana
-    if crop_key == "potato":
-        features = extract_potato_features(uploaded_file.getvalue())
-    else:
-        features = extract_all_features(uploaded_file.getvalue())
+    features = extract_all_features(uploaded_file.getvalue())
     if features is None:
         return None
 
@@ -1231,7 +1218,7 @@ def show_low_confidence_warning():
 
 def show_result(result, crop_key, config):
     """Render report + treatment from a result dict. Used by both pages."""
-    if result['conf'] < 49:
+    if result['conf'] < 40:
         show_low_confidence_warning()
         return
     ts = datetime.datetime.now().strftime("%d %b %Y · %H:%M")
@@ -1359,8 +1346,8 @@ if nav == "🏠 Home Page":
 
     st.markdown("""
     <div class="stat-grid">
-        <div class="stat-card" style="animation-delay:0.1s"><div class="stat-val">95%</div><div class="stat-lbl">Accuracy</div></div>
-        <div class="stat-card" style="animation-delay:0.2s"><div class="stat-val">24K+</div><div class="stat-lbl">Images Trained</div></div>
+        <div class="stat-card" style="animation-delay:0.1s"><div class="stat-val">97%</div><div class="stat-lbl">Accuracy</div></div>
+        <div class="stat-card" style="animation-delay:0.2s"><div class="stat-val">18K+</div><div class="stat-lbl">Images Trained</div></div>
         <div class="stat-card" style="animation-delay:0.3s"><div class="stat-val">4</div><div class="stat-lbl">Crops</div></div>
         <div class="stat-card" style="animation-delay:0.4s"><div class="stat-val">&lt;3s</div><div class="stat-lbl">Result Time</div></div>
     </div>
@@ -1419,6 +1406,14 @@ if nav == "🏠 Home Page":
         """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="scan-cta-wrap">
+        <p style="color:rgba(255,255,255,0.65);font-size:0.75rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">🔬 Quick Scan</p>
+        <h2 style="color:white;font-size:1.9rem;font-weight:900;margin:0 0 10px;letter-spacing:-0.5px;">Koi bhi fasal — ek hi jagah scan karein</h2>
+        <p style="color:rgba(255,255,255,0.7);font-size:0.95rem;max-width:500px;margin:0 auto 24px;line-height:1.6;">Seedha yahan patta upload karein — AI khud crop detect karega</p>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Universal upload zone — AI auto-detects crop
     uploaded_file, detected_crop = render_universal_upload()
@@ -1549,5 +1544,4 @@ elif nav == "🫑 Pepper (Mirch)":
 
 # ===================== CORN — uses generic function =====================
 elif nav == "🌽 Corn Field":
-    render_crop_page("corn") 
-
+    render_crop_page("corn")
