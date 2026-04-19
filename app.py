@@ -1218,7 +1218,7 @@ def show_low_confidence_warning():
 
 def show_result(result, crop_key, config):
     """Render report + treatment from a result dict. Used by both pages."""
-    if result['conf'] < 45:
+    if result['conf'] < 46:
         show_low_confidence_warning()
         return
     ts = datetime.datetime.now().strftime("%d %b %Y · %H:%M")
