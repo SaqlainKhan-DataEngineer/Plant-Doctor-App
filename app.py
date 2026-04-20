@@ -1544,4 +1544,4 @@ elif nav == "🫑 Pepper (Mirch)":
 
 # ===================== CORN — uses generic function =====================
 elif nav == "🌽 Corn Field":
-    render_crop_page("corn")
+    render_crop_page("corn")    
