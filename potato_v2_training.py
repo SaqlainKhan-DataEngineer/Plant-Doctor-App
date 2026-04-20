@@ -29,7 +29,25 @@ def preprocess_image(img):
     """
     Real world images ke liye preprocessing.
     App.py mein BILKUL same function hoga.
-    """
+    """ 
+    #  HSV Background Masking ---
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    
+    # Range for Brown (disease), Yellow (early disease), and Green (healthy leaf)
+    # Hue: 10 se 100 tak sabz, peela aur bhoora rang cover ho jata hai.
+    lower_bound = np.array([10, 20, 20])
+    upper_bound = np.array([100, 255, 255])
+    
+    # Mask banayen (Mitti aur asmaan ko kaala kar dega)
+    mask = cv2.inRange(hsv, lower_bound, upper_bound)
+    
+    # Mask ko thora smooth karein taake chotay noise khatam ho jayen
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    
+    # Asli image par mask apply karein
+    img = cv2.bitwise_and(img, img, mask=mask)
+    # ----------------------------------------
     # CLAHE — lighting normalize
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
@@ -48,7 +66,7 @@ def preprocess_image(img):
     return img
 
 # ============================================================
-# FEATURE EXTRACTION — App.py se 100% match
+# FEATURE EXTRACTION 
 # ============================================================
 def extract_features(img):
     """
