@@ -131,26 +131,24 @@ CROP_CONFIG = {
 }
 
 # --- 4. MODEL LOADING — Graceful degradation (v3 improvement) ---
-# App starts even if one or both model files are missing.
 @st.cache_resource
 def safe_load_models():
     """Load all crop models + master crop detector. Missing models don't crash app."""
     models = {}
     model_files = {
-        "potato": ("potato_disease_model_v3.pkl",          "class_names"),
+        "potato": ("potato_disease_model_v3.pkl",        "class_names"),
         "tomato": ("tomato_disease_model_9_classes.pkl", "class_names"),
         "pepper": ("pepper_disease_model.pkl",           "class_names"),
         "corn":   ("corn_disease_model.pkl",             "class_names"),
-        "master": ("crop_detector_model.pkl",            "classes"),   # ML crop detector
+        "master": ("crop_detector_model.pkl",            "classes"),
     }
     for crop_key, (file_path, cls_key) in model_files.items():
         try:
             data = joblib.load(file_path)
-            models[crop_key] = (data['model'], data['scaler'], data[cls_key])
-        except FileNotFoundError:
-            models[crop_key] = (None, None, None)
+            # Yahan humne selector ko load karne ka code add kiya hai
+            models[crop_key] = (data.get('model'), data.get('scaler'), data.get('selector'), data.get(cls_key))
         except Exception:
-            models[crop_key] = (None, None, None)
+            models[crop_key] = (None, None, None, None)
     return models
 
 MODELS = safe_load_models()
@@ -264,14 +262,17 @@ class CropAutoDetector:
         First tries ML master model, then falls back to heuristics.
         """
         # --- Try ML Master Model first ---
-        master_model, master_scaler, master_classes = MODELS.get("master", (None, None, None))
+        master_model, master_scaler, master_selector, master_classes = MODELS.get("master", (None, None, None, None))
         if master_model:
             try:
                 features = extract_all_features(image_bytes)
                 if features is not None:
                     features = np.nan_to_num(features).reshape(1, -1)
-                    features_scaled = master_scaler.transform(features)
-                    probs = master_model.predict_proba(features_scaled)[0]
+                    if master_scaler:
+                        features = master_scaler.transform(features)
+                    if master_selector: # Agar selector hai toh apply karo
+                        features = master_selector.transform(features)
+                    probs = master_model.predict_proba(features)[0]
                     max_idx = np.argmax(probs)
                     conf = float(probs[max_idx])
                     best_crop = master_classes[max_idx]
@@ -1205,7 +1206,8 @@ def analyze_image(uploaded_file, crop_key):
     Fixes the v3 DRY violation — one bug fix here fixes everywhere.
     Returns a result dict, or None on failure.
     """
-    model, crop_scaler, crop_class_names = MODELS.get(crop_key, (None, None, None))
+    # Ab hum 4 cheezein nikal rahe hain (Selector add kiya hai)
+    model, crop_scaler, crop_selector, crop_class_names = MODELS.get(crop_key, (None, None, None, None))
     if not model:
         st.error(CROP_CONFIG[crop_key]['model_missing_msg'])
         return None
@@ -1216,8 +1218,16 @@ def analyze_image(uploaded_file, crop_key):
         return None
 
     features = np.nan_to_num(features).reshape(1, -1)
-    features_scaled = crop_scaler.transform(features) if crop_scaler is not None else features
-    probs = model.predict_proba(features_scaled)[0]
+
+    # 1. Scale Features
+    if crop_scaler is not None:
+        features = crop_scaler.transform(features)
+
+    # 2. Select Features (Yeh V3 ki jaan hai!)
+    if crop_selector is not None:
+        features = crop_selector.transform(features)
+
+    probs = model.predict_proba(features)[0]
     inference_time = time.time() - start_time
 
     max_idx = np.argmax(probs)
@@ -1585,4 +1595,4 @@ elif nav == "🫑 Pepper (Mirch)":
 
 # ===================== CORN — uses generic function =====================
 elif nav == "🌽 Corn Field":
-    render_crop_page("corn")    
+    render_crop_page("corn")     
