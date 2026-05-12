@@ -154,8 +154,8 @@ def safe_load_models():
 MODELS = safe_load_models()
 
 # Keep these for any legacy references
-rf_model, scaler, class_names = MODELS.get("potato", (None, None, None))
-t_model, t_scaler, t_class_names = MODELS.get("tomato", (None, None, None))
+rf_model, scaler, selector, class_names = MODELS.get("potato", (None, None, None, None))
+t_model, t_scaler, t_selector, t_class_names = MODELS.get("tomato", (None, None, None, None))
 
 # --- 6. ERROR HANDLING DECORATOR (IMPROVEMENT #2: Defensive programming) ---
 def safe_analysis(func):
