@@ -73,18 +73,18 @@ CORN_LOCAL_NAMES = {"Blight": "پتیاں دا سڑنا", "Common Rust": "مکئ
 
 CROP_CONFIG = {
     "potato": {
-        "model_file": "potato_disease_model.pkl",
+        "model_file": "potato_disease_model_v3.pkl",
         "urdu_names": POTATO_URDU_NAMES,
         "local_names": POTATO_LOCAL_NAMES,
         "emoji": "🥔",
         "display_name": "Potato — آلو",
-        "accuracy": "97%",
+        "accuracy": "99%",  # <-- Isay 99% kar lein
         "diseases": 3,
         "nav_key": "🥔 Potato (Aloo)",
         "uploader_label": "Upload Potato Leaf Photo / آلو کا پتہ اپلوڈ کریں",
-        "model_missing_msg": "⚠️ **Model File Missing!** Please ensure `potato_disease_model.pkl` is in the project directory.",
+        "model_missing_msg": "⚠️ **Model File Missing!** Please ensure `potato_disease_model_v3.pkl` is in the project directory.",
         "header_title": "Potato Disease Scan | آلو کی بیماری",
-        "header_sub": "Random Forest · HOG + LBP + GLCM + Color · 97% Accuracy",
+        "header_sub": "XGBoost v3 · HOG+LBP+GLCM+ORB · 99% Accuracy", # <-- Nayi Details
     },
     "tomato": {
         "model_file": "tomato_disease_model_9_classes.pkl",
