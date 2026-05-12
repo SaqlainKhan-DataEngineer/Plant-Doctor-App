@@ -138,11 +138,10 @@ def render_auth_page():
                         "full_name": name,
                         "email": email,
                         "password": password,
-                        "phone": phone  # <--- BAS YEH LIKH DEIN
+                        "phone": phone
                     },
                     timeout=5
                 )
-                
                 
                 if response.status_code == 200:
                     st.success("✅ Account ban gaya! Ab login karein.")
@@ -150,10 +149,10 @@ def render_auth_page():
                     st.error("❌ Ye email pehle se registered hai!")
                 else:
                     st.error(f"❌ Error: {response.json().get('detail', 'Unknown error')}")
-            except requests.exceptions.ConnectionError:
-                st.error("❌ Backend server nahi chal raha!")
-            except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+        except requests.exceptions.ConnectionError:
+                     st.error("❌ Backend server nahi chal raha!")
+        except Exception as e:
+                     st.error(f"❌ Error: {str(e)}") 
 
 def logout():
     """User logout"""
