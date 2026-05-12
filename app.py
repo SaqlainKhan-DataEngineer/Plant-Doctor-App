@@ -248,6 +248,103 @@ def extract_all_features(image_bytes):
 
     return result
 
+# ==============================================================================
+# --- V3 FEATURE EXTRACTION (Specially for Potato v3 and future models)
+# ==============================================================================
+def extract_gabor(gray):
+    feats = []
+    for theta in range(4):
+        theta_rad = theta * np.pi / 4
+        for freq in [0.1, 0.3, 0.5]:
+            lam = 1.0/freq if freq > 0 else 1.0
+            kernel = cv2.getGaborKernel((21,21), 5.0, theta_rad, lam, 0.5, 0, ktype=cv2.CV_32F)
+            filtered = cv2.filter2D(gray, cv2.CV_32F, kernel)
+            feats.extend([filtered.mean(), filtered.std(), np.percentile(filtered, 25), np.percentile(filtered, 75)])
+    return np.array(feats)
+
+def extract_orb(img):
+    orb  = cv2.ORB_create(nfeatures=300)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    _, des = orb.detectAndCompute(gray, None)
+    if des is None or len(des) == 0:
+        return np.zeros(32)
+    return np.mean(des, axis=0).astype(np.float32)
+
+@safe_analysis
+def extract_features_v3(image_bytes):
+    if len(image_bytes) > 10 * 1024 * 1024: raise ValueError("Image too large.")
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    if nparr.size == 0: raise ValueError("Empty image data received.")
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if img is None: raise cv2.error("Could not decode image.")
+
+    img = cv2.resize(img, (128, 128))
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    lower = np.array([15, 20, 20])
+    upper = np.array([100, 255, 255])
+    mask  = cv2.inRange(hsv, lower, upper)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN,  kernel)
+
+    mean_color = cv2.mean(img, mask=mask)[:3]
+    background = np.ones_like(img, dtype=np.uint8)
+    background[:] = [int(c) for c in mean_color]
+    img = np.where(mask[:,:,None] == 0, background, img).astype(np.uint8)
+
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8,8))
+    lab[:,:,0] = clahe.apply(lab[:,:,0])
+    img = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+
+    img_f = img.astype(np.float32)
+    avg   = [img_f[:,:,c].mean() for c in range(3)]
+    avg_gray = sum(avg) / 3.0
+    for c in range(3):
+        if avg[c] > 0: img_f[:,:,c] *= avg_gray / avg[c]
+    img = np.clip(img_f, 0, 255).astype(np.uint8)
+
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    hsv  = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    hist_bgr = cv2.calcHist([img],[0,1,2],None,[16,16,16],[0,256,0,256,0,256])
+    hist_bgr = cv2.normalize(hist_bgr, hist_bgr).flatten()
+    hist_hsv = cv2.calcHist([hsv],[0,1,2],None,[16,16,16],[0,180,0,256,0,256])
+    hist_hsv = cv2.normalize(hist_hsv, hist_hsv).flatten()
+
+    color_moments = []
+    for c in range(3):
+        ch = img[:,:,c].astype(np.float32)
+        color_moments.extend([ch.mean(), ch.std(), np.percentile(ch,25), np.percentile(ch,75)])
+    f_color = np.hstack([hist_bgr, hist_hsv, color_moments])
+
+    f_hog = []
+    f_hog.extend(hog(gray, orientations=9, pixels_per_cell=(8,8), cells_per_block=(2,2), visualize=False))
+    f_hog.extend(hog(gray, orientations=9, pixels_per_cell=(16,16), cells_per_block=(2,2), visualize=False))
+    small = cv2.resize(gray, (64, 64))
+    f_hog.extend(hog(small, orientations=9, pixels_per_cell=(8,8), cells_per_block=(2,2), visualize=False))
+    f_hog = np.array(f_hog)
+
+    f_lbp = []
+    for r, p in [(1,8),(2,16),(3,24)]:
+        lbp = local_binary_pattern(gray, p, r, method='uniform')
+        h, _ = np.histogram(lbp.ravel(), bins=np.arange(0,p+3), range=(0,p+2))
+        h = h.astype("float"); h /= (h.sum()+1e-7)
+        f_lbp.extend(h)
+    f_lbp = np.array(f_lbp)
+
+    glcm = graycomatrix(gray, distances=[1,2,3], angles=[0,np.pi/4,np.pi/2,3*np.pi/4], levels=256, symmetric=True, normed=True)
+    f_glcm = np.array([graycoprops(glcm,p).mean() for p in ['contrast','correlation','energy','homogeneity','dissimilarity','ASM']])
+
+    f_gabor = extract_gabor(gray)
+    f_orb   = extract_orb(img)
+
+    result = np.hstack([f_color, f_hog, f_lbp, f_glcm, f_gabor, f_orb])
+    del img, gray, hsv, lbp, glcm
+    gc.collect()
+
+    return result
+
 # --- 8. CROP AUTO-DETECTOR (v3: Universal upload, AI detects crop type) ---
 class CropAutoDetector:
     """
@@ -275,15 +372,9 @@ class CropAutoDetector:
                 if features is not None:
                     features = np.nan_to_num(features).reshape(1, -1)
                     if master_scaler:
-                        try:
-                            features = master_scaler.transform(features)
-                        except ValueError:
-                            pass  # Skip scaler on mismatch
+                        features = master_scaler.transform(features)
                     if master_selector:
-                        try:
-                            features = master_selector.transform(features)
-                        except ValueError:
-                            pass  # Skip selector on mismatch
+                        features = master_selector.transform(features)
                     probs = master_model.predict_proba(features)[0]
                     max_idx = np.argmax(probs)
                     conf = float(probs[max_idx])
@@ -1233,33 +1324,26 @@ def analyze_image(uploaded_file, crop_key):
         return None
 
     start_time = time.time()
-    features = extract_all_features(uploaded_file.getvalue())
+
+    # --- SMART ROUTING ---
+    # Potato v3 model ko v3 features chahiye, baqi purane models ko purane features
+    if crop_key == "potato":
+        features = extract_features_v3(uploaded_file.getvalue())
+    else:
+        features = extract_all_features(uploaded_file.getvalue())
+
     if features is None:
         return None
 
     features = np.nan_to_num(features).reshape(1, -1)
 
-    # 1. Scale Features (agar scaler hai aur model ne training mein scaler use kiya ho)
+    # 1. Scale Features
     if crop_scaler is not None:
-        try:
-            features = crop_scaler.transform(features)
-        except ValueError as e:
-            # Agar feature count mismatch ho toh scaler skip karo
-            if "feature names" in str(e).lower() or "n_features" in str(e).lower():
-                pass  # Skip scaler, use raw features
-            else:
-                raise
+        features = crop_scaler.transform(features)
 
-    # 2. Select Features (Yeh V3 ki jaan hai!)
+    # 2. Select Features (Agar training mein lagaya tha)
     if crop_selector is not None:
-        try:
-            features = crop_selector.transform(features)
-        except ValueError as e:
-            # Agar feature count mismatch ho toh selector skip karo
-            if "feature names" in str(e).lower() or "n_features" in str(e).lower():
-                pass  # Skip selector
-            else:
-                raise
+        features = crop_selector.transform(features)
 
     probs = model.predict_proba(features)[0]
     inference_time = time.time() - start_time
@@ -1629,4 +1713,4 @@ elif nav == "🫑 Pepper (Mirch)":
 
 # ===================== CORN — uses generic function =====================
 elif nav == "🌽 Corn Field":
-    render_crop_page("corn")     
+    render_crop_page("corn")    
