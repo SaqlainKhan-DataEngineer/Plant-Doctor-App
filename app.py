@@ -1,4 +1,8 @@
-import streamlit as st
+import streamlit as st 
+import google.generativeai as genai
+GEMINI_API_KEY = "AIzaSyC4SeLAG92i5CrwpKKdIv-6vXy-MkkiCbA" 
+import xgboost as xgb
+genai.configure(api_key=GEMINI_API_KEY)
 from PIL import Image
 import cv2
 import numpy as np
@@ -132,7 +136,7 @@ def safe_load_models():
     """Load all crop models + master crop detector. Missing models don't crash app."""
     models = {}
     model_files = {
-        "potato": ("potato_disease_model_v2.pkl",          "class_names"),
+        "potato": ("potato_disease_model_v3.pkl",          "class_names"),
         "tomato": ("tomato_disease_model_9_classes.pkl", "class_names"),
         "pepper": ("pepper_disease_model.pkl",           "class_names"),
         "corn":   ("corn_disease_model.pkl",             "class_names"),
@@ -438,7 +442,28 @@ def render_universal_upload():
             return uploaded_file, final_crop
 
     return None, None
-
+# --- call api 
+def get_ai_doctor_advice(disease_name):
+    if "healthy" in disease_name.lower():
+        return "✅ **Fasal bilkul theek hai!** Waqat par paani dein aur khet ko saaf rakhein taake koi aane wali bimari se bacha ja sake."
+    
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = f"""
+        Tum ek expert Pakistani Agricultural Doctor ho. 
+        Kisan ki fasal mein '{disease_name}' ki bimari aayi hai.
+        Mujhe Roman Urdu mein 3 points par mabni ilaj (treatment) batao:
+        1. 🧪 Best Chemical Spray (Medicine ka naam aur istemal ka tarika)
+        2. 🌱 Desi/Organic ilaj (Gharelu totka)
+        3. ✂️ Ehtiyati tadabeer (Precautions/Field Management)
+        
+        Jawab bohot lamba na ho, short aur bullet points mein ho.
+        """
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        # Agar internet band ho ya API issue ho toh yeh emergency text chalega
+        return f"⚠️ **{disease_name} ka Ilaj:**\n- Fauran kisi qareebi zaraee markaz (agriculture center) se rabta karein.\n- Mutasira patton ko kaat kar khet se door phenk dein taake bimari phelne se ruk jaye."
 
 # --- 10. CSS (Split into critical + component CSS) ---
 def get_critical_css():
@@ -1217,21 +1242,36 @@ def show_low_confidence_warning():
 
 
 def show_result(result, crop_key, config):
-    """Render report + treatment from a result dict. Used by both pages."""
+    """Render report + AI treatment from a result dict. Used by both pages."""
     if result['conf'] < 46:
         show_low_confidence_warning()
         return
+        
     ts = datetime.datetime.now().strftime("%d %b %Y · %H:%M")
     urdu_name = config['urdu_names'].get(result['label'], result['label'])
     local_name = config['local_names'].get(result['label'], result['label'])
+    
+    # 1. Pehle result ka Meter aur Report Card print karega
     is_healthy, _ = render_report(
         result['label'], result['conf'], result['prob_dict'],
         urdu_name, local_name, config['display_name'], ts, result['inference_time']
     )
+    
     st.markdown("<br>", unsafe_allow_html=True)
+    
     if is_healthy:
         st.balloons()
-    render_treatment(result['label'], is_healthy, crop=crop_key)
+        
+    # --- YAHAN SE AI DOCTOR KA MAGIC SHURU HOTA HAI ---
+    
+    st.markdown("<h3 style='color:#064e3b;font-weight:800;margin-bottom:10px;'>👨‍⚕️ AI Doctor Ki Tajaweez (Live Advice)</h3>", unsafe_allow_html=True)
+    
+    # Spinner lagaya taake jab tak API se jawab aaye, user ko lage doctor soch raha hai
+    with st.spinner('AI Doctor aapki fasal ka nuskha tayyar kar raha hai... (Is mein 2-3 sec lagenge)'):
+        ai_advice = get_ai_doctor_advice(result['label'])
+        
+    # AI ka jawab ek khoobsurat green box mein show hoga
+    st.info(ai_advice)
 
 
 def render_crop_page(crop_key):
