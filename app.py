@@ -131,17 +131,18 @@ def render_auth_page():
                 st.error("❌ Passwords match nahi kar rahe!")
                 return
             
-            try:
+        try:
                 response = requests.post(
                     f"{API_URL}/auth/register",
                     json={
                         "full_name": name,
                         "email": email,
                         "password": password,
-                        "phone": phone if phone else None
+                        "phone": phone  # <--- BAS YEH LIKH DEIN
                     },
                     timeout=5
                 )
+                
                 
                 if response.status_code == 200:
                     st.success("✅ Account ban gaya! Ab login karein.")
