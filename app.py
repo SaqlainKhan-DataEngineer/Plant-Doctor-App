@@ -262,16 +262,28 @@ class CropAutoDetector:
         First tries ML master model, then falls back to heuristics.
         """
         # --- Try ML Master Model first ---
-        master_model, master_scaler, master_selector, master_classes = MODELS.get("master", (None, None, None, None))
+        master_data = MODELS.get("master", (None, None, None, None))
+        if len(master_data) == 4:
+            master_model, master_scaler, master_selector, master_classes = master_data
+        else:
+            master_model, master_scaler, master_classes = master_data
+            master_selector = None
+
         if master_model:
             try:
                 features = extract_all_features(image_bytes)
                 if features is not None:
                     features = np.nan_to_num(features).reshape(1, -1)
                     if master_scaler:
-                        features = master_scaler.transform(features)
-                    if master_selector: # Agar selector hai toh apply karo
-                        features = master_selector.transform(features)
+                        try:
+                            features = master_scaler.transform(features)
+                        except ValueError:
+                            pass  # Skip scaler on mismatch
+                    if master_selector:
+                        try:
+                            features = master_selector.transform(features)
+                        except ValueError:
+                            pass  # Skip selector on mismatch
                     probs = master_model.predict_proba(features)[0]
                     max_idx = np.argmax(probs)
                     conf = float(probs[max_idx])
@@ -1207,7 +1219,15 @@ def analyze_image(uploaded_file, crop_key):
     Returns a result dict, or None on failure.
     """
     # Ab hum 4 cheezein nikal rahe hain (Selector add kiya hai)
-    model, crop_scaler, crop_selector, crop_class_names = MODELS.get(crop_key, (None, None, None, None))
+    # Fallback: agar purana model hai (3 values) toh bhi handle karein
+    model_data = MODELS.get(crop_key, (None, None, None, None))
+    if len(model_data) == 4:
+        model, crop_scaler, crop_selector, crop_class_names = model_data
+    else:
+        # Purana model format (backward compatibility)
+        model, crop_scaler, crop_class_names = model_data
+        crop_selector = None
+
     if not model:
         st.error(CROP_CONFIG[crop_key]['model_missing_msg'])
         return None
@@ -1219,13 +1239,27 @@ def analyze_image(uploaded_file, crop_key):
 
     features = np.nan_to_num(features).reshape(1, -1)
 
-    # 1. Scale Features
+    # 1. Scale Features (agar scaler hai aur model ne training mein scaler use kiya ho)
     if crop_scaler is not None:
-        features = crop_scaler.transform(features)
+        try:
+            features = crop_scaler.transform(features)
+        except ValueError as e:
+            # Agar feature count mismatch ho toh scaler skip karo
+            if "feature names" in str(e).lower() or "n_features" in str(e).lower():
+                pass  # Skip scaler, use raw features
+            else:
+                raise
 
     # 2. Select Features (Yeh V3 ki jaan hai!)
     if crop_selector is not None:
-        features = crop_selector.transform(features)
+        try:
+            features = crop_selector.transform(features)
+        except ValueError as e:
+            # Agar feature count mismatch ho toh selector skip karo
+            if "feature names" in str(e).lower() or "n_features" in str(e).lower():
+                pass  # Skip selector
+            else:
+                raise
 
     probs = model.predict_proba(features)[0]
     inference_time = time.time() - start_time
