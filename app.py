@@ -1,6 +1,7 @@
 import streamlit as st 
 import google.generativeai as genai
-GEMINI_API_KEY = "AIzaSyC4SeLAG92i5CrwpKKdIv-6vXy-MkkiCbA" 
+# Code se hardcoded key hata dein, aur Streamlit secrets use karein
+GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 import xgboost as xgb
 genai.configure(api_key=GEMINI_API_KEY)
 from PIL import Image
