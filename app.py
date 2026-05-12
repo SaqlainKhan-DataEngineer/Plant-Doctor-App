@@ -34,6 +34,190 @@ else:
 # Handle quick scan target
 quick_scan_target = st.session_state.pop('quick_scan_target', None)
 
+# ==============================================================================
+# 🔥 AUTHENTICATION CODE (NEW ADDITION)
+# ==============================================================================
+
+API_URL = "http://localhost:8000/api"
+
+# Session state for auth
+if 'token' not in st.session_state:
+    st.session_state.token = None
+if 'user' not in st.session_state:
+    st.session_state.user = None
+if 'user_email' not in st.session_state:
+    st.session_state.user_email = None
+
+def render_auth_page():
+    """Login/Register page - user auth ke bina app nahi khulega"""
+    st.markdown("""
+    <style>
+    .auth-container {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+    .auth-title {
+        text-align: center;
+        color: #064e3b;
+        font-size: 2rem;
+        font-weight: 900;
+        margin-bottom: 10px;
+    }
+    .auth-subtitle {
+        text-align: center;
+        color: #6b7280;
+        font-size: 0.9rem;
+        margin-bottom: 30px;
+    }
+    </style>
+    <div class="auth-container">
+        <div style="text-align:center;font-size:4rem;margin-bottom:10px;">🌿</div>
+        <h1 class="auth-title">Plant Doctor AI</h1>
+        <p class="auth-subtitle">Pakistani Kisanon Ka AI Doctor<br>Login karein ya naya account banayein</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    tab1, tab2 = st.tabs(["🔑 Login", "📝 Register"])
+    
+    with tab1:
+        st.markdown("<br>", unsafe_allow_html=True)
+        email = st.text_input("📧 Email", key="login_email")
+        password = st.text_input("🔒 Password", type="password", key="login_password")
+        
+        if st.button("🔓 Login", type="primary", use_container_width=True):
+            if not email or not password:
+                st.error("⚠️ Email aur password dono daalein!")
+                return
+                
+            try:
+                response = requests.post(
+                    f"{API_URL}/auth/login", 
+                    json={"email": email, "password": password},
+                    timeout=5
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    st.session_state.token = data['token']
+                    st.session_state.user = data['role']
+                    st.session_state.user_email = email
+                    st.success("✅ Login successful!")
+                    time.sleep(0.5)
+                    st.rerun()
+                elif response.status_code == 401:
+                    st.error("❌ Galat email ya password!")
+                else:
+                    st.error(f"❌ Error: {response.json().get('detail', 'Unknown error')}")
+            except requests.exceptions.ConnectionError:
+                st.error("❌ Backend server nahi chal raha! Terminal mein `uvicorn main:app --reload --port 8000` run karein.")
+            except Exception as e:
+                st.error(f"❌ Error: {str(e)}")
+    
+    with tab2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        name = st.text_input("👤 Full Name", key="reg_name")
+        email = st.text_input("📧 Email", key="reg_email")
+        phone = st.text_input("📱 Phone (optional)", key="reg_phone")
+        password = st.text_input("🔒 Password", type="password", key="reg_pass")
+        confirm_password = st.text_input("🔒 Confirm Password", type="password", key="reg_confirm_pass")
+        
+        if st.button("📝 Register", type="primary", use_container_width=True):
+            if not name or not email or not password:
+                st.error("⚠️ Name, email aur password zaroori hain!")
+                return
+            
+            if password != confirm_password:
+                st.error("❌ Passwords match nahi kar rahe!")
+                return
+            
+            try:
+                response = requests.post(
+                    f"{API_URL}/auth/register",
+                    json={
+                        "full_name": name,
+                        "email": email,
+                        "password": password,
+                        "phone": phone if phone else None
+                    },
+                    timeout=5
+                )
+                
+                if response.status_code == 200:
+                    st.success("✅ Account ban gaya! Ab login karein.")
+                elif response.status_code == 400:
+                    st.error("❌ Ye email pehle se registered hai!")
+                else:
+                    st.error(f"❌ Error: {response.json().get('detail', 'Unknown error')}")
+            except requests.exceptions.ConnectionError:
+                st.error("❌ Backend server nahi chal raha!")
+            except Exception as e:
+                st.error(f"❌ Error: {str(e)}")
+
+def logout():
+    """User logout"""
+    st.session_state.token = None
+    st.session_state.user = None
+    st.session_state.user_email = None
+    st.rerun()
+
+def save_scan_to_backend(uploaded_file, crop_key, disease, confidence):
+    """Scan ko backend/database mein save karo"""
+    if not st.session_state.token:
+        return False, "Login required"
+    
+    try:
+        headers = {"Authorization": f"Bearer {st.session_state.token}"}
+        
+        files = {"image": ("scan.jpg", uploaded_file.getvalue(), "image/jpeg")}
+        data = {
+            "crop": crop_key,
+            "disease": disease,
+            "confidence": float(confidence)
+        }
+        
+        response = requests.post(
+            f"{API_URL}/scans",
+            headers=headers,
+            files=files,
+            data=data,
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            return True, response.json().get("scan_id")
+        else:
+            return False, response.json().get("detail", "Save failed")
+    except Exception as e:
+        return False, str(e)
+
+def get_scan_history():
+    """Database se scan history lao"""
+    if not st.session_state.token:
+        return []
+    
+    try:
+        headers = {"Authorization": f"Bearer {st.session_state.token}"}
+        response = requests.get(
+            f"{API_URL}/scans/history",
+            headers=headers,
+            timeout=5
+        )
+        
+        if response.status_code == 200:
+            return response.json().get("scans", [])
+        return []
+    except:
+        return []
+
+# ==============================================================================
+# 🔥 AUTH CHECK - Agar login nahi hai toh auth page dikhao
+# ==============================================================================
+if not st.session_state.token:
+    render_auth_page()
+    st.stop()
+
+
 # --- 2. WEATHER ---
 def get_real_weather():
     """Fetch live temperature, wind speed, AND real humidity from Open-Meteo."""
@@ -1029,6 +1213,44 @@ nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato
 
 st.sidebar.write("---")
 
+# ==============================================================================
+# 🔥 SIDEBAR USER INFO + LOGOUT + HISTORY (NEW ADDITION)
+# ==============================================================================
+
+# User info sidebar mein
+st.sidebar.markdown(f"""
+<div style="background:rgba(255,255,255,0.1);border-radius:12px;padding:12px 16px;border:1px solid rgba(255,255,255,0.2);margin-bottom:16px;">
+    <div style="font-size:0.7rem;opacity:0.7;text-transform:uppercase;letter-spacing:1px;font-weight:700;">👤 Logged In</div>
+    <div style="font-size:0.85rem;font-weight:700;color:white;margin-top:4px;">{st.session_state.user_email}</div>
+    <div style="font-size:0.7rem;opacity:0.6;margin-top:2px;">Role: {st.session_state.user}</div>
+</div>
+""", unsafe_allow_html=True)
+
+# Logout button
+if st.sidebar.button("🚪 Logout", use_container_width=True):
+    logout()
+
+st.sidebar.write("---")
+st.sidebar.markdown("<p style='font-size:0.75rem;opacity:0.7;text-transform:uppercase;letter-spacing:1px;font-weight:700;'>📊 Scan History</p>", unsafe_allow_html=True)
+
+history_scans = get_scan_history()
+if history_scans:
+    st.sidebar.markdown(f"<p style='font-size:0.8rem;color:white;'>{len(history_scans)} scans saved</p>", unsafe_allow_html=True)
+    for scan in history_scans[:5]:  # Sirf last 5 dikhao
+        crop = scan.get('crop_type', scan.get('crop', 'Unknown'))
+        disease = scan.get('predicted_disease', scan.get('disease', 'Unknown'))
+        conf = scan.get('confidence', 0)
+        st.sidebar.markdown(f"""
+        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px 10px;margin-bottom:6px;border:1px solid rgba(255,255,255,0.1);">
+            <div style="font-size:0.75rem;font-weight:700;color:white;">{crop.title()} - {disease}</div>
+            <div style="font-size:0.65rem;opacity:0.6;">{conf:.1f}% confidence</div>
+        </div>
+        """, unsafe_allow_html=True)
+else:
+    st.sidebar.markdown("<p style='font-size:0.75rem;opacity:0.5;'>No scans yet</p>", unsafe_allow_html=True)
+
+st.sidebar.write("---")
+
 if temp > 30:  sw_color = "#f59e0b"; sw_icon = "☀️"
 elif temp < 20: sw_color = "#6366f1"; sw_icon = "❄️"
 else:           sw_color = "#10b981"; sw_icon = "⛅"
@@ -1456,6 +1678,22 @@ def render_crop_page(crop_key):
                 result = analyze_image(uploaded_file, crop_key)
         if result:
             show_result(result, crop_key, config)
+            
+            # ==============================================================================
+            # 🔥 SCAN SAVE KARO (NEW - Single file scan ke baad)
+            # ==============================================================================
+            with st.spinner("💾 Scan database mein save ho raha hai..."):
+                success, msg = save_scan_to_backend(
+                    uploaded_file, 
+                    crop_key, 
+                    result['label'], 
+                    result['conf']
+                )
+                
+                if success:
+                    st.success(f"✅ Scan saved! ID: {msg}")
+                else:
+                    st.warning(f"⚠️ Scan save nahi hua: {msg}")
 
     # Multiple files — compact batch results table
     else:
@@ -1491,6 +1729,11 @@ def render_crop_page(crop_key):
                                 </div>
                             </div>
                             """, unsafe_allow_html=True)
+                            
+                            # ==============================================================================
+                            # 🔥 BATCH SCAN SAVE (NEW)
+                            # ==============================================================================
+                            save_scan_to_backend(uploaded_file, crop_key, label, conf)
             progress_bar.progress((i + 1) / len(uploaded_files), text=f"Scanning {i+1}/{len(uploaded_files)}...")
         progress_bar.empty()
         st.success(f"✅ Batch complete! {len(uploaded_files)} pattay scan ho gaye.")
@@ -1593,6 +1836,20 @@ if nav == "🏠 Home Page":
             result = analyze_image(uploaded_file, detected_crop)
         if result:
             show_result(result, detected_crop, CROP_CONFIG[detected_crop])
+            # ==============================================================================
+            # 🔥 UNIVERSAL SCAN SAVE (NEW)
+            # ==============================================================================
+            with st.spinner("💾 Scan database mein save ho raha hai..."):
+                success, msg = save_scan_to_backend(
+                    uploaded_file, 
+                    detected_crop, 
+                    result['label'], 
+                    result['conf']
+                )
+                if success:
+                    st.success(f"✅ Scan saved! ID: {msg}")
+                else:
+                    st.warning(f"⚠️ Scan save nahi hua: {msg}")
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align:center;color:#064e3b;font-weight:900;font-size:2rem;margin-bottom:6px;'>Supported Crops | Faslain</h2>", unsafe_allow_html=True)
@@ -1713,4 +1970,4 @@ elif nav == "🫑 Pepper (Mirch)":
 
 # ===================== CORN — uses generic function =====================
 elif nav == "🌽 Corn Field":
-    render_crop_page("corn")    
+    render_crop_page("corn") 
