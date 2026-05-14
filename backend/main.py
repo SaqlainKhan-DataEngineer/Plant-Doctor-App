@@ -1,4 +1,8 @@
-import pyodbc
+try:
+    import pyodbc
+except ImportError:
+    pyodbc = None
+
 from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials

@@ -1,6 +1,6 @@
 fastapi==0.115.0
 uvicorn==0.30.0
-pyodbc
+# pyodbc  # Commented out for Railway deployment (requires OS drivers). Using pymysql for cloud instead.
 bcrypt
 PyJWT
 python-multipart
