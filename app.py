@@ -103,6 +103,80 @@ def render_auth_page():
     </div>
     """, unsafe_allow_html=True)
     
+    # --------------------------------------------------------------------------
+    # RESET PASSWORD FLOW (URL mein reset_token ho)
+    # --------------------------------------------------------------------------
+    if "reset_token" in st.query_params:
+        st.subheader("🔑 Reset Password")
+        reset_token = st.query_params.get("reset_token")
+        with st.form("reset_password_form"):
+            new_pass = st.text_input("New Password", type="password")
+            confirm_pass = st.text_input("Confirm New Password", type="password")
+            submitted = st.form_submit_button("Reset Password", type="primary", use_container_width=True)
+            
+            if submitted:
+                if len(new_pass) < 6:
+                    st.error("⚠️ Password kam az kam 6 characters ka hona chahiye!")
+                elif new_pass != confirm_pass:
+                    st.error("❌ Passwords match nahi kar rahe!")
+                else:
+                    try:
+                        resp = requests.post(
+                            f"{API_URL}/auth/reset-password",
+                            json={"token": reset_token, "new_password": new_pass},
+                            timeout=10
+                        )
+                        if resp.status_code == 200:
+                            st.success("✅ Password successfully reset ho gaya hai! Ab aap login kar sakte hain.")
+                            # Remove token from URL so they can login
+                            st.query_params.clear()
+                            time.sleep(2)
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Error: {resp.json().get('detail', 'Invalid token')}")
+                    except Exception as e:
+                        st.error(f"❌ API Error: {str(e)}")
+                        
+        if st.button("⬅️ Back to Login"):
+            st.query_params.clear()
+            st.rerun()
+        return
+
+    # --------------------------------------------------------------------------
+    # FORGOT PASSWORD FLOW (Button click se)
+    # --------------------------------------------------------------------------
+    if st.session_state.get("show_forgot_password"):
+        st.subheader("📧 Forgot Password")
+        st.info("Apna email daalein, hum aapko password reset karne ka link bhejenge.")
+        with st.form("forgot_password_form"):
+            forgot_email = st.text_input("Registered Email")
+            submitted = st.form_submit_button("Send Reset Link", type="primary", use_container_width=True)
+            
+            if submitted:
+                if not forgot_email:
+                    st.error("⚠️ Email zaroori hai!")
+                else:
+                    try:
+                        resp = requests.post(
+                            f"{API_URL}/auth/forgot-password",
+                            json={"email": forgot_email},
+                            timeout=10
+                        )
+                        if resp.status_code == 200:
+                            st.success("✅ " + resp.json().get("message", "Link sent!"))
+                        else:
+                            st.error(f"❌ Error: {resp.json().get('detail', 'Failed')}")
+                    except Exception as e:
+                        st.error(f"❌ API Error: {str(e)}")
+                        
+        if st.button("⬅️ Back to Login"):
+            st.session_state.show_forgot_password = False
+            st.rerun()
+        return
+
+    # --------------------------------------------------------------------------
+    # STANDARD LOGIN / REGISTER
+    # --------------------------------------------------------------------------
     tab1, tab2 = st.tabs(["🔑 Login", "📝 Register"])
     
     with tab1:
@@ -142,6 +216,10 @@ def render_auth_page():
                         st.error("❌ Backend server nahi chal raha! Terminal mein `uvicorn main:app --reload --port 8000` run karein.")
                     except Exception as e:
                         st.error(f"❌ Error: {str(e)}")
+                        
+        if st.button("Forgot Password?", type="tertiary"):
+            st.session_state.show_forgot_password = True
+            st.rerun()
     
     with tab2:
         st.markdown("<br>", unsafe_allow_html=True)

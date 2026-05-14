@@ -251,6 +251,20 @@ def create_tables():
                 """)
 
             # --------------------------------------------------------------------------
+            # UPGRADE SCHEMA FOR NEW FEATURES (Forgot Password)
+            # --------------------------------------------------------------------------
+            try:
+                if is_mysql:
+                    cursor.execute("ALTER TABLE users ADD COLUMN reset_password_token VARCHAR(255) NULL;")
+                    cursor.execute("ALTER TABLE users ADD COLUMN reset_password_expires DATETIME NULL;")
+                else:
+                    cursor.execute("ALTER TABLE users ADD reset_password_token NVARCHAR(255) NULL;")
+                    cursor.execute("ALTER TABLE users ADD reset_password_expires DATETIME NULL;")
+                conn.commit()
+            except Exception:
+                pass  # Columns already exist or error, just ignore
+
+            # --------------------------------------------------------------------------
             # SEED DISEASE KNOWLEDGE BASE (18 DISEASES)
             # --------------------------------------------------------------------------
             cursor.execute("SELECT COUNT(*) FROM diseases")
@@ -328,6 +342,13 @@ class ConsultationCreate(BaseModel):
 class ConsultationReply(BaseModel):
     reply: str
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
 # ==============================================================================
 # HELPER FUNCTIONS
 # ==============================================================================
@@ -343,6 +364,33 @@ def create_token(user_id: str, role: str, email: str) -> str:
         SECRET_KEY,
         algorithm="HS256"
     )
+
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+def send_email(to_email: str, subject: str, body: str):
+    smtp_email = os.getenv("SMTP_EMAIL")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    
+    if not smtp_email or not smtp_password:
+        print(f"[MOCK EMAIL] To: {to_email} | Subject: {subject} | Body: {body}")
+        return
+        
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = smtp_email
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'html'))
+        
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(smtp_email, smtp_password)
+        server.send_message(msg)
+        server.quit()
+    except Exception as e:
+        print(f"Failed to send email: {e}")
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
@@ -429,6 +477,75 @@ def login(user: UserLogin):
         "full_name": db_user[3],
         "email": user.email.lower().strip()
     }
+
+
+@app.post("/api/auth/forgot-password")
+def forgot_password(req: ForgotPasswordRequest):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, full_name FROM users WHERE email = ?", req.email.lower().strip())
+        row = cursor.fetchone()
+        
+        if not row:
+            # Return success even if not found to prevent email enumeration
+            return {"message": "If that email is registered, we have sent a reset link."}
+            
+        reset_token = str(uuid.uuid4()) + str(uuid.uuid4())
+        # Expires in 1 hour
+        expiry = datetime.datetime.now() + datetime.timedelta(hours=1)
+        
+        cursor.execute("""
+            UPDATE users SET reset_password_token = ?, reset_password_expires = ?
+            WHERE email = ?
+        """, reset_token, expiry, req.email.lower().strip())
+        conn.commit()
+        
+    # Send Email
+    reset_link = f"https://plantdoctorapp.streamlit.app/?reset_token={reset_token}"
+    body = f"Hello {row[1]},<br><br>Click the link below to reset your password:<br><a href='{reset_link}'>{reset_link}</a><br><br>If you did not request this, please ignore this email."
+    send_email(req.email.lower().strip(), "Plant Doctor AI - Password Reset", body)
+    
+    return {"message": "If that email is registered, we have sent a reset link."}
+
+
+@app.post("/api/auth/reset-password")
+def reset_password(req: ResetPasswordRequest):
+    if len(req.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, reset_password_expires FROM users 
+            WHERE reset_password_token = ?
+        """, req.token)
+        row = cursor.fetchone()
+        
+        if not row:
+            raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+            
+        expiry = row[1]
+        # In SQLite/SQLServer it might be string, in PyMySQL it might be datetime
+        if isinstance(expiry, str):
+            try:
+                expiry = datetime.datetime.strptime(expiry, '%Y-%m-%d %H:%M:%S.%f')
+            except:
+                try:
+                    expiry = datetime.datetime.strptime(expiry, '%Y-%m-%d %H:%M:%S')
+                except:
+                    pass
+                    
+        if isinstance(expiry, datetime.datetime) and datetime.datetime.now() > expiry:
+            raise HTTPException(status_code=400, detail="Reset token has expired")
+            
+        password_hash = hash_password(req.new_password)
+        cursor.execute("""
+            UPDATE users SET password_hash = ?, reset_password_token = NULL, reset_password_expires = NULL
+            WHERE id = ?
+        """, password_hash, row[0])
+        conn.commit()
+        
+    return {"message": "Password has been reset successfully"}
 
 
 @app.get("/api/auth/me")
