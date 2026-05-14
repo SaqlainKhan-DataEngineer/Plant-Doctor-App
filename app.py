@@ -37,8 +37,9 @@ quick_scan_target = st.session_state.pop('quick_scan_target', None)
 # ==============================================================================
 # 🔥 AUTHENTICATION CODE (NEW ADDITION)
 # ==============================================================================
-
-API_URL = "http://localhost:8000/api"
+# Use cloud backend for production (Railway)
+API_URL = "https://plant-doctor-app-production.up.railway.app/api"
+# API_URL = "http://localhost:8000/api" # Use this for local testing
 
 # ==============================================================================
 # 🔥 FIX #1: REFRESH PE LOGOUT NA HO - URL QUERY PARAMS SE TOKEN PERSIST KARO
