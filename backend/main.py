@@ -27,10 +27,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+import urllib.parse
 
 # ==============================================================================
-# DATABASE CONFIG — SQL Server (Windows Auth)
+# DATABASE CONFIG — Supports Local SQL Server & Cloud MySQL
 # ==============================================================================
+DATABASE_URL = os.getenv("MYSQL_URL") or os.getenv("DATABASE_URL")
+
 SQL_SERVER_CONFIG = {
     "server": "DESKTOP-OO6VLOE\\SQLEXPRESS",
     "database": "PlantDoctor",
@@ -40,23 +43,78 @@ SQL_SERVER_CONFIG = {
 SECRET_KEY = "plantdoctor-secret-key-2026-startup"
 security = HTTPBearer()
 
+class MySQLCursorWrapper:
+    """Wrapper to automatically convert ? to %s for MySQL queries"""
+    def __init__(self, cursor):
+        self.cursor = cursor
+    
+    def execute(self, query, *args):
+        # Convert ? to %s for PyMySQL
+        mysql_query = query.replace("?", "%s")
+        # In PyMySQL, execute expects args as a tuple
+        return self.cursor.execute(mysql_query, args if args else None)
+        
+    def fetchone(self):
+        return self.cursor.fetchone()
+        
+    def fetchall(self):
+        return self.cursor.fetchall()
+        
+    def executemany(self, query, args):
+        mysql_query = query.replace("?", "%s")
+        return self.cursor.executemany(mysql_query, args)
+
 # ==============================================================================
 # DB CONNECTION — Context Manager (auto close, no leaks)
 # ==============================================================================
 @contextmanager
 def get_db():
-    """Database connection context manager — auto close even on errors"""
-    conn_str = (
-        f"DRIVER={SQL_SERVER_CONFIG['driver']};"
-        f"SERVER={SQL_SERVER_CONFIG['server']};"
-        f"DATABASE={SQL_SERVER_CONFIG['database']};"
-        f"Trusted_Connection=yes;"
-    )
-    conn = pyodbc.connect(conn_str)
+    """Database connection context manager — supports MySQL and SQL Server"""
+    conn = None
+    is_mysql = False
     try:
-        yield conn
+        if DATABASE_URL:
+            # Connect to MySQL (Railway)
+            import pymysql
+            parsed = urllib.parse.urlparse(DATABASE_URL)
+            conn = pymysql.connect(
+                host=parsed.hostname,
+                user=parsed.username,
+                password=parsed.password,
+                database=parsed.path[1:], # remove leading slash
+                port=parsed.port or 3306,
+                autocommit=False
+            )
+            is_mysql = True
+        else:
+            # Connect to Local SQL Server
+            conn_str = (
+                f"DRIVER={SQL_SERVER_CONFIG['driver']};"
+                f"SERVER={SQL_SERVER_CONFIG['server']};"
+                f"DATABASE={SQL_SERVER_CONFIG['database']};"
+                f"Trusted_Connection=yes;"
+            )
+            conn = pyodbc.connect(conn_str)
+            
+        # Yield connection with custom attribute or wrapper
+        if is_mysql:
+            class MySQLConnWrapper:
+                def __init__(self, c):
+                    self.conn = c
+                    self._is_mysql = True
+                def cursor(self):
+                    return MySQLCursorWrapper(self.conn.cursor())
+                def commit(self):
+                    self.conn.commit()
+                def close(self):
+                    self.conn.close()
+            yield MySQLConnWrapper(conn)
+        else:
+            conn._is_mysql = False
+            yield conn
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 # ==============================================================================
 # AUTO-CREATE TABLES ON STARTUP
@@ -67,73 +125,126 @@ def create_tables():
     try:
         with get_db() as conn:
             cursor = conn.cursor()
-
-            # Users table
-            cursor.execute("""
-                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='users' AND xtype='U')
-                CREATE TABLE users (
-                    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-                    full_name NVARCHAR(100) NOT NULL,
-                    email NVARCHAR(100) UNIQUE NOT NULL,
-                    phone NVARCHAR(20),
-                    password_hash NVARCHAR(255) NOT NULL,
-                    role NVARCHAR(20) DEFAULT 'farmer',
-                    location NVARCHAR(100),
-                    is_active BIT DEFAULT 1,
-                    created_at DATETIME DEFAULT GETDATE()
-                )
-            """)
-
-            # Scans table
-            cursor.execute("""
-                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='scans' AND xtype='U')
-                CREATE TABLE scans (
-                    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-                    user_id UNIQUEIDENTIFIER,
-                    crop_type NVARCHAR(50),
-                    image_url NVARCHAR(500),
-                    predicted_disease NVARCHAR(100),
-                    confidence FLOAT,
-                    ai_advice NVARCHAR(MAX),
-                    created_at DATETIME DEFAULT GETDATE(),
-                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-                )
-            """)
-
-            # Consultations table (NEW)
-            cursor.execute("""
-                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='consultations' AND xtype='U')
-                CREATE TABLE consultations (
-                    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-                    scan_id UNIQUEIDENTIFIER,
-                    farmer_id UNIQUEIDENTIFIER,
-                    expert_id UNIQUEIDENTIFIER NULL,
-                    status NVARCHAR(20) DEFAULT 'pending',
-                    message NVARCHAR(MAX),
-                    expert_reply NVARCHAR(MAX) NULL,
-                    created_at DATETIME DEFAULT GETDATE(),
-                    resolved_at DATETIME NULL,
-                    FOREIGN KEY (scan_id) REFERENCES scans(id),
-                    FOREIGN KEY (farmer_id) REFERENCES users(id),
-                    FOREIGN KEY (expert_id) REFERENCES users(id)
-                )
-            """)
-
-            # Diseases knowledge base (NEW)
-            cursor.execute("""
-                IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='diseases' AND xtype='U')
-                CREATE TABLE diseases (
-                    id INT IDENTITY(1,1) PRIMARY KEY,
-                    crop NVARCHAR(50),
-                    disease_name NVARCHAR(100),
-                    symptoms NVARCHAR(MAX),
-                    causes NVARCHAR(MAX),
-                    chemical_treatment NVARCHAR(MAX),
-                    organic_treatment NVARCHAR(MAX),
-                    prevention NVARCHAR(MAX),
-                    severity_level INT DEFAULT 3
-                )
-            """)
+            is_mysql = getattr(conn, "_is_mysql", False)
+            
+            if is_mysql:
+                # ================= MYSQL SCHEMA =================
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        id VARCHAR(36) PRIMARY KEY,
+                        full_name VARCHAR(100) NOT NULL,
+                        email VARCHAR(100) UNIQUE NOT NULL,
+                        phone VARCHAR(20),
+                        password_hash VARCHAR(255) NOT NULL,
+                        role VARCHAR(20) DEFAULT 'farmer',
+                        location VARCHAR(100),
+                        is_active BOOLEAN DEFAULT 1,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS scans (
+                        id VARCHAR(36) PRIMARY KEY,
+                        user_id VARCHAR(36),
+                        crop_type VARCHAR(50),
+                        image_url VARCHAR(500),
+                        predicted_disease VARCHAR(100),
+                        confidence FLOAT,
+                        ai_advice TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                    )
+                """)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS consultations (
+                        id VARCHAR(36) PRIMARY KEY,
+                        scan_id VARCHAR(36),
+                        farmer_id VARCHAR(36),
+                        expert_id VARCHAR(36) NULL,
+                        status VARCHAR(20) DEFAULT 'pending',
+                        message TEXT,
+                        expert_reply TEXT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        resolved_at DATETIME NULL,
+                        FOREIGN KEY (scan_id) REFERENCES scans(id),
+                        FOREIGN KEY (farmer_id) REFERENCES users(id),
+                        FOREIGN KEY (expert_id) REFERENCES users(id)
+                    )
+                """)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS diseases (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        crop VARCHAR(50),
+                        disease_name VARCHAR(100),
+                        symptoms TEXT,
+                        causes TEXT,
+                        chemical_treatment TEXT,
+                        organic_treatment TEXT,
+                        prevention TEXT,
+                        severity_level INT DEFAULT 3
+                    )
+                """)
+            else:
+                # ================= SQL SERVER SCHEMA =================
+                cursor.execute("""
+                    IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='users' AND xtype='U')
+                    CREATE TABLE users (
+                        id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                        full_name NVARCHAR(100) NOT NULL,
+                        email NVARCHAR(100) UNIQUE NOT NULL,
+                        phone NVARCHAR(20),
+                        password_hash NVARCHAR(255) NOT NULL,
+                        role NVARCHAR(20) DEFAULT 'farmer',
+                        location NVARCHAR(100),
+                        is_active BIT DEFAULT 1,
+                        created_at DATETIME DEFAULT GETDATE()
+                    )
+                """)
+                cursor.execute("""
+                    IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='scans' AND xtype='U')
+                    CREATE TABLE scans (
+                        id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                        user_id UNIQUEIDENTIFIER,
+                        crop_type NVARCHAR(50),
+                        image_url NVARCHAR(500),
+                        predicted_disease NVARCHAR(100),
+                        confidence FLOAT,
+                        ai_advice NVARCHAR(MAX),
+                        created_at DATETIME DEFAULT GETDATE(),
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                    )
+                """)
+                cursor.execute("""
+                    IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='consultations' AND xtype='U')
+                    CREATE TABLE consultations (
+                        id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                        scan_id UNIQUEIDENTIFIER,
+                        farmer_id UNIQUEIDENTIFIER,
+                        expert_id UNIQUEIDENTIFIER NULL,
+                        status NVARCHAR(20) DEFAULT 'pending',
+                        message NVARCHAR(MAX),
+                        expert_reply NVARCHAR(MAX) NULL,
+                        created_at DATETIME DEFAULT GETDATE(),
+                        resolved_at DATETIME NULL,
+                        FOREIGN KEY (scan_id) REFERENCES scans(id),
+                        FOREIGN KEY (farmer_id) REFERENCES users(id),
+                        FOREIGN KEY (expert_id) REFERENCES users(id)
+                    )
+                """)
+                cursor.execute("""
+                    IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='diseases' AND xtype='U')
+                    CREATE TABLE diseases (
+                        id INT IDENTITY(1,1) PRIMARY KEY,
+                        crop NVARCHAR(50),
+                        disease_name NVARCHAR(100),
+                        symptoms NVARCHAR(MAX),
+                        causes NVARCHAR(MAX),
+                        chemical_treatment NVARCHAR(MAX),
+                        organic_treatment NVARCHAR(MAX),
+                        prevention NVARCHAR(MAX),
+                        severity_level INT DEFAULT 3
+                    )
+                """)
 
             # --------------------------------------------------------------------------
             # SEED DISEASE KNOWLEDGE BASE (18 DISEASES)
