@@ -374,27 +374,35 @@ def register(user: UserRegister):
     if "@" not in user.email:
         raise HTTPException(status_code=400, detail="Invalid email format")
 
-    with get_db() as conn:
-        cursor = conn.cursor()
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
 
-        # Check duplicate email
-        cursor.execute("SELECT id FROM users WHERE email = ?", user.email.lower().strip())
-        if cursor.fetchone():
-            raise HTTPException(status_code=400, detail="Email already registered")
+            # Check duplicate email
+            cursor.execute("SELECT id FROM users WHERE email = ?", user.email.lower().strip())
+            if cursor.fetchone():
+                raise HTTPException(status_code=400, detail="Email already registered")
 
-        # Insert user
-        user_id = str(uuid.uuid4())
-        password_hash = hash_password(user.password)
+            # Insert user
+            user_id = str(uuid.uuid4())
+            password_hash = hash_password(user.password)
 
-        cursor.execute("""
-            INSERT INTO users (id, full_name, email, phone, password_hash, role)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, user_id, user.full_name.strip(), user.email.lower().strip(),
-             user.phone, password_hash, 'farmer')
+            cursor.execute("""
+                INSERT INTO users (id, full_name, email, phone, password_hash, role)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, user_id, user.full_name.strip(), user.email.lower().strip(),
+                 user.phone, password_hash, 'farmer')
 
-        conn.commit()
+            conn.commit()
 
-    return {"message": "User registered successfully", "user_id": user_id}
+        return {"message": "User registered successfully", "user_id": user_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print("REGISTER ERROR:", error_details)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/auth/login")
