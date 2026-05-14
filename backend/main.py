@@ -5,6 +5,7 @@ except ImportError:
 
 from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -23,6 +24,12 @@ app = FastAPI(
     description="Pakistani Kisanon Ka AI Doctor — Backend API",
     version="2.0.0"
 )
+
+# Mount PWA static files
+import os
+pwa_dir = os.path.join(os.path.dirname(__file__), "pwa")
+if os.path.exists(pwa_dir):
+    app.mount("/pwa", StaticFiles(directory=pwa_dir, html=True), name="pwa")
 
 # CORS — Streamlit aur kisi bhi frontend se requests allow
 app.add_middleware(
