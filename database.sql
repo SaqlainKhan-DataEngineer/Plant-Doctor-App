@@ -103,5 +103,9 @@ SELECT 'diseases', COUNT(*) FROM diseases;
 GO 
 
 
-UPDATE users SET role = 'admin' WHERE email = 'Khan98saqlain@gmail.com';
+UPDATE users SET role = 'user' WHERE email = 'test_saqlain123@gmail.com';
 select * from users 
+select * from scans 
+select * from consultations  
+
+delete users 
