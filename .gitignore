@@ -1,2 +1,6 @@
 venv/
 __pycache__/ 
+
+backend/venv/
+backend/uploads/
+.streamlit/secrets.toml

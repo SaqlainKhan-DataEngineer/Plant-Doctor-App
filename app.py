@@ -40,13 +40,37 @@ quick_scan_target = st.session_state.pop('quick_scan_target', None)
 
 API_URL = "http://localhost:8000/api"
 
-# Session state for auth
+# ==============================================================================
+# 🔥 FIX #1: REFRESH PE LOGOUT NA HO - URL QUERY PARAMS SE TOKEN PERSIST KARO
+# ==============================================================================
+def persist_auth_token():
+    """Token ko URL query params mein save karo taake refresh pe na jaye"""
+    if st.session_state.token:
+        st.query_params["token"] = st.session_state.token
+        st.query_params["user"] = st.session_state.user or "farmer"
+        st.query_params["email"] = st.session_state.user_email or ""
+
+def restore_auth_from_url():
+    """URL se token wapas lao agar session empty ho"""
+    params = st.query_params
+    if not st.session_state.get("token") and params.get("token"):
+        st.session_state.token = params.get("token")
+        st.session_state.user = params.get("user", "farmer")
+        st.session_state.user_email = params.get("email", "")
+
+# Pehle restore karo
+restore_auth_from_url()
+
+# Session state for auth (init with restored values if any)
 if 'token' not in st.session_state:
     st.session_state.token = None
 if 'user' not in st.session_state:
     st.session_state.user = None
 if 'user_email' not in st.session_state:
     st.session_state.user_email = None
+
+# Token ko URL mein sync karo
+persist_auth_token()
 
 def render_auth_page():
     """Login/Register page - user auth ke bina app nahi khulega"""
@@ -101,7 +125,8 @@ def render_auth_page():
                     data = response.json()
                     st.session_state.token = data['token']
                     st.session_state.user = data['role']
-                    st.session_state.user_email = email
+                    st.session_state.user_email = email 
+                    persist_auth_token()  # 🔥 URL mein save karo
                     st.success("✅ Login successful!")
                     time.sleep(0.5)
                     st.rerun()
@@ -131,7 +156,7 @@ def render_auth_page():
                 st.error("❌ Passwords match nahi kar rahe!")
                 return
             
-        try:
+            try:
                 response = requests.post(
                     f"{API_URL}/auth/register",
                     json={
@@ -149,16 +174,17 @@ def render_auth_page():
                     st.error("❌ Ye email pehle se registered hai!")
                 else:
                     st.error(f"❌ Error: {response.json().get('detail', 'Unknown error')}")
-        except requests.exceptions.ConnectionError:
-                     st.error("❌ Backend server nahi chal raha!")
-        except Exception as e:
-                     st.error(f"❌ Error: {str(e)}") 
+            except requests.exceptions.ConnectionError:
+                st.error("❌ Backend server nahi chal raha! Terminal mein `uvicorn main:app --reload --port 8000` run karein.")
+            except Exception as e:
+                st.error(f"❌ Error: {str(e)}") 
 
 def logout():
-    """User logout"""
+    """User logout - URL se bhi token hatao"""
     st.session_state.token = None
     st.session_state.user = None
     st.session_state.user_email = None
+    st.query_params.clear()  # 🔥 URL se bhi clear karo
     st.rerun()
 
 def save_scan_to_backend(uploaded_file, crop_key, disease, confidence):
@@ -170,7 +196,7 @@ def save_scan_to_backend(uploaded_file, crop_key, disease, confidence):
         headers = {"Authorization": f"Bearer {st.session_state.token}"}
         
         files = {"image": ("scan.jpg", uploaded_file.getvalue(), "image/jpeg")}
-        data = {
+        scan_info = {
             "crop": crop_key,
             "disease": disease,
             "confidence": float(confidence)
@@ -180,7 +206,7 @@ def save_scan_to_backend(uploaded_file, crop_key, disease, confidence):
             f"{API_URL}/scans",
             headers=headers,
             files=files,
-            data=data,
+            params=scan_info,  # <--- AAHM CHANGE: 'data' ki jagah 'params' lagaya hai
             timeout=10
         )
         
@@ -189,7 +215,7 @@ def save_scan_to_backend(uploaded_file, crop_key, disease, confidence):
         else:
             return False, response.json().get("detail", "Save failed")
     except Exception as e:
-        return False, str(e)
+        return False, str(e) 
 
 def get_scan_history():
     """Database se scan history lao"""
@@ -247,11 +273,11 @@ TOMATO_LOCAL_NAMES = {"Bacterial Spot": "ٹماٹر تے کالے داغ", "Earl
 POTATO_URDU_NAMES = {"Early Blight": "اگیتی جھلس", "Late Blight": "پچھیتی جھلس", "Healthy": "صحت مند"}
 POTATO_LOCAL_NAMES = {"Early Blight": "اگیتی سڑن", "Late Blight": "پچھیتی سڑن", "Healthy": "تندرست فصل"}
 
-# Pepper — Gemini ne model train kiya, yeh names add ki hain
+# Pepper
 PEPPER_URDU_NAMES = {"Bacterial Spot": "بیکٹیریل دھبے", "Healthy": "صحت مند"}
 PEPPER_LOCAL_NAMES = {"Bacterial Spot": "مرچ تے کالے دھبے", "Healthy": "تندرست فصل"}
 
-# Corn — Gemini ne model train kiya, yeh names add ki hain
+# Corn 
 CORN_URDU_NAMES = {"Blight": "جھلس روگ", "Common Rust": "کنگی روگ", "Gray Leaf Spot": "سرمئی دھبے", "Healthy": "صحت مند"}
 CORN_LOCAL_NAMES = {"Blight": "پتیاں دا سڑنا", "Common Rust": "مکئی دی کنگی", "Gray Leaf Spot": "سرمئی داغ", "Healthy": "تندرست فصل"}
 
@@ -271,7 +297,7 @@ CROP_CONFIG = {
         "header_sub": "XGBoost v3 · HOG+LBP+GLCM+ORB · 99% Accuracy", # <-- Nayi Details
     },
     "tomato": {
-        "model_file": "tomato_disease_model_9_classes.pkl",
+        "model_file": "tomato_disease_model_v3.pkl",
         "urdu_names": TOMATO_URDU_NAMES,
         "local_names": TOMATO_LOCAL_NAMES,
         "emoji": "🍅",
@@ -285,7 +311,7 @@ CROP_CONFIG = {
         "header_sub": "Random Forest · HOG + LBP + GLCM + Color · 95% Accuracy · 9 Classes",
     },
     "pepper": {
-        "model_file": "pepper_disease_model.pkl",
+        "model_file": "pepper_disease_model_v3.pkl",
         "urdu_names": PEPPER_URDU_NAMES,
         "local_names": PEPPER_LOCAL_NAMES,
         "emoji": "🫑",
@@ -294,12 +320,12 @@ CROP_CONFIG = {
         "diseases": 2,
         "nav_key": "🫑 Pepper (Mirch)",
         "uploader_label": "Upload Pepper Leaf Photo / مرچ کا پتہ اپلوڈ کریں",
-        "model_missing_msg": "⚠️ **Pepper Model File Missing!** Please ensure `pepper_disease_model.pkl` is in the project directory.",
+        "model_missing_msg": "⚠️ **Pepper Model File Missing!** Please ensure `pepper_disease_model_v3.pkl` is in the project directory.",
         "header_title": "Pepper Disease Scan | مرچ کی بیماری",
-        "header_sub": "Random Forest · HOG + LBP + GLCM + Color · 99% Accuracy",
+        "header_sub": "XGBoost v3 · HOG+LBP+GLCM+ORB · 99% Accuracy",
     },
     "corn": {
-        "model_file": "corn_disease_model.pkl",
+        "model_file": "corn_disease_model_v3.pkl",
         "urdu_names": CORN_URDU_NAMES,
         "local_names": CORN_LOCAL_NAMES,
         "emoji": "🌽",
@@ -308,9 +334,9 @@ CROP_CONFIG = {
         "diseases": 4,
         "nav_key": "🌽 Corn Field",
         "uploader_label": "Upload Corn Leaf Photo / مکئی کا پتہ اپلوڈ کریں",
-        "model_missing_msg": "⚠️ **Corn Model File Missing!** Please ensure `corn_disease_model.pkl` is in the project directory.",
+        "model_missing_msg": "⚠️ **Corn Model File Missing!** Please ensure `corn_disease_model_v3.pkl` is in the project directory.",
         "header_title": "Corn Disease Scan | مکئی کی بیماری",
-        "header_sub": "Random Forest · HOG + LBP + GLCM + Color · 87% Accuracy",
+        "header_sub": "XGBoost v3 · HOG+LBP+GLCM+ORB · 87% Accuracy",
     },
 }
 
@@ -321,25 +347,36 @@ def safe_load_models():
     models = {}
     model_files = {
         "potato": ("potato_disease_model_v3.pkl",        "class_names"),
-        "tomato": ("tomato_disease_model_9_classes.pkl", "class_names"),
-        "pepper": ("pepper_disease_model.pkl",           "class_names"),
-        "corn":   ("corn_disease_model.pkl",             "class_names"),
-        "master": ("crop_detector_model.pkl",            "classes"),
+        "tomato": ("tomato_disease_model_v3.pkl", "class_names"),
+        "pepper": ("pepper_disease_model_v3.pkl",        "class_names"),
+        "corn":   ("corn_disease_model_v3.pkl",          "class_names"),
+        "master": ("crop_detector_v3_ultimate.pkl",      "classes"),
     }
     for crop_key, (file_path, cls_key) in model_files.items():
         try:
             data = joblib.load(file_path)
-            # Yahan humne selector ko load karne ka code add kiya hai
-            models[crop_key] = (data.get('model'), data.get('scaler'), data.get('selector'), data.get(cls_key))
+            # ✅ Extract ALL pipeline components (model, scaler, vt, pca, selector, class_names)
+            models[crop_key] = (
+                data.get('model'),              # 0
+                data.get('scaler'),             # 1
+                data.get('variance_threshold'), # 2 — VarianceThreshold
+                data.get('pca'),                # 3 — PCA
+                data.get('selector'),           # 4 — SelectKBest
+                data.get(cls_key)               # 5 — class names
+            )
         except Exception:
-            models[crop_key] = (None, None, None, None)
+            models[crop_key] = (None, None, None, None, None, None)
     return models
 
 MODELS = safe_load_models()
 
 # Keep these for any legacy references
-rf_model, scaler, selector, class_names = MODELS.get("potato", (None, None, None, None))
-t_model, t_scaler, t_selector, t_class_names = MODELS.get("tomato", (None, None, None, None))
+_potato_data = MODELS.get("potato", (None, None, None, None, None, None))
+rf_model, scaler = _potato_data[0], _potato_data[1]
+selector, class_names = _potato_data[4], _potato_data[5]
+_tomato_data = MODELS.get("tomato", (None, None, None, None, None, None))
+t_model, t_scaler = _tomato_data[0], _tomato_data[1]
+t_selector, t_class_names = _tomato_data[4], _tomato_data[5]
 
 # --- 6. ERROR HANDLING DECORATOR (IMPROVEMENT #2: Defensive programming) ---
 def safe_analysis(func):
@@ -543,22 +580,29 @@ class CropAutoDetector:
         First tries ML master model, then falls back to heuristics.
         """
         # --- Try ML Master Model first ---
-        master_data = MODELS.get("master", (None, None, None, None))
-        if len(master_data) == 4:
-            master_model, master_scaler, master_selector, master_classes = master_data
+        # ✅ FIX #4: Handle 6 items from pipeline
+        master_data = MODELS.get("master", (None, None, None, None, None, None))
+        if len(master_data) == 6:
+            master_model, master_scaler, master_vt, master_pca, master_sel, master_classes = master_data
         else:
-            master_model, master_scaler, master_classes = master_data
-            master_selector = None
+            master_model = master_data[0] if master_data else None
+            master_scaler = master_vt = master_pca = master_sel = master_classes = None
 
         if master_model:
             try:
-                features = extract_all_features(image_bytes)
+                # ✅ FIX #5: Use extract_features_v3 — SAME as training!
+                features = extract_features_v3(image_bytes)
                 if features is not None:
                     features = np.nan_to_num(features).reshape(1, -1)
+                    # ✅ Apply full 4-step pipeline
                     if master_scaler:
                         features = master_scaler.transform(features)
-                    if master_selector:
-                        features = master_selector.transform(features)
+                    if master_vt:
+                        features = master_vt.transform(features)
+                    if master_pca:
+                        features = master_pca.transform(features)
+                    if master_sel:
+                        features = master_sel.transform(features)
                     probs = master_model.predict_proba(features)[0]
                     max_idx = np.argmax(probs)
                     conf = float(probs[max_idx])
@@ -855,7 +899,20 @@ html, body, [class*="css"] {
     font-weight: 700 !important; letter-spacing: 0.3px !important;
     transition: all 0.3s ease !important;
     min-height: 44px !important;
+    color: #064e3b !important; /* YEH LINE ADD KI HAI - Dark Green Text */
+    border: 1px solid rgba(6,78,59,0.2) !important;
+} 
+
+[data-testid="stSidebar"] .stButton > button:hover {
+    background-color: #d1fae5 !important;
 }
+.stButton > button[kind="primary"] {
+    background: linear-gradient(90deg, var(--emerald-700), var(--emerald-500)) !important;
+    border: none !important;
+    color: #ffffff !important; /* YEH LINE ADD KI HAI - White Text sirf primary ke liye */
+    box-shadow: 0 4px 20px rgba(16,185,129,0.35) !important;
+}
+
 .stButton > button[kind="primary"] {
     background: linear-gradient(90deg, var(--emerald-700), var(--emerald-500)) !important;
     border: none !important;
@@ -866,7 +923,80 @@ html, body, [class*="css"] {
     box-shadow: 0 8px 30px rgba(16,185,129,0.45) !important;
 }
 
-img { border-radius: var(--radius-lg); box-shadow: var(--shadow-soft); transition: transform 0.3s; }
+img { border-radius: var(--radius-lg); box-shadow: var(--shadow-soft); transition: transform 0.3s; } 
+
+/* SIDEBAR BUTTONS - FINAL FIX */
+[data-testid="stSidebar"] .stButton > button {
+    background-color: #f8fafc !important;
+    color: #064e3b !important;
+    border: 2px solid #064e3b !important;
+    font-weight: 900 !important;
+}
+
+[data-testid="stSidebar"] .stButton > button p,
+[data-testid="stSidebar"] .stButton > button span,
+[data-testid="stSidebar"] .stButton > button div {
+    color: #064e3b !important;
+}
+
+[data-testid="stSidebar"] .stButton > button:hover {
+    background-color: #d1fae5 !important;
+    color: #047857 !important;
+    border-color: #047857 !important;
+}
+
+[data-testid="stSidebar"] .stButton > button:hover p,
+[data-testid="stSidebar"] .stButton > button:hover span,
+[data-testid="stSidebar"] .stButton > button:hover div {
+    color: #047857 !important;
+} 
+/* SELECTBOX ARROW - ULTIMATE FIX */
+[data-testid="stSidebar"] .stSelectbox div[role="button"] svg,
+[data-testid="stSidebar"] .stSelectbox div[role="combobox"] svg,
+[data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] svg {
+    fill: #064e3b !important;
+    stroke: #064e3b !important;
+    width: 20px !important;
+    height: 20px !important;
+}
+
+/* Arrow ke parent container ko bhi style karo */
+[data-testid="stSidebar"] .stSelectbox div[role="button"],
+[data-testid="stSidebar"] .stSelectbox div[role="combobox"] {
+    color: #064e3b !important;
+} 
+
+/* Selectbox ke andar ka text (jo selected dikhta hai) */
+[data-testid="stSidebar"] .stSelectbox > div[data-baseweb="select"] span,
+[data-testid="stSidebar"] .stSelectbox > div[data-baseweb="select"] div {
+    color: #064e3b !important;
+    font-weight: 700 !important;
+}
+
+/* Dropdown menu ke options (jo neeche khulta hai) */
+[data-testid="stSidebar"] div[role="listbox"] div,
+[data-testid="stSidebar"] div[role="option"] {
+    color: #064e3b !important;
+    background-color: #f8fafc !important;
+}
+
+/* Dropdown option hover par */
+[data-testid="stSidebar"] div[role="option"]:hover {
+    background-color: #d1fae5 !important;
+    color: #047857 !important;
+}
+/* ==============================================================================
+   🔥 FIX #3: SELECTBOX ARROW + HAND CURSOR FIX
+   ============================================================================== */
+[data-testid="stSidebar"] .stSelectbox > div[data-baseweb="select"] { cursor: pointer !important; }
+[data-testid="stSidebar"] .stSelectbox div[role="button"],
+[data-testid="stSidebar"] .stSelectbox div[role="combobox"] { cursor: pointer !important; color: #064e3b !important; }
+[data-testid="stSidebar"] .stSelectbox svg,
+[data-testid="stSidebar"] .stSelectbox [data-testid="stIcon"] svg {
+    fill: #064e3b !important; stroke: #064e3b !important; color: #064e3b !important;
+    opacity: 1 !important; width: 20px !important; height: 20px !important; cursor: pointer !important;
+}
+
 </style>
 """
 
@@ -933,7 +1063,7 @@ def get_home_css():
 .slide-track { display:flex; width:calc(600px * 12); animation:scroll 60s linear infinite; }
 .slide-track:hover { animation-play-state:paused; }
 .slide { width:600px; height:400px; flex-shrink:0; padding:0 4px; }
-.slide img { width:100%; height:100%; object-fit:cover; border-radius:14px; transition:transform 0.5s, filter 0.5s; }
+.slide img { width:100%; height:100%; object-fit:cover; border-radius:14px; transition:transform 0.5s, filter 0.5s; background: linear-gradient(135deg, #ecfdf5, #d1fae5); }
 .slide img:hover { transform:scale(1.05); filter:brightness(1.08) saturate(1.1); }
 
 .scan-cta-wrap {
@@ -1208,48 +1338,94 @@ st.sidebar.markdown("""
 """, unsafe_allow_html=True)
 
 st.sidebar.write("---")
-nav = st.sidebar.radio("", ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🫑 Pepper (Mirch)", "🌽 Corn Field"],
-    index=["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🫑 Pepper (Mirch)", "🌽 Corn Field"].index(nav_default))
+# Build nav list dynamically based on role
+nav_options = ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🫑 Pepper (Mirch)", "🌽 Corn Field", "👤 My Profile", "📊 Dashboard", "💬 Expert Chat"]
+if st.session_state.user == "admin":
+    nav_options.append("🛡️ Admin Panel")
+
+# Ensure nav_default is valid
+if nav_default not in nav_options:
+    nav_default = "🏠 Home Page"
+
+nav = st.sidebar.radio("", nav_options, index=nav_options.index(nav_default))
 
 st.sidebar.write("---")
 
-# ==============================================================================
-# 🔥 SIDEBAR USER INFO + LOGOUT + HISTORY (NEW ADDITION)
-# ==============================================================================
 
-# User info sidebar mein
-st.sidebar.markdown(f"""
-<div style="background:rgba(255,255,255,0.1);border-radius:12px;padding:12px 16px;border:1px solid rgba(255,255,255,0.2);margin-bottom:16px;">
-    <div style="font-size:0.7rem;opacity:0.7;text-transform:uppercase;letter-spacing:1px;font-weight:700;">👤 Logged In</div>
-    <div style="font-size:0.85rem;font-weight:700;color:white;margin-top:4px;">{st.session_state.user_email}</div>
-    <div style="font-size:0.7rem;opacity:0.6;margin-top:2px;">Role: {st.session_state.user}</div>
-</div>
-""", unsafe_allow_html=True)
 
 # Logout button
 if st.sidebar.button("🚪 Logout", use_container_width=True):
     logout()
 
+# ==============================================================================
+# 🔥 SIDEBAR HISTORY — Premium Card UI
+# ==============================================================================
+
 st.sidebar.write("---")
 st.sidebar.markdown("<p style='font-size:0.75rem;opacity:0.7;text-transform:uppercase;letter-spacing:1px;font-weight:700;'>📊 Scan History</p>", unsafe_allow_html=True)
 
 history_scans = get_scan_history()
+
 if history_scans:
-    st.sidebar.markdown(f"<p style='font-size:0.8rem;color:white;'>{len(history_scans)} scans saved</p>", unsafe_allow_html=True)
-    for scan in history_scans[:5]:  # Sirf last 5 dikhao
-        crop = scan.get('crop_type', scan.get('crop', 'Unknown'))
-        disease = scan.get('predicted_disease', scan.get('disease', 'Unknown'))
-        conf = scan.get('confidence', 0)
+    emoji_map = {"potato": "🥔", "tomato": "🍅", "pepper": "🫑", "corn": "🌽"}
+    
+    # Show last 5 scans as styled cards
+    for i, s in enumerate(history_scans[:5]):
+        crop = s.get('crop_type', s.get('crop', 'unknown'))
+        disease = s.get('predicted_disease', s.get('disease', 'Unknown'))
+        conf = s.get('confidence', 0)
+        raw_date = str(s.get('created_at', ''))
+        # Format date nicely
+        try:
+            date_str = raw_date[:16].replace('T', ' · ')
+        except:
+            date_str = raw_date[:16]
+        
+        is_healthy = 'healthy' in disease.lower()
+        border_color = "rgba(16,185,129,0.6)" if is_healthy else "rgba(239,68,68,0.5)"
+        emoji = emoji_map.get(crop, "🌿")
+        conf_bg = "rgba(16,185,129,0.3)" if is_healthy else "rgba(239,68,68,0.25)"
+        
         st.sidebar.markdown(f"""
-        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px 10px;margin-bottom:6px;border:1px solid rgba(255,255,255,0.1);">
-            <div style="font-size:0.75rem;font-weight:700;color:white;">{crop.title()} - {disease}</div>
-            <div style="font-size:0.65rem;opacity:0.6;">{conf:.1f}% confidence</div>
+        <div style="background:rgba(255,255,255,0.06);border-radius:12px;padding:10px 12px;margin-bottom:8px;border-left:3px solid {border_color};cursor:pointer;transition:all 0.2s;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                <span style="font-size:1.1rem;">{emoji}</span>
+                <span style="font-weight:700;font-size:0.82rem;color:#ecfdf5;">{disease}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:0.65rem;opacity:0.5;">{date_str}</span>
+                <span style="background:{conf_bg};padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:700;">{conf:.0f}%</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
-else:
-    st.sidebar.markdown("<p style='font-size:0.75rem;opacity:0.5;'>No scans yet</p>", unsafe_allow_html=True)
+    
+    # Dropdown for detail view (cleaner labels)
+    scan_labels = []
+    for i, s in enumerate(history_scans):
+        crop = s.get('crop_type', s.get('crop', 'unknown')).title()
+        disease = s.get('predicted_disease', s.get('disease', 'Unknown'))
+        raw_date = str(s.get('created_at', ''))[:10]
+        scan_labels.append(f"{crop} · {disease} · {raw_date}")
+    
+    selected_idx = st.sidebar.selectbox("Detail dekhein:", range(len(scan_labels)), format_func=lambda i: scan_labels[i], key="hist_select")
 
-st.sidebar.write("---")
+    if st.sidebar.button("🔍 Detail Report Dekhein", use_container_width=True):
+        st.session_state['view_history_detail'] = history_scans[selected_idx]
+    
+    # Total count
+    if len(history_scans) > 5:
+        st.sidebar.markdown(f"<p style='font-size:0.7rem;opacity:0.5;text-align:center;'>+ {len(history_scans)-5} more scans · Dashboard mein dekhein</p>", unsafe_allow_html=True)
+else:
+    st.sidebar.markdown("""
+    <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:16px;text-align:center;border:1px dashed rgba(255,255,255,0.1);">
+        <div style="font-size:1.5rem;margin-bottom:6px;">📭</div>
+        <div style="font-size:0.78rem;opacity:0.5;font-weight:600;">Koi scan nahi kiya abhi</div>
+        <div style="font-size:0.68rem;opacity:0.35;margin-top:3px;">Home page se pehla scan karein!</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.sidebar.write("---") 
+
 
 if temp > 30:  sw_color = "#f59e0b"; sw_icon = "☀️"
 elif temp < 20: sw_color = "#6366f1"; sw_icon = "❄️"
@@ -1289,6 +1465,7 @@ st.sidebar.markdown("""
 
 
 # ===== HELPER: RENDER DIAGNOSTIC REPORT =====
+# ===== HELPER: RENDER DIAGNOSTIC REPORT =====
 def render_report(label, conf, prob_dict, urdu_name, local_name, crop_name, timestamp_str, inference_time=None):
     is_healthy = "healthy" in label.lower()
 
@@ -1304,59 +1481,60 @@ def render_report(label, conf, prob_dict, urdu_name, local_name, crop_name, time
 
     bar_color = "#059669" if is_healthy else ("#dc2626" if "high" in sev.lower() else "#d97706")
 
-    # IMPROVEMENT #8: Show actual inference time instead of fake sleep
     infer_badge = ""
     if inference_time is not None:
         infer_badge = f'<div class="infer-badge">⚡ {inference_time:.2f}s inference time</div>'
 
-    st.markdown(f"""
-    <div class="report-wrapper">
-        <div class="report-header" style="background:{hdr_bg};">
-            <div class="report-scan-line"></div>
-            <div class="report-id">🔬 DIAGNOSTIC REPORT · {timestamp_str} · {crop_name.upper()}</div>
-            <div class="report-disease">{label}</div>
-            <div class="report-urdu">{urdu_name}</div>
-            <div class="report-local">🌾 مقامی نام: {local_name}</div>
-            <div class="conf-bar-wrap">
-                <div class="conf-label">Detection Confidence</div>
-                <div class="conf-pct">{conf:.1f}%</div>
-                <div class="conf-bar-bg"><div class="conf-bar-fill" style="width:{conf}%;background:rgba(255,255,255,0.9);"></div></div>
-            </div>
-            {infer_badge}
-        </div>
-        <div class="report-body">
-            <div class="report-meta">
-                <div class="report-meta-item">
-                    <div class="report-meta-label">Crop / فصل</div>
-                    <div class="report-meta-val">{crop_name}</div>
-                </div>
-                <div class="report-meta-item">
-                    <div class="report-meta-label">Severity</div>
-                    <div class="report-meta-val" style="color:{sev_color};">{sev}</div>
-                </div>
-                <div class="report-meta-item">
-                    <div class="report-meta-label">Method</div>
-                    <div class="report-meta-val">HOG+LBP+GLCM</div>
-                </div>
-            </div>
-    """, unsafe_allow_html=True)
+    # WARNING: Do NOT add spaces before the HTML tags inside this string!
+    html_1 = f"""
+<div class="report-wrapper">
+<div class="report-header" style="background:{hdr_bg};">
+<div class="report-scan-line"></div>
+<div class="report-id">🔬 DIAGNOSTIC REPORT · {timestamp_str} · {crop_name.upper()}</div>
+<div class="report-disease">{label}</div>
+<div class="report-urdu">{urdu_name}</div>
+<div class="report-local">🌾 مقامی نام: {local_name}</div>
+<div class="conf-bar-wrap">
+<div class="conf-label">Detection Confidence</div>
+<div class="conf-pct">{conf:.1f}%</div>
+<div class="conf-bar-bg"><div class="conf-bar-fill" style="width:{conf}%;background:rgba(255,255,255,0.9);"></div></div>
+</div>
+{infer_badge}
+</div>
+<div class="report-body">
+<div class="report-meta">
+<div class="report-meta-item">
+<div class="report-meta-label">Crop / فصل</div>
+<div class="report-meta-val">{crop_name}</div>
+</div>
+<div class="report-meta-item">
+<div class="report-meta-label">Severity</div>
+<div class="report-meta-val" style="color:{sev_color};">{sev}</div>
+</div>
+<div class="report-meta-item">
+<div class="report-meta-label">Method</div>
+<div class="report-meta-val">HOG+LBP+GLCM</div>
+</div>
+</div>
+"""
+    st.markdown(html_1, unsafe_allow_html=True)
 
     st.markdown('<div class="breakdown-section"><div class="breakdown-title">📊 Probability Distribution</div>', unsafe_allow_html=True)
     sorted_probs = sorted(prob_dict.items(), key=lambda x: x[1], reverse=True)
     for i, (lbl, pct) in enumerate(sorted_probs):
         clean_lbl = lbl.replace('_', ' ').title()
         fill_color = bar_color if i == 0 else "#d1d5db"
-        st.markdown(f"""
-        <div class="breakdown-row">
-            <div class="breakdown-lbl">{clean_lbl}</div>
-            <div class="breakdown-track"><div class="breakdown-fill" style="width:{pct:.1f}%;background:{'linear-gradient(90deg,'+bar_color+','+bar_color+'aa)' if i==0 else '#d1d5db'};"></div></div>
-            <div class="breakdown-pct">{pct:.1f}%</div>
-        </div>
-        """, unsafe_allow_html=True)
+        row_html = f"""
+<div class="breakdown-row">
+<div class="breakdown-lbl">{clean_lbl}</div>
+<div class="breakdown-track"><div class="breakdown-fill" style="width:{pct:.1f}%;background:{'linear-gradient(90deg,'+bar_color+','+bar_color+'aa)' if i==0 else '#d1d5db'};"></div></div>
+<div class="breakdown-pct">{pct:.1f}%</div>
+</div>
+"""
+        st.markdown(row_html, unsafe_allow_html=True)
     st.markdown('</div></div>', unsafe_allow_html=True)
 
     return is_healthy, sev
-
 
 def render_treatment(label, is_healthy, crop="potato"):
     if is_healthy:
@@ -1531,15 +1709,14 @@ def analyze_image(uploaded_file, crop_key):
     Fixes the v3 DRY violation — one bug fix here fixes everywhere.
     Returns a result dict, or None on failure.
     """
-    # Ab hum 4 cheezein nikal rahe hain (Selector add kiya hai)
-    # Fallback: agar purana model hai (3 values) toh bhi handle karein
-    model_data = MODELS.get(crop_key, (None, None, None, None))
-    if len(model_data) == 4:
-        model, crop_scaler, crop_selector, crop_class_names = model_data
+    # ✅ FIX #3: Unpack 6 items from pipeline
+    model_data = MODELS.get(crop_key, (None, None, None, None, None, None))
+    if len(model_data) == 6:
+        model, scaler, vt, pca, sel, crop_class_names = model_data
     else:
-        # Purana model format (backward compatibility)
-        model, crop_scaler, crop_class_names = model_data
-        crop_selector = None
+        # Fallback for old models
+        model, scaler, crop_class_names = model_data[0], model_data[1], model_data[-1]
+        vt = pca = sel = None
 
     if not model:
         st.error(CROP_CONFIG[crop_key]['model_missing_msg'])
@@ -1547,25 +1724,23 @@ def analyze_image(uploaded_file, crop_key):
 
     start_time = time.time()
 
-    # --- SMART ROUTING ---
-    # Potato v3 model ko v3 features chahiye, baqi purane models ko purane features
-    if crop_key == "potato":
-        features = extract_features_v3(uploaded_file.getvalue())
-    else:
-        features = extract_all_features(uploaded_file.getvalue())
+    # ✅ FIX #5: Use extract_features_v3 for ALL crops (matches training pipeline)
+    features = extract_features_v3(uploaded_file.getvalue())
 
     if features is None:
         return None
 
     features = np.nan_to_num(features).reshape(1, -1)
 
-    # 1. Scale Features
-    if crop_scaler is not None:
-        features = crop_scaler.transform(features)
-
-    # 2. Select Features (Agar training mein lagaya tha)
-    if crop_selector is not None:
-        features = crop_selector.transform(features)
+    # ✅ FIX #3: Apply FULL 4-step pipeline
+    if scaler is not None:
+        features = scaler.transform(features)
+    if vt is not None:
+        features = vt.transform(features)
+    if pca is not None:
+        features = pca.transform(features)
+    if sel is not None:
+        features = sel.transform(features)
 
     probs = model.predict_proba(features)[0]
     inference_time = time.time() - start_time
@@ -1662,7 +1837,7 @@ def render_crop_page(crop_key):
         col1, col2 = st.columns([1, 1.6])
         with col1:
             pil_img = Image.open(uploaded_file).convert('RGB')
-            st.image(pil_img, caption="📷 Uploaded Leaf Photo", use_column_width=True)
+            st.image(pil_img, caption="📷 Uploaded Leaf Photo", use_container_width=True)
             w, h = pil_img.size
             st.markdown(f"""
             <div style="background:var(--emerald-50);border-radius:12px;padding:14px 16px;border:1px solid rgba(52,211,153,0.2);margin-top:12px;">
@@ -1691,9 +1866,9 @@ def render_crop_page(crop_key):
                 )
                 
                 if success:
-                    st.success(f"✅ Scan saved! ID: {msg}")
+                    st.toast(f"Scan saved to history!", icon="💾")
                 else:
-                    st.warning(f"⚠️ Scan save nahi hua: {msg}")
+                    st.toast(f"Scan save error: {msg}", icon="⚠️")
 
     # Multiple files — compact batch results table
     else:
@@ -1736,18 +1911,460 @@ def render_crop_page(crop_key):
                             save_scan_to_backend(uploaded_file, crop_key, label, conf)
             progress_bar.progress((i + 1) / len(uploaded_files), text=f"Scanning {i+1}/{len(uploaded_files)}...")
         progress_bar.empty()
-        st.success(f"✅ Batch complete! {len(uploaded_files)} pattay scan ho gaye.")
+        st.toast(f"Batch complete! {len(uploaded_files)} pattay scan ho gaye.", icon="📦") 
+
+# ==============================================================================
+# 🔥 HISTORY DETAIL VIEW (Main Screen par dikhane ke liye)
+# ==============================================================================
+
+if 'view_history_detail' in st.session_state and st.session_state['view_history_detail'] is not None:
+    scan = st.session_state['view_history_detail']
+    
+    st.markdown("---")
+    if st.button("⬅️ Back to Main App"):
+        st.session_state['view_history_detail'] = None
+        st.rerun()
+        
+    st.subheader("📜 Purani Diagnostic Report")
+    
+    # Data nikalna
+    crop_key = scan.get('crop_type', 'potato')
+    disease = scan.get('predicted_disease', 'Unknown')
+    conf = scan.get('confidence', 0)
+    
+    # Report dikhane ke liye config nikalna
+    config = CROP_CONFIG.get(crop_key, CROP_CONFIG['potato'])
+    urdu_name = config['urdu_names'].get(disease, disease)
+    local_name = config['local_names'].get(disease, disease)
+    ts = scan.get('created_at', 'N/A')
+
+    # Re-render report UI
+    render_report(
+        disease, conf, {disease: conf}, 
+        urdu_name, local_name, config['display_name'], ts
+    )
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color:#064e3b;font-weight:800;'>👨‍⚕️ AI Doctor Ka Purana Mashwara</h3>", unsafe_allow_html=True)
+    
+    with st.spinner('Puraana nuskha nikal raha hoon...'):
+        ai_advice = get_ai_doctor_advice(disease)
+    st.info(ai_advice)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style="background:linear-gradient(135deg,#e0f2fe,#bae6fd);border-radius:16px;padding:20px;border:1px solid rgba(14,165,233,0.2);">
+        <h3 style="color:#0369a1;font-weight:800;margin:0 0 10px;">👨‍🌾 Zaraat ke Mahir se Puchiye (Ask Expert)</h3>
+        <p style="color:#0c4a6e;font-size:0.85rem;margin:0 0 15px;">Agar AI ki report se mutmain nahi hain, toh apne sawal agricultural expert ko bhejein.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    expert_msg = st.text_area("Aap ka sawal:", placeholder="Mera sawal hai ke...", key="exp_msg")
+    if st.button("📤 Expert Ko Bhejein", type="primary"):
+        if not expert_msg.strip():
+            st.warning("⚠️ Sawal likhna zaroori hai!")
+        else:
+            try:
+                headers = {"Authorization": f"Bearer {st.session_state.token}"}
+                resp = requests.post(f"{API_URL}/consultations", headers=headers, json={"scan_id": str(scan['id']), "message": expert_msg}, timeout=5)
+                if resp.status_code == 200:
+                    st.toast("✅ Sawal expert ko bhej diya gaya hai!", icon="📤")
+                else:
+                    st.error(f"❌ Error: {resp.json().get('detail', 'Failed')}")
+            except Exception as e:
+                st.error("❌ Backend error!")
+    
+    st.stop() # <--- YEH MAGIC LINE HAI (Baaki app ko render hone se rok degi)
+
+
+# ==============================================================================
+# 👤 PROFILE PAGE
+# ==============================================================================
+def render_profile_page():
+    st.markdown("""
+    <div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-radius:24px;padding:32px;margin-bottom:24px;border:1px solid rgba(52,211,153,0.2);">
+        <h2 style="color:#064e3b;font-weight:900;margin:0 0 6px;">👤 Meri Profile</h2>
+        <p style="color:#6b7280;margin:0;font-size:0.9rem;">Apni info update karein aur password change karein</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Fetch current user data
+    user_data = None
+    try:
+        headers = {"Authorization": f"Bearer {st.session_state.token}"}
+        resp = requests.get(f"{API_URL}/auth/me", headers=headers, timeout=5)
+        if resp.status_code == 200:
+            user_data = resp.json()
+    except:
+        pass
+
+    if not user_data:
+        st.warning("⚠️ Profile load nahi ho saki. Backend server check karein.")
+        return
+
+    col1, col2 = st.columns([1.2, 1])
+
+    with col1:
+        st.markdown(f"""
+        <div style="background:white;border-radius:20px;padding:28px;box-shadow:0 4px 20px rgba(6,78,59,0.08);border:1px solid rgba(52,211,153,0.15);">
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+                <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:white;font-weight:900;">{(user_data.get('full_name') or '?')[0].upper()}</div>
+                <div>
+                    <div style="font-size:1.3rem;font-weight:800;color:#064e3b;">{user_data['full_name']}</div>
+                    <div style="font-size:0.82rem;color:#6b7280;">{user_data['email']}</div>
+                    <span style="background:#d1fae5;color:#065f46;padding:3px 12px;border-radius:20px;font-size:0.7rem;font-weight:700;text-transform:uppercase;">{user_data['role']}</span>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div style="background:#f8fafc;border-radius:12px;padding:12px;"><span style="font-size:0.7rem;color:#6b7280;font-weight:600;">📱 Phone</span><br><b style="color:#064e3b;">{user_data.get('phone') or 'Not set'}</b></div>
+                <div style="background:#f8fafc;border-radius:12px;padding:12px;"><span style="font-size:0.7rem;color:#6b7280;font-weight:600;">📍 Location</span><br><b style="color:#064e3b;">{user_data.get('location') or 'Not set'}</b></div>
+                <div style="background:#f8fafc;border-radius:12px;padding:12px;"><span style="font-size:0.7rem;color:#6b7280;font-weight:600;">📅 Member Since</span><br><b style="color:#064e3b;">{str(user_data.get('created_at',''))[:10]}</b></div>
+                <div style="background:#f8fafc;border-radius:12px;padding:12px;"><span style="font-size:0.7rem;color:#6b7280;font-weight:600;">🛡️ Role</span><br><b style="color:#064e3b;">{user_data['role'].title()}</b></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("#### ✏️ Profile Update Karein")
+        new_name = st.text_input("Full Name", value=user_data['full_name'], key="prof_name")
+        new_phone = st.text_input("Phone", value=user_data.get('phone') or '', key="prof_phone")
+        new_location = st.text_input("Location", value=user_data.get('location') or '', key="prof_loc")
+
+        if st.button("💾 Save Changes", type="primary", use_container_width=True, key="prof_save"):
+            try:
+                headers = {"Authorization": f"Bearer {st.session_state.token}"}
+                resp = requests.put(f"{API_URL}/auth/profile", headers=headers, json={
+                    "full_name": new_name, "phone": new_phone, "location": new_location
+                }, timeout=5)
+                if resp.status_code == 200:
+                    st.success("✅ Profile updated!")
+                    time.sleep(0.5)
+                    st.rerun()
+                else:
+                    st.error(f"❌ {resp.json().get('detail','Error')}")
+            except:
+                st.error("❌ Backend se connect nahi ho saka!")
+
+        st.markdown("---")
+        st.markdown("#### 🔐 Password Change")
+        old_pw = st.text_input("Current Password", type="password", key="old_pw")
+        new_pw = st.text_input("New Password", type="password", key="new_pw")
+
+        if st.button("🔒 Change Password", use_container_width=True, key="pw_change"):
+            if not old_pw or not new_pw:
+                st.error("Dono passwords daalein!")
+            elif len(new_pw) < 6:
+                st.error("New password kam az kam 6 characters ka hona chahiye!")
+            else:
+                try:
+                    headers = {"Authorization": f"Bearer {st.session_state.token}"}
+                    resp = requests.put(f"{API_URL}/auth/password", headers=headers,
+                        json={"old_password": old_pw, "new_password": new_pw}, timeout=5)
+                    if resp.status_code == 200:
+                        st.success("✅ Password changed!")
+                    else:
+                        st.error(f"❌ {resp.json().get('detail','Error')}")
+                except:
+                    st.error("❌ Backend error!")
+
+
+# ==============================================================================
+# 📊 DASHBOARD PAGE
+# ==============================================================================
+def render_dashboard_page():
+    st.markdown("""
+    <div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-radius:24px;padding:32px;margin-bottom:24px;border:1px solid rgba(52,211,153,0.2);">
+        <h2 style="color:#064e3b;font-weight:900;margin:0 0 6px;">📊 Mera Dashboard</h2>
+        <p style="color:#6b7280;margin:0;font-size:0.9rem;">Apne scan history, crop stats aur trends dekhein</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Fetch stats
+    stats = None
+    try:
+        headers = {"Authorization": f"Bearer {st.session_state.token}"}
+        resp = requests.get(f"{API_URL}/scans/stats", headers=headers, timeout=5)
+        if resp.status_code == 200:
+            stats = resp.json()
+    except:
+        pass
+
+    if not stats:
+        st.info("📭 Abhi tak koi scan nahi kiya. Pehle ek crop scan karein!")
+        return
+
+    # Stats cards
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.markdown(f"""<div style="background:white;border-radius:16px;padding:20px;text-align:center;box-shadow:0 4px 16px rgba(6,78,59,0.08);border-top:3px solid #10b981;">
+            <div style="font-size:2rem;font-weight:900;color:#064e3b;">{stats['total_scans']}</div>
+            <div style="font-size:0.75rem;color:#6b7280;font-weight:600;text-transform:uppercase;">Total Scans</div></div>""", unsafe_allow_html=True)
+    with c2:
+        st.markdown(f"""<div style="background:white;border-radius:16px;padding:20px;text-align:center;box-shadow:0 4px 16px rgba(6,78,59,0.08);border-top:3px solid #059669;">
+            <div style="font-size:2rem;font-weight:900;color:#064e3b;">{stats['healthy_count']}</div>
+            <div style="font-size:0.75rem;color:#6b7280;font-weight:600;text-transform:uppercase;">Healthy Scans</div></div>""", unsafe_allow_html=True)
+    with c3:
+        st.markdown(f"""<div style="background:white;border-radius:16px;padding:20px;text-align:center;box-shadow:0 4px 16px rgba(6,78,59,0.08);border-top:3px solid #dc2626;">
+            <div style="font-size:2rem;font-weight:900;color:#dc2626;">{stats['disease_count']}</div>
+            <div style="font-size:0.75rem;color:#6b7280;font-weight:600;text-transform:uppercase;">Diseases Found</div></div>""", unsafe_allow_html=True)
+    with c4:
+        st.markdown(f"""<div style="background:white;border-radius:16px;padding:20px;text-align:center;box-shadow:0 4px 16px rgba(6,78,59,0.08);border-top:3px solid #f59e0b;">
+            <div style="font-size:2rem;font-weight:900;color:#064e3b;">{stats['avg_confidence']}%</div>
+            <div style="font-size:0.75rem;color:#6b7280;font-weight:600;text-transform:uppercase;">Avg Confidence</div></div>""", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Crop breakdown
+    col_left, col_right = st.columns(2)
+    with col_left:
+        st.markdown("### 🌾 Crop-wise Breakdown")
+        crop_data = stats.get('crop_breakdown', {})
+        if crop_data:
+            emoji_map = {"potato": "🥔", "tomato": "🍅", "pepper": "🫑", "corn": "🌽"}
+            for crop, count in crop_data.items():
+                emoji = emoji_map.get(crop, "🌿")
+                pct = (count / max(stats['total_scans'], 1)) * 100
+                st.markdown(f"""
+                <div style="background:white;border-radius:12px;padding:14px 18px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:space-between;">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="font-size:1.5rem;">{emoji}</span>
+                        <span style="font-weight:700;color:#064e3b;">{crop.title()}</span>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-weight:800;color:#064e3b;font-size:1.1rem;">{count}</span>
+                        <span style="font-size:0.75rem;color:#6b7280;margin-left:4px;">({pct:.0f}%)</span>
+                    </div>
+                </div>""", unsafe_allow_html=True)
+        else:
+            st.info("Koi data nahi hai abhi.")
+
+    with col_right:
+        st.markdown("### 📅 Is Hafte Ki Activity")
+        st.markdown(f"""
+        <div style="background:white;border-radius:16px;padding:24px;box-shadow:0 4px 16px rgba(6,78,59,0.08);">
+            <div style="font-size:3rem;font-weight:900;color:#064e3b;text-align:center;">{stats['weekly_scans']}</div>
+            <div style="font-size:0.85rem;color:#6b7280;text-align:center;font-weight:600;">Scans pichle 7 din mein</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Full scan history table
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("### 📋 Full Scan History")
+    history = get_scan_history()
+    if history:
+        for s in history:
+            crop = s.get('crop_type', 'unknown')
+            disease = s.get('predicted_disease', 'Unknown')
+            conf = s.get('confidence', 0)
+            date = str(s.get('created_at', ''))[:16]
+            is_healthy = 'healthy' in disease.lower()
+            color = "#059669" if is_healthy else "#dc2626"
+            emoji_map = {"potato": "🥔", "tomato": "🍅", "pepper": "🫑", "corn": "🌽"}
+            st.markdown(f"""
+            <div style="background:white;border-radius:14px;padding:16px 20px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.04);border-left:4px solid {color};display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span style="font-size:1.6rem;">{emoji_map.get(crop,'🌿')}</span>
+                    <div>
+                        <div style="font-weight:700;color:#064e3b;">{disease}</div>
+                        <div style="font-size:0.75rem;color:#6b7280;">{crop.title()} · {date}</div>
+                    </div>
+                </div>
+                <div style="background:{'#d1fae5' if is_healthy else '#fee2e2'};color:{color};padding:4px 14px;border-radius:20px;font-weight:700;font-size:0.82rem;">
+                    {conf:.0f}%
+                </div>
+            </div>""", unsafe_allow_html=True)
+    else:
+        st.info("📭 Koi scan history nahi hai.")
+
+
+# ==============================================================================
+# 🛡️ ADMIN PANEL PAGE
+# ==============================================================================
+def render_admin_page():
+    if st.session_state.user != "admin":
+        st.error("🚫 Access Denied — Sirf Admin access kar sakta hai!")
+        return
+
+    st.markdown("""
+    <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:24px;padding:32px;margin-bottom:24px;border:1px solid rgba(245,158,11,0.3);">
+        <h2 style="color:#92400e;font-weight:900;margin:0 0 6px;">🛡️ Admin Control Panel</h2>
+        <p style="color:#78350f;margin:0;font-size:0.9rem;">Platform stats, user management aur scan analytics</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    headers = {"Authorization": f"Bearer {st.session_state.token}"}
+
+    # Fetch admin stats
+    stats = None
+    try:
+        resp = requests.get(f"{API_URL}/admin/stats", headers=headers, timeout=5)
+        if resp.status_code == 200:
+            stats = resp.json()
+        elif resp.status_code == 403:
+            st.error("🚫 Admin access required!")
+            return
+    except:
+        st.error("❌ Backend se connect nahi ho saka!")
+        return
+
+    if not stats:
+        st.warning("Stats load nahi hui.")
+        return
+
+    # Stats cards
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.markdown(f"""<div style="background:linear-gradient(135deg,#059669,#10b981);border-radius:16px;padding:20px;text-align:center;color:white;">
+            <div style="font-size:2.2rem;font-weight:900;">{stats['total_users']}</div>
+            <div style="font-size:0.75rem;font-weight:600;opacity:0.85;text-transform:uppercase;">Total Users</div></div>""", unsafe_allow_html=True)
+    with c2:
+        st.markdown(f"""<div style="background:linear-gradient(135deg,#2563eb,#3b82f6);border-radius:16px;padding:20px;text-align:center;color:white;">
+            <div style="font-size:2.2rem;font-weight:900;">{stats['total_scans']}</div>
+            <div style="font-size:0.75rem;font-weight:600;opacity:0.85;text-transform:uppercase;">Total Scans</div></div>""", unsafe_allow_html=True)
+    with c3:
+        st.markdown(f"""<div style="background:linear-gradient(135deg,#d97706,#f59e0b);border-radius:16px;padding:20px;text-align:center;color:white;">
+            <div style="font-size:2.2rem;font-weight:900;">{stats['today_scans']}</div>
+            <div style="font-size:0.75rem;font-weight:600;opacity:0.85;text-transform:uppercase;">Today Scans</div></div>""", unsafe_allow_html=True)
+    with c4:
+        st.markdown(f"""<div style="background:linear-gradient(135deg,#dc2626,#ef4444);border-radius:16px;padding:20px;text-align:center;color:white;">
+            <div style="font-size:2.2rem;font-weight:900;">{stats['pending_consultations']}</div>
+            <div style="font-size:0.75rem;font-weight:600;opacity:0.85;text-transform:uppercase;">Pending Consults</div></div>""", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Tabs for admin sections
+    tab_users, tab_scans, tab_diseases = st.tabs(["👥 Users", "🔬 Scans", "📊 Analytics"])
+
+    with tab_users:
+        st.markdown("### 👥 User Management")
+        try:
+            resp = requests.get(f"{API_URL}/admin/users", headers=headers, timeout=5)
+            if resp.status_code == 200:
+                users = resp.json().get('users', [])
+                for u in users:
+                    role_color = {"admin": "#dc2626", "expert": "#2563eb", "farmer": "#059669"}.get(u['role'], '#6b7280')
+                    active = "✅" if u.get('is_active', True) else "❌"
+                    st.markdown(f"""
+                    <div style="background:white;border-radius:14px;padding:14px 20px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;">{(u.get('full_name') or '?')[0].upper()}</div>
+                            <div>
+                                <div style="font-weight:700;color:#064e3b;">{u['full_name']} {active}</div>
+                                <div style="font-size:0.75rem;color:#6b7280;">{u['email']} · {u.get('scan_count',0)} scans</div>
+                            </div>
+                        </div>
+                        <span style="background:{role_color};color:white;padding:4px 14px;border-radius:20px;font-weight:700;font-size:0.72rem;text-transform:uppercase;">{u['role']}</span>
+                    </div>""", unsafe_allow_html=True)
+
+                # Role change section
+                st.markdown("---")
+                st.markdown("#### 🔄 Change User Role")
+                user_emails = [u['email'] for u in users]
+                sel_email = st.selectbox("User select karein:", user_emails, key="admin_role_email")
+                sel_user = next((u for u in users if u['email'] == sel_email), None)
+                new_role = st.selectbox("Naya role:", ["farmer", "expert", "admin"], key="admin_new_role")
+                if st.button("🔄 Role Change Karein", type="primary", key="admin_role_btn"):
+                    if sel_user:
+                        resp = requests.put(f"{API_URL}/admin/users/{sel_user['id']}/role",
+                            headers=headers, json={"role": new_role}, timeout=5)
+                        if resp.status_code == 200:
+                            st.success(f"✅ {sel_email} ka role {new_role} ho gaya!")
+                            time.sleep(0.5)
+                            st.rerun()
+                        else:
+                            st.error(f"❌ {resp.json().get('detail','Error')}")
+        except Exception as e:
+            st.error(f"❌ Users load nahi hui: {e}")
+
+    with tab_scans:
+        st.markdown("### 🔬 Recent Scans (All Users)")
+        try:
+            resp = requests.get(f"{API_URL}/admin/scans?limit=30", headers=headers, timeout=5)
+            if resp.status_code == 200:
+                scans = resp.json().get('scans', [])
+                for s in scans:
+                    disease = s.get('predicted_disease', 'Unknown')
+                    is_healthy = 'healthy' in disease.lower()
+                    color = "#059669" if is_healthy else "#dc2626"
+                    st.markdown(f"""
+                    <div style="background:white;border-radius:12px;padding:12px 18px;margin-bottom:6px;box-shadow:0 2px 6px rgba(0,0,0,0.03);border-left:3px solid {color};display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+                        <div>
+                            <span style="font-weight:700;color:#064e3b;">{disease}</span>
+                            <span style="color:#6b7280;font-size:0.8rem;"> · {s.get('crop_type','?').title()}</span>
+                        </div>
+                        <div style="font-size:0.75rem;color:#6b7280;">
+                            {s.get('full_name','?')} · {s.get('confidence',0):.0f}% · {str(s.get('created_at',''))[:16]}
+                        </div>
+                    </div>""", unsafe_allow_html=True)
+            else:
+                st.warning("Scans load nahi hui.")
+        except Exception as e:
+            st.error(f"❌ Error: {e}")
+
+    with tab_diseases:
+        st.markdown("### 📊 Platform Analytics")
+        # Crop distribution
+        crops = stats.get('scans_by_crop', {})
+        if crops:
+            st.markdown("#### 🌾 Crop Distribution")
+            for crop, cnt in sorted(crops.items(), key=lambda x: -x[1]):
+                pct = (cnt / max(stats['total_scans'], 1)) * 100
+                bar_width = max(pct, 5)
+                st.markdown(f"""
+                <div style="margin-bottom:8px;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                        <span style="font-weight:700;color:#064e3b;font-size:0.85rem;">{crop.title()}</span>
+                        <span style="color:#6b7280;font-size:0.8rem;">{cnt} ({pct:.0f}%)</span>
+                    </div>
+                    <div style="background:#e5e7eb;border-radius:8px;height:8px;overflow:hidden;">
+                        <div style="background:linear-gradient(90deg,#10b981,#059669);width:{bar_width}%;height:100%;border-radius:8px;"></div>
+                    </div>
+                </div>""", unsafe_allow_html=True)
+
+        # Top diseases
+        diseases = stats.get('top_diseases', {})
+        if diseases:
+            st.markdown("#### 🦠 Top Diseases Detected")
+            for disease, cnt in diseases.items():
+                st.markdown(f"""
+                <div style="background:#fee2e2;border-radius:10px;padding:10px 16px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-weight:700;color:#991b1b;">{disease}</span>
+                    <span style="background:#dc2626;color:white;padding:2px 12px;border-radius:14px;font-weight:700;font-size:0.8rem;">{cnt}</span>
+                </div>""", unsafe_allow_html=True)
+
+        # Role distribution
+        roles = stats.get('users_by_role', {})
+        if roles:
+            st.markdown("#### 👥 Users by Role")
+            for role, cnt in roles.items():
+                st.markdown(f"- **{role.title()}**: {cnt} users")
 
 
 # ===================== HOME PAGE =====================
 if nav == "🏠 Home Page":
     render_persistent_header()
+    # ==============================================================================
+    # 🔥 FIX #2: COMPACT LOGGED IN USER BADGE - TOP RIGHT CORNER
+    # ==============================================================================
+    col_user_left, col_user_right = st.columns([6, 1])
+    with col_user_right:
+        st.markdown(f"""
+        <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:10px;">
+            <div style="background:linear-gradient(135deg,#059669,#10b981);color:white;padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(16,185,129,0.3);">
+                <span>👤</span>
+                <span>{st.session_state.user_email}</span>
+                <span style="background:rgba(255,255,255,0.25);padding:2px 8px;border-radius:10px;font-size:0.65rem;">{st.session_state.user or "Farmer"}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
 
     st.markdown("""
     <div class="hero-wrapper">
         <div class="hero-bg">
             <div class="hero-orb orb-1"></div>
-            <div class="hero-orb orb-2"></div>
+            <div class="hero-orb orb-2"></div> 
             <div class="hero-badge">🌿 AI-Powered Agriculture</div>
             <h1 class="hero-title">Plant Doctor AI</h1>
             <p class="hero-sub">Apni Fasal Ki Bimari Seconds Mein Pehchanein</p>
@@ -1767,25 +2384,34 @@ if nav == "🏠 Home Page":
 
     col1, col2 = st.columns([2, 1])
     with col1:
-        st.markdown("""
+                st.markdown("""
         <div class="slider-container">
             <div class="slide-track">
-                <div class="slide"><img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800"></div>
-                <div class="slide"><img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800"></div>
-                <div class="slide"><img src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=800"></div>
-                <div class="slide"><img src="https://images.unsplash.com/photo-1587334274328-64186a80aeee?w=800"></div>
-                <div class="slide"><img src="https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=800"></div>
-                <div class="slide"><img src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=800"></div>
-                <div class="slide"><img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800"></div>
-                <div class="slide"><img src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800"></div>
-                <div class="slide"><img src="https://images.unsplash.com/photo-1592087046781-3070b59e4c14?w=800"></div>
-                <div class="slide"><img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800"></div>
-                <div class="slide"><img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800"></div>
-                <div class="slide"><img src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=800"></div>
+                <!-- 🔥 FIX #4: ZYADA AUR BEHTREEN PICTURES -->
+                <div class="slide"><img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1592419044706-39796d40f98c?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1591857177580-dc82b9ac4e1e?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1560493676-04071c5f467b?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=800&q=80"></div>
+                <!-- Duplicate for infinite scroll -->
+                <div class="slide"><img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&q=80"></div>
             </div>
         </div>
         <p style="text-align:center;font-size:0.78rem;color:#aaa;margin-top:8px;font-style:italic;">🖱️ Hover to pause the gallery</p>
         """, unsafe_allow_html=True)
+              
 
     with col2:
         if temp > 30:
@@ -1847,9 +2473,9 @@ if nav == "🏠 Home Page":
                     result['conf']
                 )
                 if success:
-                    st.success(f"✅ Scan saved! ID: {msg}")
+                    st.toast(f"Scan saved to history!", icon="💾")
                 else:
-                    st.warning(f"⚠️ Scan save nahi hua: {msg}")
+                    st.toast(f"Scan save error: {msg}", icon="⚠️")
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align:center;color:#064e3b;font-weight:900;font-size:2rem;margin-bottom:6px;'>Supported Crops | Faslain</h2>", unsafe_allow_html=True)
@@ -1970,4 +2596,90 @@ elif nav == "🫑 Pepper (Mirch)":
 
 # ===================== CORN — uses generic function =====================
 elif nav == "🌽 Corn Field":
-    render_crop_page("corn") 
+    render_crop_page("corn")
+
+
+# ===================== PROFILE PAGE =====================
+elif nav == "👤 My Profile":
+    render_persistent_header()
+    render_profile_page()
+
+
+# ===================== DASHBOARD PAGE =====================
+elif nav == "📊 Dashboard":
+    render_persistent_header()
+    render_dashboard_page()
+
+
+# ===================== EXPERT CHAT PAGE =====================
+elif nav == "💬 Expert Chat":
+    render_persistent_header()
+    
+    st.markdown("""
+    <div style="background:linear-gradient(135deg,#e0f2fe,#bae6fd);border-radius:24px;padding:32px;margin-bottom:24px;border:1px solid rgba(14,165,233,0.3);">
+        <h2 style="color:#0369a1;font-weight:900;margin:0 0 6px;">💬 Expert Consultations</h2>
+        <p style="color:#0c4a6e;margin:0;font-size:0.9rem;">Kisan aur Agricultural Experts ke darmiyan rabta</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    headers = {"Authorization": f"Bearer {st.session_state.token}"}
+    try:
+        resp = requests.get(f"{API_URL}/consultations", headers=headers, timeout=5)
+        if resp.status_code == 200:
+            consults = resp.json().get('consultations', [])
+            
+            if not consults:
+                st.info("📭 Abhi koi consultation nahi hai.")
+            else:
+                for c in consults:
+                    status_color = "#10b981" if c['status'] == 'resolved' else "#f59e0b"
+                    status_text = "Resolved" if c['status'] == 'resolved' else "Pending"
+                    
+                    st.markdown(f"""
+                    <div style="background:white;border-radius:16px;padding:20px;margin-bottom:12px;box-shadow:0 4px 16px rgba(0,0,0,0.05);border-left:4px solid {status_color};">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                            <div>
+                                <span style="font-weight:800;color:#0369a1;font-size:1.1rem;">{c.get('crop_type', '').title()} · {c.get('predicted_disease', '')}</span>
+                                <div style="font-size:0.75rem;color:#6b7280;margin-top:2px;">{str(c.get('created_at', ''))[:16]}</div>
+                            </div>
+                            <span style="background:{status_color}20;color:{status_color};padding:4px 12px;border-radius:12px;font-weight:800;font-size:0.7rem;text-transform:uppercase;">{status_text}</span>
+                        </div>
+                        
+                        <div style="background:#f8fafc;padding:12px 16px;border-radius:12px;margin-bottom:10px;">
+                            <div style="font-size:0.7rem;font-weight:700;color:#64748b;margin-bottom:4px;text-transform:uppercase;">👨‍🌾 {c.get('farmer_name', 'Kisan')} ka Sawal:</div>
+                            <div style="color:#334155;font-size:0.95rem;">{c['message']}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+                    if c['status'] == 'resolved':
+                        st.markdown(f"""
+                        <div style="background:#ecfdf5;padding:12px 16px;border-radius:12px;border:1px solid #a7f3d0;">
+                            <div style="font-size:0.7rem;font-weight:700;color:#059669;margin-bottom:4px;text-transform:uppercase;">👨‍⚕️ Expert ka Jawab:</div>
+                            <div style="color:#064e3b;font-size:0.95rem;">{c['expert_reply']}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    elif st.session_state.user in ['expert', 'admin']:
+                        # Expert can reply
+                        reply_msg = st.text_area("Aap ka Jawab:", key=f"reply_{c['id']}")
+                        if st.button("📤 Jawab Bhejein", key=f"btn_{c['id']}", type="primary"):
+                            if reply_msg.strip():
+                                r_resp = requests.put(f"{API_URL}/consultations/{c['id']}/reply", headers=headers, json={"reply": reply_msg})
+                                if r_resp.status_code == 200:
+                                    st.toast("✅ Jawab bhej diya gaya!", icon="📤")
+                                    time.sleep(0.5)
+                                    st.rerun()
+                                else:
+                                    st.error("Error sending reply")
+                            else:
+                                st.warning("Jawab likhein")
+                    
+                    st.markdown("</div>", unsafe_allow_html=True)
+        else:
+            st.error("❌ Failed to load consultations")
+    except Exception as e:
+        st.error(f"❌ Backend error: {e}") 
+
+# ===================== ADMIN PANEL =====================
+elif nav == "🛡️ Admin Panel":
+    render_persistent_header()
+    render_admin_page() 
