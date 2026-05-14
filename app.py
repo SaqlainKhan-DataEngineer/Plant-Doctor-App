@@ -107,78 +107,85 @@ def render_auth_page():
     
     with tab1:
         st.markdown("<br>", unsafe_allow_html=True)
-        email = st.text_input("📧 Email", key="login_email")
-        password = st.text_input("🔒 Password", type="password", key="login_password")
-        
-        if st.button("🔓 Login", type="primary", use_container_width=True):
-            if not email or not password:
-                st.error("⚠️ Email aur password dono daalein!")
-                return
-                
-            try:
-                response = requests.post(
-                    f"{API_URL}/auth/login", 
-                    json={"email": email, "password": password},
-                    timeout=5
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    st.session_state.token = data['token']
-                    st.session_state.user = data['role']
-                    st.session_state.user_email = email 
-                    persist_auth_token()  # 🔥 URL mein save karo
-                    st.success("✅ Login successful!")
-                    time.sleep(0.5)
-                    st.rerun()
-                elif response.status_code == 401:
-                    st.error("❌ Galat email ya password!")
+    with tab1:
+        st.markdown("<br>", unsafe_allow_html=True)
+        with st.form("login_form"):
+            email = st.text_input("📧 Email")
+            password = st.text_input("🔒 Password", type="password")
+            
+            submitted = st.form_submit_button("🔓 Login", type="primary", use_container_width=True)
+            if submitted:
+                if not email or not password:
+                    st.error("⚠️ Email aur password dono daalein!")
                 else:
-                    st.error(f"❌ Error: {response.json().get('detail', 'Unknown error')}")
-            except requests.exceptions.ConnectionError:
-                st.error("❌ Backend server nahi chal raha! Terminal mein `uvicorn main:app --reload --port 8000` run karein.")
-            except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+                    try:
+                        response = requests.post(
+                            f"{API_URL}/auth/login", 
+                            json={"email": email, "password": password},
+                            timeout=5
+                        )
+                        
+                        if response.status_code == 200:
+                            data = response.json()
+                            st.session_state.token = data['token']
+                            st.session_state.user = data['role']
+                            st.session_state.user_email = email 
+                            persist_auth_token()  # 🔥 URL mein save karo
+                            st.success("✅ Login successful!")
+                            time.sleep(0.5)
+                            st.rerun()
+                        elif response.status_code == 401:
+                            st.error("❌ Galat email ya password!")
+                        else:
+                            st.error(f"❌ Error: {response.json().get('detail', 'Unknown error')}")
+                    except requests.exceptions.ConnectionError:
+                        st.error("❌ Backend server nahi chal raha! Terminal mein `uvicorn main:app --reload --port 8000` run karein.")
+                    except Exception as e:
+                        st.error(f"❌ Error: {str(e)}")
     
     with tab2:
         st.markdown("<br>", unsafe_allow_html=True)
-        name = st.text_input("👤 Full Name", key="reg_name")
-        email = st.text_input("📧 Email", key="reg_email")
-        phone = st.text_input("📱 Phone (optional)", key="reg_phone")
-        password = st.text_input("🔒 Password", type="password", key="reg_pass")
-        confirm_password = st.text_input("🔒 Confirm Password", type="password", key="reg_confirm_pass")
-        
-        if st.button("📝 Register", type="primary", use_container_width=True):
-            if not name or not email or not password:
-                st.error("⚠️ Name, email aur password zaroori hain!")
-                return
+        with st.form("register_form"):
+            name = st.text_input("👤 Full Name")
+            email = st.text_input("📧 Email")
+            phone = st.text_input("📱 Phone (optional)")
+            password = st.text_input("🔒 Password", type="password")
+            confirm_password = st.text_input("🔒 Confirm Password", type="password")
             
-            if password != confirm_password:
-                st.error("❌ Passwords match nahi kar rahe!")
-                return
-            
-            try:
-                response = requests.post(
-                    f"{API_URL}/auth/register",
-                    json={
-                        "full_name": name,
-                        "email": email,
-                        "password": password,
-                        "phone": phone
-                    },
-                    timeout=5
-                )
-                
-                if response.status_code == 200:
-                    st.success("✅ Account ban gaya! Ab login karein.")
-                elif response.status_code == 400:
-                    st.error("❌ Ye email pehle se registered hai!")
+            submitted = st.form_submit_button("📝 Register", type="primary", use_container_width=True)
+            if submitted:
+                if not name or not email or not password:
+                    st.error("⚠️ Name, email aur password zaroori hain!")
+                elif password != confirm_password:
+                    st.error("❌ Passwords match nahi kar rahe!")
                 else:
-                    st.error(f"❌ Error: {response.json().get('detail', 'Unknown error')}")
-            except requests.exceptions.ConnectionError:
-                st.error("❌ Backend server nahi chal raha! Terminal mein `uvicorn main:app --reload --port 8000` run karein.")
-            except Exception as e:
-                st.error(f"❌ Error: {str(e)}") 
+                    try:
+                        response = requests.post(
+                            f"{API_URL}/auth/register",
+                            json={
+                                "full_name": name,
+                                "email": email,
+                                "password": password,
+                                "phone": phone
+                            },
+                            timeout=5
+                        )
+                        
+                        if response.status_code == 200:
+                            st.success("✅ Account ban gaya! Ab login karein.")
+                        elif response.status_code == 400:
+                            st.error("❌ Ye email pehle se registered hai!")
+                        else:
+                            # Parse error details directly to show 500 error messages explicitly
+                            try:
+                                err_msg = response.json().get('detail', 'Unknown error')
+                            except:
+                                err_msg = response.text
+                            st.error(f"❌ Error: {err_msg}")
+                    except requests.exceptions.ConnectionError:
+                        st.error("❌ Backend server nahi chal raha! Terminal mein `uvicorn main:app --reload --port 8000` run karein.")
+                    except Exception as e:
+                        st.error(f"❌ Error: {str(e)}") 
 
 def logout():
     """User logout - URL se bhi token hatao"""
