@@ -1438,7 +1438,7 @@ st.sidebar.markdown("""
 st.sidebar.write("---")
 # Build nav list dynamically based on role
 nav_options = ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🫑 Pepper (Mirch)", "🌽 Corn Field", "👤 My Profile", "📊 Dashboard", "💬 Expert Chat"]
-if st.session_state.user == "admin":
+if st.session_state.user and st.session_state.user.lower() == "admin":
     nav_options.append("🛡️ Admin Panel")
 
 # Ensure nav_default is valid
@@ -2279,7 +2279,7 @@ def render_dashboard_page():
 # 🛡️ ADMIN PANEL PAGE
 # ==============================================================================
 def render_admin_page():
-    if st.session_state.user != "admin":
+    if not st.session_state.user or st.session_state.user.lower() != "admin":
         st.error("🚫 Access Denied — Sirf Admin access kar sakta hai!")
         return
 
@@ -2756,7 +2756,7 @@ elif nav == "💬 Expert Chat":
                             <div style="color:#064e3b;font-size:0.95rem;">{c['expert_reply']}</div>
                         </div>
                         """, unsafe_allow_html=True)
-                    elif st.session_state.user in ['expert', 'admin']:
+                    elif st.session_state.user and st.session_state.user.lower() in ['expert', 'admin']:
                         # Expert can reply
                         reply_msg = st.text_area("Aap ka Jawab:", key=f"reply_{c['id']}")
                         if st.button("📤 Jawab Bhejein", key=f"btn_{c['id']}", type="primary"):
