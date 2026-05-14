@@ -410,7 +410,8 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
 def require_admin(user=Depends(verify_token)):
     """Admin-only guard — non-admin ko reject karo"""
-    if user.get("role") != "admin":
+    role = user.get("role")
+    if not role or role.lower() != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     return user
 
