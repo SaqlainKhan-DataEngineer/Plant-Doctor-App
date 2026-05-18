@@ -828,43 +828,49 @@ def get_history(user=Depends(verify_token)):
         raise HTTPException(status_code=500, detail=f"History error: {e}")
 
 
+def _db_is_mysql(conn) -> bool:
+    """Reliable MySQL detection (Railway always sets DATABASE_URL)."""
+    return bool(DATABASE_URL) or getattr(conn, "_is_mysql", False)
+
+
 @app.get("/api/scans/stats")
 def get_user_stats(user=Depends(verify_token)):
     """Current user ke scan statistics"""
     try:
         with get_db() as conn:
             cursor = conn.cursor()
-            is_mysql = getattr(conn, "_is_mysql", False)
+            is_mysql = _db_is_mysql(conn)
+            uid = user["user_id"]
 
-            cursor.execute("SELECT COUNT(*) FROM scans WHERE user_id = ?", user["user_id"])
-            total_scans = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM scans WHERE user_id = ?", uid)
+            total_scans = int(cursor.fetchone()[0])
 
             cursor.execute(
                 """
-                SELECT crop_type, COUNT(*) as count
+                SELECT crop_type, COUNT(*) AS cnt
                 FROM scans WHERE user_id = ?
                 GROUP BY crop_type
             """,
-                user["user_id"],
+                uid,
             )
-            crop_breakdown = {row[0]: row[1] for row in cursor.fetchall()}
+            crop_breakdown = {str(row[0]): int(row[1]) for row in cursor.fetchall()}
 
             cursor.execute(
                 """
                 SELECT COUNT(*) FROM scans
-                WHERE user_id = ? AND predicted_disease NOT LIKE '%Healthy%'
+                WHERE user_id = ? AND LOWER(predicted_disease) NOT LIKE '%healthy%'
             """,
-                user["user_id"],
+                uid,
             )
-            disease_count = cursor.fetchone()[0]
+            disease_count = int(cursor.fetchone()[0])
 
             if is_mysql:
                 cursor.execute(
                     """
                     SELECT COUNT(*) FROM scans
-                    WHERE user_id = ? AND created_at >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 7 DAY)
+                    WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
                 """,
-                    user["user_id"],
+                    uid,
                 )
             else:
                 cursor.execute(
@@ -872,11 +878,11 @@ def get_user_stats(user=Depends(verify_token)):
                     SELECT COUNT(*) FROM scans
                     WHERE user_id = ? AND created_at >= DATEADD(day, -7, GETDATE())
                 """,
-                    user["user_id"],
+                    uid,
                 )
-            weekly_scans = cursor.fetchone()[0]
+            weekly_scans = int(cursor.fetchone()[0])
 
-            cursor.execute("SELECT AVG(confidence) FROM scans WHERE user_id = ?", user["user_id"])
+            cursor.execute("SELECT AVG(confidence) FROM scans WHERE user_id = ?", uid)
             avg_conf = cursor.fetchone()[0]
 
         return {
@@ -885,7 +891,7 @@ def get_user_stats(user=Depends(verify_token)):
             "disease_count": disease_count,
             "healthy_count": total_scans - disease_count,
             "weekly_scans": weekly_scans,
-            "avg_confidence": round(float(avg_conf), 1) if avg_conf else 0,
+            "avg_confidence": round(float(avg_conf), 1) if avg_conf is not None else 0,
         }
     except Exception as e:
         import traceback
@@ -1055,7 +1061,7 @@ def admin_stats(user=Depends(require_admin)):
     try:
         with get_db() as conn:
             cursor = conn.cursor()
-            is_mysql = getattr(conn, "_is_mysql", False)
+            is_mysql = _db_is_mysql(conn)
 
             cursor.execute("SELECT COUNT(*) FROM users")
             total_users = cursor.fetchone()[0]
@@ -1193,7 +1199,7 @@ def admin_get_scans(
     """All scans for admin — with optional crop filter"""
     with get_db() as conn:
         cursor = conn.cursor()
-        is_mysql = getattr(conn, "_is_mysql", False)
+        is_mysql = _db_is_mysql(conn)
 
         if crop:
             if is_mysql:

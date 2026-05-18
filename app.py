@@ -365,6 +365,43 @@ def get_user_stats_api():
     except Exception:
         return None
 
+
+def compute_stats_from_history(scans):
+    """Dashboard stats from scan history (fallback if /scans/stats fails)."""
+    from datetime import datetime, timedelta
+
+    total = len(scans)
+    crop_breakdown = {}
+    disease_count = 0
+    confidences = []
+    week_ago = datetime.now() - timedelta(days=7)
+    weekly_scans = 0
+
+    for s in scans:
+        crop = s.get("crop_type") or "unknown"
+        crop_breakdown[crop] = crop_breakdown.get(crop, 0) + 1
+        disease = (s.get("predicted_disease") or "")
+        if "healthy" not in disease.lower():
+            disease_count += 1
+        confidences.append(float(s.get("confidence") or 0))
+        try:
+            raw = str(s.get("created_at") or "")[:19]
+            if raw:
+                dt = datetime.strptime(raw.replace("T", " ")[:19], "%Y-%m-%d %H:%M:%S")
+                if dt >= week_ago:
+                    weekly_scans += 1
+        except Exception:
+            pass
+
+    return {
+        "total_scans": total,
+        "crop_breakdown": crop_breakdown,
+        "disease_count": disease_count,
+        "healthy_count": total - disease_count,
+        "weekly_scans": weekly_scans,
+        "avg_confidence": round(sum(confidences) / len(confidences), 1) if confidences else 0,
+    }
+
 # ==============================================================================
 # 🔥 AUTH CHECK - Agar login nahi hai toh auth page dikhao
 # ==============================================================================
@@ -2245,18 +2282,23 @@ def render_dashboard_page():
     """, unsafe_allow_html=True)
 
     stats = get_user_stats_api()
+    stats_from_history = False
 
     if not stats:
         history = get_scan_history()
         if history:
-            st.warning("Scans database mein hain lekin stats load nahi hui. Backend redeploy karein.")
+            stats = compute_stats_from_history(history)
+            stats_from_history = True
         else:
             api_err = st.session_state.pop("api_error", None)
             if api_err:
                 st.error(api_err)
             else:
                 st.info("Abhi tak koi scan nahi kiya. Pehle ek crop scan karein!")
-        return
+            return
+
+    if stats_from_history:
+        st.caption("ℹ️ Stats aapki scan history se calculate kiye gaye.")
 
     # Stats cards
     c1, c2, c3, c4 = st.columns(4)
