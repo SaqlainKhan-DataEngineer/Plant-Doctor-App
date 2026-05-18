@@ -1,5 +1,5 @@
 # Plant Doctor — Current State Analysis
-> **Date**: 18 May 2026 · **Status**: Phase 3 Complete
+> **Date**: 18 May 2026 · **Status**: Phase 3 Complete + Premium
 
 ---
 
@@ -7,84 +7,43 @@
 
 | # | Feature | Details |
 |---|---------|---------|
-| 1 | **AI Models (4 crops)** | Potato, Tomato, Pepper, Corn — v3 pkl + crop detector |
-| 2 | **Feature Extraction v3** | HOG + LBP + GLCM + Gabor + ORB |
-| 3 | **Streamlit Frontend** | Auth, 4 crop pages, home universal scan, dashboard, profile |
-| 4 | **AI Doctor (Gemini)** | Roman Urdu treatment advice |
-| 5 | **Backend API (FastAPI)** | Auth, scans, consultations, admin, diseases KB |
-| 6 | **MySQL (Railway) + SQL Server (local)** | Dual DB support |
-| 7 | **User Auth** | Register, login, JWT expiry, forgot/reset password |
-| 8 | **Email Verification** | Register pe verification email (SMTP / Resend) + `/api/auth/verify-email` |
-| 9 | **Scan Save** | Compressed JPEG in DB (`image_data`) — survives Railway redeploy |
-| 10 | **AI Advice Saved** | `ai_advice` column on each scan |
-| 11 | **Disease Knowledge Base** | 18 diseases + API + UI treatment guide |
-| 12 | **Expert Chat** | Farmer questions + expert replies |
-| 13 | **Admin Panel** | Stats, users, scans — MySQL-compatible |
-| 14 | **Plotly Analytics** | Pie/bar charts on Dashboard + Admin |
-| 15 | **Rate Limiting** | SlowAPI on register, login, forgot-password |
-| 16 | **API Tests** | `backend/tests/test_api.py` (pytest) |
-| 17 | **PWA + Deployment** | Streamlit Cloud + Railway |
+| 1 | **AI Models (4 crops)** | v3 pkl + crop detector |
+| 2 | **Streamlit + FastAPI** | Full app + Railway + Streamlit Cloud |
+| 3 | **Auth** | JWT, forgot password, email verification (SMTP/Resend) |
+| 4 | **Scans** | Compressed images in DB, history, dashboard |
+| 5 | **Plotly charts** | Dashboard + Admin analytics |
+| 6 | **Rate limiting** | SlowAPI on auth endpoints |
+| 7 | **pytest** | `backend/tests/test_api.py` |
+| 8 | **Premium payments** | Stripe Checkout + webhook → `is_premium` |
 
 ---
 
 ## ⚠️ PARTIAL — Can Be Improved
 
-| # | Feature | Current State | Next Step |
-|---|---------|--------------|-----------|
-| 1 | **Payment / premium** | Not implemented | Razorpay / Stripe |
-| 2 | **Disease heatmap** | Not implemented | Regional map |
-| 3 | **Multi-language UI** | Roman Urdu in content only | Full Urdu toggle |
-| 4 | **Push notifications** | Not implemented | FCM / email alerts |
+| # | Feature | Next Step |
+|---|---------|-----------|
+| 1 | **Razorpay (Pakistan)** | Local payment gateway if Stripe limited |
+| 2 | **Disease heatmap** | Regional map |
+| 3 | **Urdu UI toggle** | Full interface translation |
 
 ---
 
-## ❌ MISSING — Future Roadmap
+## ❌ MISSING — Future
 
-| # | Feature | Priority |
-|---|---------|----------|
-| 1 | S3 / Cloudinary for very large image archives | Low |
-| 2 | Email verification resend button in UI | Low |
-| 3 | CI pipeline (GitHub Actions + pytest) | Low |
-
----
-
-## 📁 Project Structure
-
-```
-Plant-Doctor-App/
-├── app.py
-├── README.md
-├── backend/
-│   ├── main.py
-│   ├── image_utils.py          # JPEG compression
-│   ├── requirements.txt
-│   ├── tests/test_api.py       # pytest
-│   └── pwa/
-├── current_state_analysis.md
-└── *.pkl
-```
+| # | Feature |
+|---|---------|
+| 1 | Push notifications |
+| 2 | S3 for very large image archives |
+| 3 | GitHub Actions CI |
 
 ---
 
-## 🔧 Env Variables (Production)
+## 🔧 Railway Variables Checklist
 
-| Variable | Purpose |
-|----------|---------|
-| `JWT_SECRET` | JWT signing |
-| `MYSQL_URL` / `DATABASE_URL` | Railway MySQL |
-| `SMTP_EMAIL` + `SMTP_PASSWORD` | Gmail verification / reset |
-| `RESEND_API_KEY` | Optional Resend email API |
-| `RESEND_FROM` | Sender address for Resend |
-| `APP_BASE_URL` | `https://plantdoctorapp.streamlit.app` |
-| `REQUIRE_EMAIL_VERIFY` | `true` / `false` |
-| `CORS_ORIGINS` | Allowed frontend origins |
-
----
-
-## 🎯 Recommended Next Steps
-
-| Step | Task |
-|------|------|
-| 1 | Push + redeploy Railway + Streamlit |
-| 2 | Set `RESEND_API_KEY` or Gmail SMTP on Railway |
-| 3 | Payment integration for premium tier |
+| Variable | Required for |
+|----------|----------------|
+| `MYSQL_URL` | Database |
+| `JWT_SECRET` | Security |
+| `GEMINI_API_KEY` | Streamlit only |
+| `SMTP_*` or `RESEND_API_KEY` | Email verify (optional) |
+| `STRIPE_*` | Premium payments (optional) |

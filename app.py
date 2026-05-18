@@ -397,32 +397,72 @@ def get_user_stats_api():
         return None
 
 
+def fetch_user_profile():
+    if not st.session_state.token:
+        return None
+    try:
+        headers = {"Authorization": f"Bearer {st.session_state.token}"}
+        resp = requests.get(f"{API_URL}/auth/me", headers=headers, timeout=10)
+        if resp.status_code == 200:
+            return resp.json()
+    except Exception:
+        pass
+    return None
+
+
+CHART_COLORS = ["#047857", "#059669", "#10b981", "#fbbf24", "#ea580c", "#dc2626", "#7c3aed"]
+
+
+def _style_plotly_fig(fig, height=400):
+    fig.update_layout(
+        height=height,
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#f0fdf4",
+        font=dict(color="#064e3b", size=13),
+        title=dict(font=dict(size=18, color="#064e3b", family="sans-serif")),
+        margin=dict(t=55, b=30, l=10, r=10),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.15, x=0.5, xanchor="center"),
+    )
+
+
 def render_crop_pie_chart(crop_breakdown, title="Crop-wise Scans"):
     if not HAS_PLOTLY or not crop_breakdown:
         return
+    labels = [k.title() for k in crop_breakdown.keys()]
+    values = list(crop_breakdown.values())
     fig = px.pie(
-        names=[k.title() for k in crop_breakdown.keys()],
-        values=list(crop_breakdown.values()),
+        names=labels,
+        values=values,
         title=title,
-        hole=0.35,
-        color_discrete_sequence=px.colors.sequential.Greens,
+        hole=0.42,
+        color_discrete_sequence=CHART_COLORS[: len(labels)],
     )
-    fig.update_layout(margin=dict(t=45, b=10, l=10, r=10), height=360)
+    fig.update_traces(
+        textposition="inside",
+        textinfo="percent+label",
+        textfont_size=14,
+        textfont_color="#ffffff",
+        marker=dict(line=dict(color="#ffffff", width=2)),
+    )
+    _style_plotly_fig(fig, 420)
     st.plotly_chart(fig, use_container_width=True)
 
 
-def render_disease_bar_chart(disease_counts, title="Top Diseases Detected"):
+def render_disease_bar_chart(disease_counts, title="Diseases Detected"):
     if not HAS_PLOTLY or not disease_counts:
         return
     items = sorted(disease_counts.items(), key=lambda x: -x[1])[:8]
     fig = px.bar(
-        x=[d[0] for d in items],
-        y=[d[1] for d in items],
+        x=[d[1] for d in items],
+        y=[d[0] for d in items],
+        orientation="h",
         title=title,
-        labels={"x": "Disease", "y": "Scans"},
-        color_discrete_sequence=["#dc2626"],
+        labels={"x": "Scans", "y": ""},
+        color=[d[1] for d in items],
+        color_continuous_scale=["#fca5a5", "#dc2626"],
     )
-    fig.update_layout(margin=dict(t=45, b=80, l=10, r=10), height=380)
+    fig.update_layout(coloraxis_showscale=False, yaxis=dict(autorange="reversed"))
+    _style_plotly_fig(fig, max(280, 70 * len(items)))
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -433,9 +473,38 @@ def render_role_pie_chart(roles, title="Users by Role"):
         names=[k.title() for k in roles.keys()],
         values=list(roles.values()),
         title=title,
-        color_discrete_sequence=px.colors.qualitative.Set2,
+        color_discrete_sequence=CHART_COLORS,
     )
-    fig.update_layout(margin=dict(t=45, b=10, l=10, r=10), height=320)
+    fig.update_traces(textinfo="percent+label", marker=dict(line=dict(color="#fff", width=2)))
+    _style_plotly_fig(fig, 340)
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def render_scan_timeline_chart(history):
+    """Scans over last 14 days from history list."""
+    if not HAS_PLOTLY or not history:
+        return
+    from collections import Counter
+    from datetime import datetime, timedelta
+
+    days = Counter()
+    for s in history:
+        raw = str(s.get("created_at") or "")[:10]
+        if raw:
+            days[raw] += 1
+    if not days:
+        return
+    labels = sorted(days.keys())[-14:]
+    counts = [days[d] for d in labels]
+    fig = px.bar(
+        x=labels,
+        y=counts,
+        title="📈 Scan Activity (Recent)",
+        labels={"x": "Date", "y": "Scans"},
+        color_discrete_sequence=["#059669"],
+    )
+    fig.update_traces(marker_line=dict(width=0))
+    _style_plotly_fig(fig, 320)
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -481,6 +550,15 @@ def compute_stats_from_history(scans):
 if not st.session_state.token:
     render_auth_page()
     st.stop()
+
+# Payment return from Stripe
+_pay = st.query_params.get("payment")
+if _pay == "success" and not st.session_state.get("_pay_success_shown"):
+    st.session_state._pay_success_shown = True
+    st.success("👑 Payment successful! Premium features ab activate ho rahe hain — page refresh ho jayega.")
+elif _pay == "cancel" and not st.session_state.get("_pay_cancel_shown"):
+    st.session_state._pay_cancel_shown = True
+    st.warning("Payment cancel ho gayi. Aap baad mein Premium se upgrade kar sakte hain.")
 
 
 # --- 2. WEATHER ---
@@ -1590,7 +1668,7 @@ st.sidebar.markdown("""
 
 st.sidebar.write("---")
 # Build nav list dynamically based on role
-nav_options = ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🫑 Pepper (Mirch)", "🌽 Corn Field", "👤 My Profile", "📊 Dashboard", "💬 Expert Chat"]
+nav_options = ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🫑 Pepper (Mirch)", "🌽 Corn Field", "👤 My Profile", "📊 Dashboard", "👑 Premium", "💬 Expert Chat"]
 if st.session_state.user and st.session_state.user.lower() == "admin":
     nav_options.append("🛡️ Admin Panel")
 
@@ -2347,103 +2425,118 @@ def render_profile_page():
 # 📊 DASHBOARD PAGE
 # ==============================================================================
 def render_dashboard_page():
-    st.markdown("""
-    <div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-radius:24px;padding:32px;margin-bottom:24px;border:1px solid rgba(52,211,153,0.2);">
-        <h2 style="color:#064e3b;font-weight:900;margin:0 0 6px;">📊 Mera Dashboard</h2>
-        <p style="color:#6b7280;margin:0;font-size:0.9rem;">Apne scan history, crop stats aur trends dekhein</p>
+    profile = fetch_user_profile()
+    is_premium = profile and profile.get("is_premium")
+    badge = "PREMIUM" if is_premium else "FREE PLAN"
+
+    st.markdown(f"""
+    <div style="background:linear-gradient(135deg,#064e3b,#059669,#10b981);border-radius:20px;padding:28px 32px;margin-bottom:20px;color:white;">
+        <h2 style="margin:0;font-weight:900;">📊 Mera Dashboard</h2>
+        <p style="margin:6px 0 0;opacity:0.9;">Scan history, trends aur crop analytics · {badge}</p>
     </div>
     """, unsafe_allow_html=True)
 
+    if not is_premium:
+        st.info("👑 Premium se unlimited scans + priority expert — sidebar **Premium** kholein.")
+
     stats = get_user_stats_api()
     stats_from_history = False
+    history = get_scan_history()
 
     if not stats:
-        history = get_scan_history()
         if history:
             stats = compute_stats_from_history(history)
             stats_from_history = True
         else:
             api_err = st.session_state.pop("api_error", None)
-            if api_err:
-                st.error(api_err)
-            else:
-                st.info("Abhi tak koi scan nahi kiya. Pehle ek crop scan karein!")
+            st.error(api_err) if api_err else st.info("Pehla scan Home se karein!")
             return
 
     if stats_from_history:
-        st.caption("ℹ️ Stats aapki scan history se calculate kiye gaye.")
+        st.caption("Stats scan history se calculate kiye gaye.")
 
-    # Stats cards
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        st.markdown(f"""<div style="background:white;border-radius:16px;padding:20px;text-align:center;box-shadow:0 4px 16px rgba(6,78,59,0.08);border-top:3px solid #10b981;">
-            <div style="font-size:2rem;font-weight:900;color:#064e3b;">{stats['total_scans']}</div>
-            <div style="font-size:0.75rem;color:#6b7280;font-weight:600;text-transform:uppercase;">Total Scans</div></div>""", unsafe_allow_html=True)
+        st.metric("🔬 Total Scans", stats["total_scans"])
     with c2:
-        st.markdown(f"""<div style="background:white;border-radius:16px;padding:20px;text-align:center;box-shadow:0 4px 16px rgba(6,78,59,0.08);border-top:3px solid #059669;">
-            <div style="font-size:2rem;font-weight:900;color:#064e3b;">{stats['healthy_count']}</div>
-            <div style="font-size:0.75rem;color:#6b7280;font-weight:600;text-transform:uppercase;">Healthy Scans</div></div>""", unsafe_allow_html=True)
+        st.metric("✅ Healthy", stats["healthy_count"])
     with c3:
-        st.markdown(f"""<div style="background:white;border-radius:16px;padding:20px;text-align:center;box-shadow:0 4px 16px rgba(6,78,59,0.08);border-top:3px solid #dc2626;">
-            <div style="font-size:2rem;font-weight:900;color:#dc2626;">{stats['disease_count']}</div>
-            <div style="font-size:0.75rem;color:#6b7280;font-weight:600;text-transform:uppercase;">Diseases Found</div></div>""", unsafe_allow_html=True)
+        st.metric("🦠 Diseases", stats["disease_count"])
     with c4:
-        st.markdown(f"""<div style="background:white;border-radius:16px;padding:20px;text-align:center;box-shadow:0 4px 16px rgba(6,78,59,0.08);border-top:3px solid #f59e0b;">
-            <div style="font-size:2rem;font-weight:900;color:#064e3b;">{stats['avg_confidence']}%</div>
-            <div style="font-size:0.75rem;color:#6b7280;font-weight:600;text-transform:uppercase;">Avg Confidence</div></div>""", unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
+        st.metric("📊 Avg Confidence", f"{stats['avg_confidence']}%")
 
     crop_data = stats.get("crop_breakdown", {})
-    if crop_data and HAS_PLOTLY:
-        chart_l, chart_r = st.columns(2)
-        with chart_l:
-            render_crop_pie_chart(crop_data, "🌾 Crop-wise Scans")
-        with chart_r:
-            st.markdown("### 📅 Is Hafte Ki Activity")
-            st.metric("Weekly Scans", stats.get("weekly_scans", 0))
-    else:
-        col_left, col_right = st.columns(2)
-        with col_left:
-            st.markdown("### 🌾 Crop-wise Breakdown")
-            if crop_data:
-                for crop, count in crop_data.items():
-                    pct = (count / max(stats["total_scans"], 1)) * 100
-                    st.markdown(f"**{crop.title()}** — {count} scans ({pct:.0f}%)")
-            else:
-                st.info("Koi data nahi hai abhi.")
-        with col_right:
-            st.markdown("### 📅 Is Hafte Ki Activity")
-            st.metric("Weekly Scans", stats.get("weekly_scans", 0))
+    disease_from_history = {}
+    for s in history:
+        d = s.get("predicted_disease", "Unknown")
+        if "healthy" not in d.lower():
+            disease_from_history[d] = disease_from_history.get(d, 0) + 1
 
-    # Full scan history table
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### 📋 Full Scan History")
-    history = get_scan_history()
+    if HAS_PLOTLY:
+        ca, cb = st.columns([1.1, 0.9])
+        with ca:
+            with st.container(border=True):
+                if crop_data:
+                    render_crop_pie_chart(crop_data, "🌾 Crop Distribution")
+        with cb:
+            with st.container(border=True):
+                st.markdown("### 📅 Weekly Activity")
+                st.metric("Last 7 days", stats.get("weekly_scans", 0))
+        if disease_from_history:
+            with st.container(border=True):
+                render_disease_bar_chart(disease_from_history, "🦠 Disease Scans")
+        if history:
+            with st.container(border=True):
+                render_scan_timeline_chart(history)
+
+    st.markdown("### 📋 Scan History")
     if history:
+        emoji_map = {"potato": "🥔", "tomato": "🍅", "pepper": "🫑", "corn": "🌽"}
         for s in history:
-            crop = s.get('crop_type', 'unknown')
-            disease = s.get('predicted_disease', 'Unknown')
-            conf = s.get('confidence', 0)
-            date = str(s.get('created_at', ''))[:16]
-            is_healthy = 'healthy' in disease.lower()
-            color = "#059669" if is_healthy else "#dc2626"
-            emoji_map = {"potato": "🥔", "tomato": "🍅", "pepper": "🫑", "corn": "🌽"}
-            st.markdown(f"""
-            <div style="background:white;border-radius:14px;padding:16px 20px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.04);border-left:4px solid {color};display:flex;align-items:center;justify-content:space-between;">
-                <div style="display:flex;align-items:center;gap:12px;">
-                    <span style="font-size:1.6rem;">{emoji_map.get(crop,'🌿')}</span>
-                    <div>
-                        <div style="font-weight:700;color:#064e3b;">{disease}</div>
-                        <div style="font-size:0.75rem;color:#6b7280;">{crop.title()} · {date}</div>
-                    </div>
-                </div>
-                <div style="background:{'#d1fae5' if is_healthy else '#fee2e2'};color:{color};padding:4px 14px;border-radius:20px;font-weight:700;font-size:0.82rem;">
-                    {conf:.0f}%
-                </div>
-            </div>""", unsafe_allow_html=True)
+            crop = s.get("crop_type", "unknown")
+            disease = s.get("predicted_disease", "Unknown")
+            conf = float(s.get("confidence") or 0)
+            date = str(s.get("created_at", ""))[:16]
+            ok = "healthy" in disease.lower()
+            color = "#059669" if ok else "#dc2626"
+            st.markdown(f"**{emoji_map.get(crop,'🌿')} {disease}** — {crop.title()} · {date} · **{conf:.0f}%**")
     else:
-        st.info("📭 Koi scan history nahi hai.")
+        st.info("Koi scan history nahi.")
+
+
+def render_premium_page():
+    profile = fetch_user_profile()
+    is_premium = profile and profile.get("is_premium")
+    headers = {"Authorization": f"Bearer {st.session_state.token}"}
+
+    st.markdown("## 👑 Plant Doctor Premium")
+    if is_premium:
+        st.success(f"Premium active until {str(profile.get('premium_until',''))[:10]}")
+        st.balloons()
+        return
+
+    st.markdown("| Feature | Free | Premium |\n|---------|------|---------|\n| Scans | Limited | Unlimited |\n| Expert | Normal | Priority |\n| Charts | Basic | Full |")
+
+    try:
+        resp = requests.post(f"{API_URL}/payments/create-checkout", headers=headers, timeout=15)
+        if resp.status_code == 200:
+            st.link_button("🚀 Upgrade with Stripe", resp.json()["checkout_url"], type="primary")
+        elif resp.status_code == 503:
+            st.warning("Stripe keys Railway par set karein: STRIPE_SECRET_KEY, STRIPE_PRICE_ID")
+        else:
+            st.error(resp.json().get("detail", "Error"))
+    except Exception as e:
+        st.error(str(e))
+
+    with st.expander("✉️ Email verify kaise set karein?"):
+        st.markdown("""
+**Gmail (recommended):** Railway Variables → `SMTP_EMAIL` + `SMTP_PASSWORD` (App Password)
+
+**Resend:** `RESEND_API_KEY` set karein
+
+**Kuch nahi set?** Register ke baad bina email ke login (auto-verify)
+        """)
+
 
 
 # ==============================================================================
@@ -2878,6 +2971,10 @@ elif nav == "👤 My Profile":
 elif nav == "📊 Dashboard":
     render_persistent_header()
     render_dashboard_page()
+
+elif nav == "👑 Premium":
+    render_persistent_header()
+    render_premium_page()
 
 
 # ===================== EXPERT CHAT PAGE =====================
