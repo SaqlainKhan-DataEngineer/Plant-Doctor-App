@@ -273,7 +273,23 @@ def logout():
     st.query_params.clear()  # 🔥 URL se bhi clear karo
     st.rerun()
 
-def save_scan_to_backend(uploaded_file, crop_key, disease, confidence):
+def fetch_disease_from_kb(crop, disease_label):
+    """Backend disease knowledge base se ilaaj lao"""
+    try:
+        disease_name = disease_label.replace("_", " ").strip()
+        resp = requests.get(
+            f"{API_URL}/diseases",
+            params={"crop": crop, "disease": disease_name},
+            timeout=5,
+        )
+        if resp.status_code == 200:
+            return resp.json()
+    except Exception:
+        pass
+    return None
+
+
+def save_scan_to_backend(uploaded_file, crop_key, disease, confidence, ai_advice=None):
     """Scan ko backend/database mein save karo"""
     if not st.session_state.token:
         return False, "Login required"
@@ -282,26 +298,32 @@ def save_scan_to_backend(uploaded_file, crop_key, disease, confidence):
         headers = {"Authorization": f"Bearer {st.session_state.token}"}
         
         files = {"image": ("scan.jpg", uploaded_file.getvalue(), "image/jpeg")}
-        scan_info = {
+        data = {
             "crop": crop_key,
             "disease": disease,
-            "confidence": float(confidence)
+            "confidence": str(float(confidence)),
         }
+        if ai_advice:
+            data["ai_advice"] = ai_advice
         
         response = requests.post(
             f"{API_URL}/scans",
             headers=headers,
             files=files,
-            params=scan_info,  # <--- AAHM CHANGE: 'data' ki jagah 'params' lagaya hai
-            timeout=10
+            data=data,
+            timeout=15,
         )
         
         if response.status_code == 200:
             return True, response.json().get("scan_id")
-        else:
-            return False, response.json().get("detail", "Save failed")
+        try:
+            detail = response.json().get("detail", "Save failed")
+        except Exception:
+            detail = response.text or f"HTTP {response.status_code}"
+        return False, detail
     except Exception as e:
-        return False, str(e) 
+        return False, str(e)
+
 
 def get_scan_history():
     """Database se scan history lao"""
@@ -313,14 +335,35 @@ def get_scan_history():
         response = requests.get(
             f"{API_URL}/scans/history",
             headers=headers,
-            timeout=5
+            timeout=10,
         )
         
         if response.status_code == 200:
             return response.json().get("scans", [])
+        if "api_error" not in st.session_state:
+            try:
+                err = response.json().get("detail", response.text)
+            except Exception:
+                err = response.text
+            st.session_state.api_error = f"History load failed ({response.status_code}): {err}"
         return []
-    except:
+    except Exception as e:
+        st.session_state.api_error = f"Backend connect error: {e}"
         return []
+
+
+def get_user_stats_api():
+    """Dashboard stats from API"""
+    if not st.session_state.token:
+        return None
+    try:
+        headers = {"Authorization": f"Bearer {st.session_state.token}"}
+        resp = requests.get(f"{API_URL}/scans/stats", headers=headers, timeout=10)
+        if resp.status_code == 200:
+            return resp.json()
+        return None
+    except Exception:
+        return None
 
 # ==============================================================================
 # 🔥 AUTH CHECK - Agar login nahi hai toh auth page dikhao
@@ -392,7 +435,7 @@ CROP_CONFIG = {
         "diseases": 9,
         "nav_key": "🍅 Tomato Check",
         "uploader_label": "Upload Tomato Leaf Photo / ٹماٹر کا پتہ اپلوڈ کریں",
-        "model_missing_msg": "⚠️ **Tomato Model File Missing!** Please ensure `tomato_disease_model_9_classes.pkl` is in the project directory.",
+        "model_missing_msg": "⚠️ **Tomato Model File Missing!** Please ensure `tomato_disease_model_v3.pkl` is in the project directory.",
         "header_title": "Tomato Disease Scan | ٹماٹر کی بیماری",
         "header_sub": "Random Forest · HOG + LBP + GLCM + Color · 95% Accuracy · 9 Classes",
     },
@@ -1462,6 +1505,9 @@ if st.sidebar.button("🚪 Logout", use_container_width=True):
 st.sidebar.write("---")
 st.sidebar.markdown("<p style='font-size:0.75rem;opacity:0.7;text-transform:uppercase;letter-spacing:1px;font-weight:700;'>📊 Scan History</p>", unsafe_allow_html=True)
 
+if st.session_state.get("api_error"):
+    st.sidebar.warning(st.session_state.api_error[:120])
+
 history_scans = get_scan_history()
 
 if history_scans:
@@ -1635,6 +1681,17 @@ def render_report(label, conf, prob_dict, urdu_name, local_name, crop_name, time
     return is_healthy, sev
 
 def render_treatment(label, is_healthy, crop="potato"):
+    kb = fetch_disease_from_kb(crop, label)
+    if kb:
+        sev = kb.get("severity_level", 3)
+        st.markdown(f"### Disease Guide: {kb.get('disease_name', label)}")
+        st.markdown(f"**Symptoms:** {kb.get('symptoms', 'N/A')}")
+        st.markdown(f"**Chemical:** {kb.get('chemical_treatment', 'N/A')}")
+        st.markdown(f"**Organic:** {kb.get('organic_treatment', 'N/A')}")
+        st.markdown(f"**Prevention:** {kb.get('prevention', 'N/A')}")
+        return
+
+
     if is_healthy:
         st.markdown("""
         <div class="treatment-section">
@@ -1869,7 +1926,7 @@ def show_result(result, crop_key, config):
     """Render report + AI treatment from a result dict. Used by both pages."""
     if result['conf'] < 46:
         show_low_confidence_warning()
-        return
+        return None
         
     ts = datetime.datetime.now().strftime("%d %b %Y · %H:%M")
     urdu_name = config['urdu_names'].get(result['label'], result['label'])
@@ -1896,6 +1953,9 @@ def show_result(result, crop_key, config):
         
     # AI ka jawab ek khoobsurat green box mein show hoga
     st.info(ai_advice)
+
+    render_treatment(result['label'], is_healthy, crop_key)
+    return ai_advice
 
 
 def render_crop_page(crop_key):
@@ -1950,7 +2010,7 @@ def render_crop_page(crop_key):
             with st.spinner("🔬 Extracting features & running diagnostics..."):
                 result = analyze_image(uploaded_file, crop_key)
         if result:
-            show_result(result, crop_key, config)
+            ai_advice = show_result(result, crop_key, config)
             
             # ==============================================================================
             # 🔥 SCAN SAVE KARO (NEW - Single file scan ke baad)
@@ -1960,13 +2020,15 @@ def render_crop_page(crop_key):
                     uploaded_file, 
                     crop_key, 
                     result['label'], 
-                    result['conf']
+                    result['conf'],
+                    ai_advice=ai_advice,
                 )
                 
                 if success:
-                    st.toast(f"Scan saved to history!", icon="💾")
+                    st.success("Scan history mein save ho gaya!")
+                    st.rerun()
                 else:
-                    st.toast(f"Scan save error: {msg}", icon="⚠️")
+                    st.error(f"Scan save nahi hua: {msg}")
 
     # Multiple files — compact batch results table
     else:
@@ -2045,9 +2107,14 @@ if 'view_history_detail' in st.session_state and st.session_state['view_history_
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("<h3 style='color:#064e3b;font-weight:800;'>👨‍⚕️ AI Doctor Ka Purana Mashwara</h3>", unsafe_allow_html=True)
     
-    with st.spinner('Puraana nuskha nikal raha hoon...'):
-        ai_advice = get_ai_doctor_advice(disease)
-    st.info(ai_advice)
+    saved_advice = scan.get('ai_advice')
+    if saved_advice:
+        st.info(saved_advice)
+    else:
+        with st.spinner('Puraana nuskha nikal raha hoon...'):
+            ai_advice = get_ai_doctor_advice(disease)
+        st.info(ai_advice)
+    render_treatment(disease, 'healthy' in disease.lower(), crop_key)
     
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("""
@@ -2177,18 +2244,18 @@ def render_dashboard_page():
     </div>
     """, unsafe_allow_html=True)
 
-    # Fetch stats
-    stats = None
-    try:
-        headers = {"Authorization": f"Bearer {st.session_state.token}"}
-        resp = requests.get(f"{API_URL}/scans/stats", headers=headers, timeout=5)
-        if resp.status_code == 200:
-            stats = resp.json()
-    except:
-        pass
+    stats = get_user_stats_api()
 
     if not stats:
-        st.info("📭 Abhi tak koi scan nahi kiya. Pehle ek crop scan karein!")
+        history = get_scan_history()
+        if history:
+            st.warning("Scans database mein hain lekin stats load nahi hui. Backend redeploy karein.")
+        else:
+            api_err = st.session_state.pop("api_error", None)
+            if api_err:
+                st.error(api_err)
+            else:
+                st.info("Abhi tak koi scan nahi kiya. Pehle ek crop scan karein!")
         return
 
     # Stats cards
@@ -2295,18 +2362,28 @@ def render_admin_page():
     # Fetch admin stats
     stats = None
     try:
-        resp = requests.get(f"{API_URL}/admin/stats", headers=headers, timeout=5)
+        resp = requests.get(f"{API_URL}/admin/stats", headers=headers, timeout=15)
         if resp.status_code == 200:
             stats = resp.json()
         elif resp.status_code == 403:
-            st.error("🚫 Admin access required!")
+            st.error("🚫 Admin access required! Dobara login karein — JWT mein purana role ho sakta hai.")
             return
-    except:
-        st.error("❌ Backend se connect nahi ho saka!")
+        elif resp.status_code == 401:
+            st.error("🔑 Session expire ho gaya. Logout karke dubara login karein.")
+            return
+        else:
+            try:
+                detail = resp.json().get("detail", resp.text)
+            except Exception:
+                detail = resp.text
+            st.error(f"❌ Stats load nahi hui (HTTP {resp.status_code}): {detail}")
+            return
+    except requests.exceptions.RequestException as e:
+        st.error(f"❌ Backend se connect nahi ho saka: {e}")
         return
 
     if not stats:
-        st.warning("Stats load nahi hui.")
+        st.warning("Stats load nahi hui — koi data nahi aaya.")
         return
 
     # Stats cards
@@ -2559,7 +2636,7 @@ if nav == "🏠 Home Page":
         with st.spinner("🔬 Analyzing..."):
             result = analyze_image(uploaded_file, detected_crop)
         if result:
-            show_result(result, detected_crop, CROP_CONFIG[detected_crop])
+            ai_advice = show_result(result, detected_crop, CROP_CONFIG[detected_crop])
             # ==============================================================================
             # 🔥 UNIVERSAL SCAN SAVE (NEW)
             # ==============================================================================
@@ -2568,12 +2645,14 @@ if nav == "🏠 Home Page":
                     uploaded_file, 
                     detected_crop, 
                     result['label'], 
-                    result['conf']
+                    result['conf'],
+                    ai_advice=ai_advice,
                 )
                 if success:
-                    st.toast(f"Scan saved to history!", icon="💾")
+                    st.success("Scan history mein save ho gaya!")
+                    st.rerun()
                 else:
-                    st.toast(f"Scan save error: {msg}", icon="⚠️")
+                    st.error(f"Scan save nahi hua: {msg}")
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align:center;color:#064e3b;font-weight:900;font-size:2rem;margin-bottom:6px;'>Supported Crops | Faslain</h2>", unsafe_allow_html=True)

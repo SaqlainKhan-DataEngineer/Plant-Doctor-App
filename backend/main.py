@@ -3,9 +3,10 @@ try:
 except ImportError:
     pyodbc = None
 
-from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Query
+from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Query, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -15,6 +16,8 @@ import bcrypt
 import uuid
 import os
 import datetime
+import base64
+import re
 
 # ==============================================================================
 # APP SETUP
@@ -31,10 +34,15 @@ pwa_dir = os.path.join(os.path.dirname(__file__), "pwa")
 if os.path.exists(pwa_dir):
     app.mount("/pwa", StaticFiles(directory=pwa_dir, html=True), name="pwa")
 
-# CORS — Streamlit aur kisi bhi frontend se requests allow
+# CORS — production Streamlit + local dev (override via CORS_ORIGINS env)
+_cors_raw = os.getenv(
+    "CORS_ORIGINS",
+    "https://plantdoctorapp.streamlit.app,http://localhost:8501,http://127.0.0.1:8501",
+)
+CORS_ORIGINS = [o.strip() for o in _cors_raw.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -51,29 +59,57 @@ SQL_SERVER_CONFIG = {
     "driver": "{ODBC Driver 17 for SQL Server}"
 }
 
-SECRET_KEY = "plantdoctor-secret-key-2026-startup"
+SECRET_KEY = os.getenv("JWT_SECRET") or os.getenv("SECRET_KEY") or "plantdoctor-secret-key-2026-startup"
+JWT_EXPIRE_DAYS = int(os.getenv("JWT_EXPIRE_DAYS", "7"))
 security = HTTPBearer()
+
+UPLOADS_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOADS_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 class MySQLCursorWrapper:
     """Wrapper to automatically convert ? to %s for MySQL queries"""
     def __init__(self, cursor):
         self.cursor = cursor
-    
-    def execute(self, query, *args):
-        # Convert ? to %s for PyMySQL
+
+    def _translate(self, query: str) -> str:
         mysql_query = query.replace("?", "%s")
-        # In PyMySQL, execute expects args as a tuple
+        mysql_query = mysql_query.replace("GETDATE()", "CURRENT_TIMESTAMP")
+        mysql_query = mysql_query.replace(
+            "CAST(created_at AS DATE) = CAST(CURRENT_TIMESTAMP AS DATE)",
+            "DATE(created_at) = CURDATE()",
+        )
+        mysql_query = mysql_query.replace("CAST(CURRENT_TIMESTAMP AS DATE)", "CURDATE()")
+        mysql_query = mysql_query.replace(
+            "DATEADD(day, -7, GETDATE())", "DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 7 DAY)"
+        )
+        mysql_query = mysql_query.replace(
+            "DATEADD(day, -7, CURRENT_TIMESTAMP)", "DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 7 DAY)"
+        )
+        top_match = re.search(r"SELECT\s+TOP\s+(\d+)\s+", mysql_query, re.IGNORECASE)
+        if top_match:
+            limit_val = top_match.group(1)
+            mysql_query = re.sub(r"SELECT\s+TOP\s+\d+\s+", "SELECT ", mysql_query, flags=re.IGNORECASE)
+            if not re.search(r"\bLIMIT\s+\d+\s*$", mysql_query.strip(), re.IGNORECASE):
+                mysql_query = f"{mysql_query.rstrip()} LIMIT {limit_val}"
+        return mysql_query
+
+    def execute(self, query, *args):
+        mysql_query = self._translate(query)
         return self.cursor.execute(mysql_query, args if args else None)
-        
+
     def fetchone(self):
         return self.cursor.fetchone()
-        
+
     def fetchall(self):
         return self.cursor.fetchall()
-        
+
     def executemany(self, query, args):
-        mysql_query = query.replace("?", "%s")
+        mysql_query = self._translate(query)
         return self.cursor.executemany(mysql_query, args)
+
+    def __getattr__(self, name):
+        return getattr(self.cursor, name)
 
 # ==============================================================================
 # DB CONNECTION — Context Manager (auto close, no leaks)
@@ -162,6 +198,7 @@ def create_tables():
                         predicted_disease VARCHAR(100),
                         confidence FLOAT,
                         ai_advice TEXT,
+                        image_data MEDIUMTEXT NULL,
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                     )
@@ -221,6 +258,7 @@ def create_tables():
                         predicted_disease NVARCHAR(100),
                         confidence FLOAT,
                         ai_advice NVARCHAR(MAX),
+                        image_data NVARCHAR(MAX) NULL,
                         created_at DATETIME DEFAULT GETDATE(),
                         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                     )
@@ -311,6 +349,16 @@ def create_tables():
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, diseases_data)
                 
+            # Persistent scan images (Railway / cloud)
+            try:
+                if is_mysql:
+                    cursor.execute("ALTER TABLE scans ADD COLUMN image_data MEDIUMTEXT NULL")
+                else:
+                    cursor.execute("ALTER TABLE scans ADD image_data NVARCHAR(MAX) NULL")
+                conn.commit()
+            except Exception:
+                pass
+
             conn.commit()
             print("[SUCCESS] Database tables ready & seeded!")
     except Exception as e:
@@ -366,11 +414,13 @@ def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
 def create_token(user_id: str, role: str, email: str) -> str:
-    return jwt.encode(
-        {"user_id": user_id, "role": role, "email": email},
+    exp = datetime.datetime.utcnow() + datetime.timedelta(days=JWT_EXPIRE_DAYS)
+    token = jwt.encode(
+        {"user_id": user_id, "role": role, "email": email, "exp": exp},
         SECRET_KEY,
-        algorithm="HS256"
+        algorithm="HS256",
     )
+    return token if isinstance(token, str) else token.decode("utf-8")
 
 import smtplib
 from email.mime.text import MIMEText
@@ -637,99 +687,210 @@ def change_password(data: PasswordChange, user=Depends(verify_token)):
 # ==============================================================================
 
 @app.post("/api/scans")
-def save_scan(crop: str, disease: str, confidence: float,
-              image: UploadFile = File(...), user=Depends(verify_token)):
-    """Scan result save karo database mein"""
-    # Ensure uploads directory exists
-    user_dir = f"uploads/{user['user_id']}"
-    os.makedirs(user_dir, exist_ok=True)
+async def save_scan(
+    request: Request,
+    image: UploadFile = File(...),
+    user=Depends(verify_token),
+):
+    """Scan save — supports form fields (new app) and query params (old app)."""
+    form = await request.form()
+    crop = form.get("crop") or request.query_params.get("crop")
+    disease = form.get("disease") or request.query_params.get("disease")
+    conf_raw = form.get("confidence") or request.query_params.get("confidence")
+    ai_advice = form.get("ai_advice") or request.query_params.get("ai_advice")
+    if not crop or not disease or conf_raw is None:
+        raise HTTPException(status_code=422, detail="crop, disease, and confidence are required")
+    try:
+        confidence = float(conf_raw)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=422, detail="confidence must be a number")
 
-    # Save image
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{crop}_{timestamp}_{image.filename}"
-    image_path = f"{user_dir}/{filename}"
-    with open(image_path, "wb") as f:
-        f.write(image.file.read())
+    image_bytes = await image.read()
+    if len(image_bytes) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image size must be under 5MB")
 
-    # Save to database
     scan_id = str(uuid.uuid4())
+    image_b64 = base64.b64encode(image_bytes).decode("ascii")
+    image_url = f"/api/scans/{scan_id}/image"
+
+    user_dir = os.path.join(UPLOADS_DIR, user["user_id"])
+    os.makedirs(user_dir, exist_ok=True)
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{crop}_{timestamp}_{image.filename or 'scan.jpg'}"
+    with open(os.path.join(user_dir, filename), "wb") as f:
+        f.write(image_bytes)
+
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO scans (id, user_id, crop_type, image_url, predicted_disease, confidence)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, scan_id, user['user_id'], crop, image_path, disease, confidence)
+        try:
+            cursor.execute(
+                """
+                INSERT INTO scans (id, user_id, crop_type, image_url, predicted_disease, confidence, ai_advice, image_data)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+                scan_id,
+                user["user_id"],
+                crop,
+                image_url,
+                disease,
+                confidence,
+                ai_advice,
+                image_b64,
+            )
+        except Exception:
+            cursor.execute(
+                """
+                INSERT INTO scans (id, user_id, crop_type, image_url, predicted_disease, confidence)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """,
+                scan_id,
+                user["user_id"],
+                crop,
+                image_url,
+                disease,
+                confidence,
+            )
         conn.commit()
 
-    return {"message": "Scan saved", "scan_id": scan_id}
+    return {"message": "Scan saved", "scan_id": scan_id, "image_url": image_url}
+
+
+@app.get("/api/scans/{scan_id}/image")
+def get_scan_image(scan_id: str, user=Depends(verify_token)):
+    """Scan image — DB (cloud) ya local file se"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT user_id, image_data, image_url FROM scans WHERE id = ?",
+            scan_id,
+        )
+        row = cursor.fetchone()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    if str(row[0]) != user["user_id"] and user.get("role", "").lower() != "admin":
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if row[1]:
+        try:
+            return Response(content=base64.b64decode(row[1]), media_type="image/jpeg")
+        except Exception:
+            raise HTTPException(status_code=500, detail="Could not decode image")
+
+    stored_path = row[2] or ""
+    if os.path.isfile(stored_path):
+        with open(stored_path, "rb") as f:
+            return Response(content=f.read(), media_type="image/jpeg")
+
+    raise HTTPException(status_code=404, detail="Image not found")
+
+
+def _row_to_scan(row):
+    """Build scan dict without relying on cursor.description (MySQL wrapper safe)."""
+    return {
+        "id": str(row[0]),
+        "crop_type": row[1],
+        "image_url": row[2],
+        "predicted_disease": row[3],
+        "confidence": float(row[4]) if row[4] is not None else 0,
+        "created_at": str(row[5]) if row[5] else None,
+        "ai_advice": row[6] if len(row) > 6 else None,
+    }
 
 
 @app.get("/api/scans/history")
 def get_history(user=Depends(verify_token)):
     """Current user ki scan history"""
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT id, crop_type, image_url, predicted_disease, confidence, created_at
-            FROM scans WHERE user_id = ? ORDER BY created_at DESC
-        """, user['user_id'])
-
-        columns = [column[0] for column in cursor.description]
-        scans = []
-        for row in cursor.fetchall():
-            scan = dict(zip(columns, row))
-            # Convert UUID and datetime to strings
-            scan['id'] = str(scan['id'])
-            scan['created_at'] = str(scan['created_at']) if scan['created_at'] else None
-            scans.append(scan)
-
-    return {"scans": scans}
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            try:
+                cursor.execute(
+                    """
+                    SELECT id, crop_type, image_url, predicted_disease, confidence, created_at, ai_advice
+                    FROM scans WHERE user_id = ? ORDER BY created_at DESC
+                """,
+                    user["user_id"],
+                )
+            except Exception:
+                cursor.execute(
+                    """
+                    SELECT id, crop_type, image_url, predicted_disease, confidence, created_at
+                    FROM scans WHERE user_id = ? ORDER BY created_at DESC
+                """,
+                    user["user_id"],
+                )
+            scans = [_row_to_scan(row) for row in cursor.fetchall()]
+        return {"scans": scans}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"History error: {e}")
 
 
 @app.get("/api/scans/stats")
 def get_user_stats(user=Depends(verify_token)):
     """Current user ke scan statistics"""
-    with get_db() as conn:
-        cursor = conn.cursor()
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            is_mysql = getattr(conn, "_is_mysql", False)
 
-        # Total scans
-        cursor.execute("SELECT COUNT(*) FROM scans WHERE user_id = ?", user['user_id'])
-        total_scans = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM scans WHERE user_id = ?", user["user_id"])
+            total_scans = cursor.fetchone()[0]
 
-        # Crop-wise breakdown
-        cursor.execute("""
-            SELECT crop_type, COUNT(*) as count
-            FROM scans WHERE user_id = ?
-            GROUP BY crop_type
-        """, user['user_id'])
-        crop_breakdown = {row[0]: row[1] for row in cursor.fetchall()}
+            cursor.execute(
+                """
+                SELECT crop_type, COUNT(*) as count
+                FROM scans WHERE user_id = ?
+                GROUP BY crop_type
+            """,
+                user["user_id"],
+            )
+            crop_breakdown = {row[0]: row[1] for row in cursor.fetchall()}
 
-        # Disease count (excluding healthy)
-        cursor.execute("""
-            SELECT COUNT(*) FROM scans 
-            WHERE user_id = ? AND predicted_disease NOT LIKE '%Healthy%'
-        """, user['user_id'])
-        disease_count = cursor.fetchone()[0]
+            cursor.execute(
+                """
+                SELECT COUNT(*) FROM scans
+                WHERE user_id = ? AND predicted_disease NOT LIKE '%Healthy%'
+            """,
+                user["user_id"],
+            )
+            disease_count = cursor.fetchone()[0]
 
-        # Recent 7 days scan count
-        cursor.execute("""
-            SELECT COUNT(*) FROM scans 
-            WHERE user_id = ? AND created_at >= DATEADD(day, -7, GETDATE())
-        """, user['user_id'])
-        weekly_scans = cursor.fetchone()[0]
+            if is_mysql:
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) FROM scans
+                    WHERE user_id = ? AND created_at >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 7 DAY)
+                """,
+                    user["user_id"],
+                )
+            else:
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) FROM scans
+                    WHERE user_id = ? AND created_at >= DATEADD(day, -7, GETDATE())
+                """,
+                    user["user_id"],
+                )
+            weekly_scans = cursor.fetchone()[0]
 
-        # Average confidence
-        cursor.execute("SELECT AVG(confidence) FROM scans WHERE user_id = ?", user['user_id'])
-        avg_conf = cursor.fetchone()[0]
+            cursor.execute("SELECT AVG(confidence) FROM scans WHERE user_id = ?", user["user_id"])
+            avg_conf = cursor.fetchone()[0]
 
-    return {
-        "total_scans": total_scans,
-        "crop_breakdown": crop_breakdown,
-        "disease_count": disease_count,
-        "healthy_count": total_scans - disease_count,
-        "weekly_scans": weekly_scans,
-        "avg_confidence": round(float(avg_conf), 1) if avg_conf else 0
-    }
+        return {
+            "total_scans": total_scans,
+            "crop_breakdown": crop_breakdown,
+            "disease_count": disease_count,
+            "healthy_count": total_scans - disease_count,
+            "weekly_scans": weekly_scans,
+            "avg_confidence": round(float(avg_conf), 1) if avg_conf else 0,
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Stats error: {e}")
 
 
 # ==============================================================================
@@ -816,66 +977,157 @@ def reply_consultation(consult_id: str, data: ConsultationReply, user=Depends(ve
 # ADMIN APIs (admin role only)
 # ==============================================================================
 
+@app.get("/api/diseases")
+def get_diseases(
+    crop: Optional[str] = None,
+    disease: Optional[str] = None,
+):
+    """Disease knowledge base — symptoms & treatments (18 diseases seeded on startup)"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        if crop and disease:
+            d = disease.strip()
+            cursor.execute(
+                """
+                SELECT crop, disease_name, symptoms, causes, chemical_treatment,
+                       organic_treatment, prevention, severity_level
+                FROM diseases
+                WHERE LOWER(crop) = LOWER(?)
+                  AND (LOWER(disease_name) = LOWER(?)
+                       OR LOWER(?) LIKE CONCAT('%', LOWER(disease_name), '%'))
+            """,
+                crop.strip(),
+                d,
+                d,
+            )
+            row = cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Disease not found")
+            return {
+                "crop": row[0],
+                "disease_name": row[1],
+                "symptoms": row[2],
+                "causes": row[3],
+                "chemical_treatment": row[4],
+                "organic_treatment": row[5],
+                "prevention": row[6],
+                "severity_level": row[7],
+            }
+
+        if crop:
+            cursor.execute(
+                """
+                SELECT crop, disease_name, symptoms, causes, chemical_treatment,
+                       organic_treatment, prevention, severity_level
+                FROM diseases WHERE LOWER(crop) = LOWER(?)
+                ORDER BY severity_level DESC, disease_name
+            """,
+                crop.strip(),
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT crop, disease_name, symptoms, causes, chemical_treatment,
+                       organic_treatment, prevention, severity_level
+                FROM diseases ORDER BY crop, disease_name
+            """
+            )
+
+        diseases = []
+        for row in cursor.fetchall():
+            diseases.append({
+                "crop": row[0],
+                "disease_name": row[1],
+                "symptoms": row[2],
+                "causes": row[3],
+                "chemical_treatment": row[4],
+                "organic_treatment": row[5],
+                "prevention": row[6],
+                "severity_level": row[7],
+            })
+
+    return {"diseases": diseases, "count": len(diseases)}
+
+
 @app.get("/api/admin/stats")
 def admin_stats(user=Depends(require_admin)):
     """Admin dashboard — overall platform stats"""
-    with get_db() as conn:
-        cursor = conn.cursor()
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            is_mysql = getattr(conn, "_is_mysql", False)
 
-        # Total users
-        cursor.execute("SELECT COUNT(*) FROM users")
-        total_users = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM users")
+            total_users = cursor.fetchone()[0]
 
-        # Total scans
-        cursor.execute("SELECT COUNT(*) FROM scans")
-        total_scans = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM scans")
+            total_scans = cursor.fetchone()[0]
 
-        # Today's scans
-        cursor.execute("""
-            SELECT COUNT(*) FROM scans 
-            WHERE CAST(created_at AS DATE) = CAST(GETDATE() AS DATE)
-        """)
-        today_scans = cursor.fetchone()[0]
+            if is_mysql:
+                cursor.execute(
+                    "SELECT COUNT(*) FROM scans WHERE DATE(created_at) = CURDATE()"
+                )
+            else:
+                cursor.execute("""
+                    SELECT COUNT(*) FROM scans
+                    WHERE CAST(created_at AS DATE) = CAST(GETDATE() AS DATE)
+                """)
+            today_scans = cursor.fetchone()[0]
 
-        # Users by role
-        cursor.execute("SELECT role, COUNT(*) FROM users GROUP BY role")
-        roles = {row[0]: row[1] for row in cursor.fetchall()}
+            cursor.execute("SELECT role, COUNT(*) FROM users GROUP BY role")
+            roles = {row[0]: row[1] for row in cursor.fetchall()}
 
-        # Scans by crop
-        cursor.execute("SELECT crop_type, COUNT(*) FROM scans GROUP BY crop_type")
-        crops = {row[0]: row[1] for row in cursor.fetchall()}
+            cursor.execute("SELECT crop_type, COUNT(*) FROM scans GROUP BY crop_type")
+            crops = {row[0]: row[1] for row in cursor.fetchall()}
 
-        # Top diseases
-        cursor.execute("""
-            SELECT TOP 5 predicted_disease, COUNT(*) as cnt 
-            FROM scans 
-            WHERE predicted_disease NOT LIKE '%Healthy%'
-            GROUP BY predicted_disease 
-            ORDER BY cnt DESC
-        """)
-        top_diseases = {row[0]: row[1] for row in cursor.fetchall()}
+            if is_mysql:
+                cursor.execute("""
+                    SELECT predicted_disease, COUNT(*) as cnt
+                    FROM scans
+                    WHERE predicted_disease NOT LIKE '%Healthy%'
+                    GROUP BY predicted_disease
+                    ORDER BY cnt DESC
+                    LIMIT 5
+                """)
+            else:
+                cursor.execute("""
+                    SELECT TOP 5 predicted_disease, COUNT(*) as cnt
+                    FROM scans
+                    WHERE predicted_disease NOT LIKE '%Healthy%'
+                    GROUP BY predicted_disease
+                    ORDER BY cnt DESC
+                """)
+            top_diseases = {row[0]: row[1] for row in cursor.fetchall()}
 
-        # Weekly new users
-        cursor.execute("""
-            SELECT COUNT(*) FROM users 
-            WHERE created_at >= DATEADD(day, -7, GETDATE())
-        """)
-        weekly_users = cursor.fetchone()[0]
+            if is_mysql:
+                cursor.execute("""
+                    SELECT COUNT(*) FROM users
+                    WHERE created_at >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 7 DAY)
+                """)
+            else:
+                cursor.execute("""
+                    SELECT COUNT(*) FROM users
+                    WHERE created_at >= DATEADD(day, -7, GETDATE())
+                """)
+            weekly_users = cursor.fetchone()[0]
 
-        # Pending consultations
-        cursor.execute("SELECT COUNT(*) FROM consultations WHERE status = 'pending'")
-        pending_consults = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM consultations WHERE status = 'pending'")
+            pending_consults = cursor.fetchone()[0]
 
-    return {
-        "total_users": total_users,
-        "total_scans": total_scans,
-        "today_scans": today_scans,
-        "weekly_new_users": weekly_users,
-        "users_by_role": roles,
-        "scans_by_crop": crops,
-        "top_diseases": top_diseases,
-        "pending_consultations": pending_consults
-    }
+        return {
+            "total_users": total_users,
+            "total_scans": total_scans,
+            "today_scans": today_scans,
+            "weekly_new_users": weekly_users,
+            "users_by_role": roles,
+            "scans_by_crop": crops,
+            "top_diseases": top_diseases,
+            "pending_consultations": pending_consults,
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Admin stats error: {e}")
 
 
 @app.get("/api/admin/users")
@@ -941,24 +1193,46 @@ def admin_get_scans(
     """All scans for admin — with optional crop filter"""
     with get_db() as conn:
         cursor = conn.cursor()
+        is_mysql = getattr(conn, "_is_mysql", False)
 
         if crop:
-            cursor.execute(f"""
-                SELECT TOP {limit} s.id, s.crop_type, s.predicted_disease, s.confidence, 
-                       s.created_at, u.full_name, u.email
-                FROM scans s
-                JOIN users u ON s.user_id = u.id
-                WHERE s.crop_type = ?
-                ORDER BY s.created_at DESC
-            """, crop)
+            if is_mysql:
+                cursor.execute(f"""
+                    SELECT s.id, s.crop_type, s.predicted_disease, s.confidence,
+                           s.created_at, u.full_name, u.email
+                    FROM scans s
+                    JOIN users u ON s.user_id = u.id
+                    WHERE s.crop_type = %s
+                    ORDER BY s.created_at DESC
+                    LIMIT %s
+                """, (crop, limit))
+            else:
+                cursor.execute(f"""
+                    SELECT TOP {limit} s.id, s.crop_type, s.predicted_disease, s.confidence,
+                           s.created_at, u.full_name, u.email
+                    FROM scans s
+                    JOIN users u ON s.user_id = u.id
+                    WHERE s.crop_type = ?
+                    ORDER BY s.created_at DESC
+                """, crop)
         else:
-            cursor.execute(f"""
-                SELECT TOP {limit} s.id, s.crop_type, s.predicted_disease, s.confidence,
-                       s.created_at, u.full_name, u.email
-                FROM scans s
-                JOIN users u ON s.user_id = u.id
-                ORDER BY s.created_at DESC
-            """)
+            if is_mysql:
+                cursor.execute(f"""
+                    SELECT s.id, s.crop_type, s.predicted_disease, s.confidence,
+                           s.created_at, u.full_name, u.email
+                    FROM scans s
+                    JOIN users u ON s.user_id = u.id
+                    ORDER BY s.created_at DESC
+                    LIMIT %s
+                """, (limit,))
+            else:
+                cursor.execute(f"""
+                    SELECT TOP {limit} s.id, s.crop_type, s.predicted_disease, s.confidence,
+                           s.created_at, u.full_name, u.email
+                    FROM scans s
+                    JOIN users u ON s.user_id = u.id
+                    ORDER BY s.created_at DESC
+                """)
 
         columns = [col[0] for col in cursor.description]
         scans = []
