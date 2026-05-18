@@ -19,6 +19,12 @@ import datetime
 import base64
 import re
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+from image_utils import compress_image_bytes
+
 # ==============================================================================
 # APP SETUP
 # ==============================================================================
@@ -27,6 +33,13 @@ app = FastAPI(
     description="Pakistani Kisanon Ka AI Doctor — Backend API",
     version="2.0.0"
 )
+
+limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+APP_BASE_URL = os.getenv("APP_BASE_URL", "https://plantdoctorapp.streamlit.app")
+REQUIRE_EMAIL_VERIFY = os.getenv("REQUIRE_EMAIL_VERIFY", "true").lower() in ("1", "true", "yes")
 
 # Mount PWA static files
 import os
@@ -134,7 +147,11 @@ def get_db():
             )
             is_mysql = True
         else:
-            # Connect to Local SQL Server
+            if pyodbc is None:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Database not configured. Set DATABASE_URL (MySQL) or install pyodbc for SQL Server.",
+                )
             conn_str = (
                 f"DRIVER={SQL_SERVER_CONFIG['driver']};"
                 f"SERVER={SQL_SERVER_CONFIG['server']};"
@@ -309,6 +326,20 @@ def create_tables():
             except Exception:
                 pass  # Columns already exist or error, just ignore
 
+            # Email verification columns
+            try:
+                if is_mysql:
+                    cursor.execute("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT 1")
+                    cursor.execute("ALTER TABLE users ADD COLUMN verification_token VARCHAR(255) NULL")
+                    cursor.execute("ALTER TABLE users ADD COLUMN verification_expires DATETIME NULL")
+                else:
+                    cursor.execute("ALTER TABLE users ADD email_verified BIT DEFAULT 1")
+                    cursor.execute("ALTER TABLE users ADD verification_token NVARCHAR(255) NULL")
+                    cursor.execute("ALTER TABLE users ADD verification_expires DATETIME NULL")
+                conn.commit()
+            except Exception:
+                pass
+
             # --------------------------------------------------------------------------
             # SEED DISEASE KNOWLEDGE BASE (18 DISEASES)
             # --------------------------------------------------------------------------
@@ -426,28 +457,67 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+def _email_configured() -> bool:
+    return bool(os.getenv("RESEND_API_KEY") or (os.getenv("SMTP_EMAIL") and os.getenv("SMTP_PASSWORD")))
+
+
 def send_email(to_email: str, subject: str, body: str):
+    resend_key = os.getenv("RESEND_API_KEY")
+    if resend_key:
+        try:
+            import urllib.request
+            import json as _json
+
+            payload = _json.dumps({
+                "from": os.getenv("RESEND_FROM", "Plant Doctor <onboarding@resend.dev>"),
+                "to": [to_email],
+                "subject": subject,
+                "html": body,
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                "https://api.resend.com/emails",
+                data=payload,
+                headers={"Authorization": f"Bearer {resend_key}", "Content-Type": "application/json"},
+                method="POST",
+            )
+            urllib.request.urlopen(req, timeout=15)
+            return
+        except Exception as e:
+            print(f"Resend failed, trying SMTP: {e}")
+
     smtp_email = os.getenv("SMTP_EMAIL")
     smtp_password = os.getenv("SMTP_PASSWORD")
-    
+
     if not smtp_email or not smtp_password:
         print(f"[MOCK EMAIL] To: {to_email} | Subject: {subject} | Body: {body}")
         return
-        
+
     try:
         msg = MIMEMultipart()
-        msg['From'] = smtp_email
-        msg['To'] = to_email
-        msg['Subject'] = subject
-        msg.attach(MIMEText(body, 'html'))
-        
-        server = smtplib.SMTP('smtp.gmail.com', 587)
+        msg["From"] = smtp_email
+        msg["To"] = to_email
+        msg["Subject"] = subject
+        msg.attach(MIMEText(body, "html"))
+
+        server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
         server.login(smtp_email, smtp_password)
         server.send_message(msg)
         server.quit()
     except Exception as e:
         print(f"Failed to send email: {e}")
+
+
+def send_verification_email(to_email: str, full_name: str, token: str):
+    link = f"{APP_BASE_URL}/?verify_token={token}"
+    body = (
+        f"Hello {full_name},<br><br>"
+        f"Plant Doctor AI par account banane ka shukriya!<br>"
+        f"Email verify karne ke liye yeh link kholein:<br>"
+        f"<a href='{link}'>{link}</a><br><br>"
+        f"Link 24 ghante ke liye valid hai."
+    )
+    send_email(to_email, "Plant Doctor AI — Email Verification", body)
 
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
@@ -470,9 +540,9 @@ def require_admin(user=Depends(verify_token)):
 # ==============================================================================
 
 @app.post("/api/auth/register")
-def register(user: UserRegister):
-    """New user registration"""
-    # Validation
+@limiter.limit("5/minute")
+def register(request: Request, user: UserRegister):
+    """New user registration with optional email verification"""
     if len(user.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
     if not user.full_name.strip():
@@ -480,28 +550,71 @@ def register(user: UserRegister):
     if "@" not in user.email:
         raise HTTPException(status_code=400, detail="Invalid email format")
 
+    email = user.email.lower().strip()
     try:
         with get_db() as conn:
             cursor = conn.cursor()
 
-            # Check duplicate email
-            cursor.execute("SELECT id FROM users WHERE email = ?", user.email.lower().strip())
+            cursor.execute("SELECT id FROM users WHERE email = ?", email)
             if cursor.fetchone():
                 raise HTTPException(status_code=400, detail="Email already registered")
 
-            # Insert user
             user_id = str(uuid.uuid4())
             password_hash = hash_password(user.password)
+            email_configured = _email_configured()
+            email_verified = 0 if (REQUIRE_EMAIL_VERIFY and email_configured) else 1
+            verify_token = None
+            verify_expires = None
 
-            cursor.execute("""
-                INSERT INTO users (id, full_name, email, phone, password_hash, role)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, user_id, user.full_name.strip(), user.email.lower().strip(),
-                 user.phone, password_hash, 'farmer')
+            if email_verified == 0:
+                verify_token = str(uuid.uuid4()) + str(uuid.uuid4())
+                verify_expires = datetime.datetime.now() + datetime.timedelta(hours=24)
 
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO users (id, full_name, email, phone, password_hash, role,
+                                       email_verified, verification_token, verification_expires)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    user_id,
+                    user.full_name.strip(),
+                    email,
+                    user.phone,
+                    password_hash,
+                    "farmer",
+                    email_verified,
+                    verify_token,
+                    verify_expires,
+                )
+            except Exception:
+                cursor.execute(
+                    """
+                    INSERT INTO users (id, full_name, email, phone, password_hash, role)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                    user_id,
+                    user.full_name.strip(),
+                    email,
+                    user.phone,
+                    password_hash,
+                    "farmer",
+                )
             conn.commit()
 
-        return {"message": "User registered successfully", "user_id": user_id}
+        if email_verified == 0 and verify_token:
+            send_verification_email(email, user.full_name.strip(), verify_token)
+            return {
+                "message": "Account created. Please verify your email before login.",
+                "user_id": user_id,
+                "email_verification_required": True,
+            }
+
+        return {
+            "message": "User registered successfully",
+            "user_id": user_id,
+            "email_verification_required": False,
+        }
     except HTTPException:
         raise
     except Exception as e:
@@ -511,23 +624,87 @@ def register(user: UserRegister):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/auth/verify-email")
+def verify_email(token: str = Query(...)):
+    """Email verification link handler"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                SELECT id, verification_expires FROM users WHERE verification_token = ?
+            """,
+                token,
+            )
+        except Exception:
+            raise HTTPException(status_code=400, detail="Verification not configured on this server")
+
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=400, detail="Invalid or expired verification link")
+
+        expiry = row[1]
+        if isinstance(expiry, str):
+            for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S"):
+                try:
+                    expiry = datetime.datetime.strptime(expiry[:26], fmt)
+                    break
+                except ValueError:
+                    continue
+        if isinstance(expiry, datetime.datetime) and datetime.datetime.now() > expiry:
+            raise HTTPException(status_code=400, detail="Verification link has expired")
+
+        cursor.execute(
+            """
+            UPDATE users SET email_verified = 1, verification_token = NULL, verification_expires = NULL
+            WHERE id = ?
+        """,
+            row[0],
+        )
+        conn.commit()
+
+    return {"message": "Email verified successfully. You can now login."}
+
+
 @app.post("/api/auth/login")
-def login(user: UserLogin):
+@limiter.limit("10/minute")
+def login(request: Request, user: UserLogin):
     """User login — returns JWT token"""
+    email = user.email.lower().strip()
     with get_db() as conn:
         cursor = conn.cursor()
 
-        cursor.execute("""
-            SELECT id, password_hash, role, full_name FROM users 
-            WHERE email = ? AND is_active = 1
-        """, user.email.lower().strip())
-
-        db_user = cursor.fetchone()
+        try:
+            cursor.execute(
+                """
+                SELECT id, password_hash, role, full_name, email_verified FROM users
+                WHERE email = ? AND is_active = 1
+            """,
+                email,
+            )
+            db_user = cursor.fetchone()
+            email_verified = db_user[4] if db_user and len(db_user) > 4 else 1
+        except Exception:
+            cursor.execute(
+                """
+                SELECT id, password_hash, role, full_name FROM users
+                WHERE email = ? AND is_active = 1
+            """,
+                email,
+            )
+            db_user = cursor.fetchone()
+            email_verified = 1
 
     if not db_user or not verify_password(user.password, db_user[1]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    token = create_token(str(db_user[0]), db_user[2], user.email.lower().strip())
+    if REQUIRE_EMAIL_VERIFY and _email_configured() and not email_verified:
+        raise HTTPException(
+            status_code=403,
+            detail="Email not verified. Check your inbox for the verification link.",
+        )
+
+    token = create_token(str(db_user[0]), db_user[2], email)
 
     return {
         "token": token,
@@ -538,7 +715,8 @@ def login(user: UserLogin):
 
 
 @app.post("/api/auth/forgot-password")
-def forgot_password(req: ForgotPasswordRequest):
+@limiter.limit("3/minute")
+def forgot_password(request: Request, req: ForgotPasswordRequest):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id, full_name FROM users WHERE email = ?", req.email.lower().strip())
@@ -706,8 +884,13 @@ async def save_scan(
         raise HTTPException(status_code=422, detail="confidence must be a number")
 
     image_bytes = await image.read()
-    if len(image_bytes) > 5 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Image size must be under 5MB")
+    if len(image_bytes) > 8 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image size must be under 8MB")
+
+    try:
+        image_bytes = compress_image_bytes(image_bytes)
+    except Exception:
+        pass  # keep original if compression fails
 
     scan_id = str(uuid.uuid4())
     image_b64 = base64.b64encode(image_bytes).decode("ascii")
@@ -719,6 +902,8 @@ async def save_scan(
     filename = f"{crop}_{timestamp}_{image.filename or 'scan.jpg'}"
     with open(os.path.join(user_dir, filename), "wb") as f:
         f.write(image_bytes)
+
+    compressed_kb = round(len(image_bytes) / 1024, 1)
 
     with get_db() as conn:
         cursor = conn.cursor()
@@ -752,7 +937,12 @@ async def save_scan(
             )
         conn.commit()
 
-    return {"message": "Scan saved", "scan_id": scan_id, "image_url": image_url}
+    return {
+        "message": "Scan saved",
+        "scan_id": scan_id,
+        "image_url": image_url,
+        "image_size_kb": compressed_kb,
+    }
 
 
 @app.get("/api/scans/{scan_id}/image")

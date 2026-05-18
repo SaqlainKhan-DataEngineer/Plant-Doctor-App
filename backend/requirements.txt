@@ -9,3 +9,7 @@ pydantic[email]
 pymysql
 cryptography
 aiofiles
+Pillow
+slowapi
+pytest
+httpx

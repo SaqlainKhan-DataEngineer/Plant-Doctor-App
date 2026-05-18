@@ -38,7 +38,11 @@ In `app.py`, uncomment `API_URL = "http://localhost:8000/api"` for local API tes
 | `JWT_SECRET` or `SECRET_KEY` | JWT signing key (required in production) |
 | `JWT_EXPIRE_DAYS` | Token lifetime (default: 7) |
 | `CORS_ORIGINS` | Comma-separated allowed origins |
-| `SMTP_EMAIL`, `SMTP_PASSWORD` | Gmail for password reset emails |
+| `SMTP_EMAIL`, `SMTP_PASSWORD` | Gmail for password reset + email verification |
+| `RESEND_API_KEY` | Optional Resend API for emails |
+| `RESEND_FROM` | Sender e.g. `Plant Doctor <onboarding@resend.dev>` |
+| `APP_BASE_URL` | Streamlit app URL for email links |
+| `REQUIRE_EMAIL_VERIFY` | `true` (default) or `false` for dev |
 
 ## Project structure
 
@@ -58,5 +62,13 @@ current_state_analysis.md  # Feature checklist (updated)
 - `GET /api/scans/{id}/image` — retrieve scan photo
 - `GET /api/diseases?crop=potato&disease=Late Blight` — knowledge base
 - `GET /api/admin/stats` — admin dashboard (admin role only)
+
+## Run tests
+
+```bash
+cd backend
+pip install -r requirements.txt
+pytest tests/ -q
+```
 
 See `current_state_analysis.md` for full feature status.

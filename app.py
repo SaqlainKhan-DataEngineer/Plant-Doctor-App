@@ -17,6 +17,12 @@ import traceback
 import functools
 from skimage.feature import hog, local_binary_pattern, graycomatrix, graycoprops
 
+try:
+    import plotly.express as px
+    HAS_PLOTLY = True
+except ImportError:
+    HAS_PLOTLY = False
+
 # --- 1. PAGE SETUP ---
 st.set_page_config(
     page_title="Plant Doctor AI",
@@ -103,6 +109,25 @@ def render_auth_page():
     </div>
     """, unsafe_allow_html=True)
     
+    # --------------------------------------------------------------------------
+    # EMAIL VERIFICATION (URL mein verify_token ho)
+    # --------------------------------------------------------------------------
+    if "verify_token" in st.query_params:
+        st.subheader("✉️ Email Verification")
+        vtoken = st.query_params.get("verify_token")
+        try:
+            resp = requests.get(f"{API_URL}/auth/verify-email", params={"token": vtoken}, timeout=10)
+            if resp.status_code == 200:
+                st.success("✅ " + resp.json().get("message", "Email verified!"))
+            else:
+                st.error(f"❌ {resp.json().get('detail', 'Verification failed')}")
+        except Exception as e:
+            st.error(f"❌ API Error: {e}")
+        if st.button("⬅️ Login par jayein"):
+            st.query_params.clear()
+            st.rerun()
+        return
+
     # --------------------------------------------------------------------------
     # RESET PASSWORD FLOW (URL mein reset_token ho)
     # --------------------------------------------------------------------------
@@ -210,6 +235,8 @@ def render_auth_page():
                             st.rerun()
                         elif response.status_code == 401:
                             st.error("❌ Galat email ya password!")
+                        elif response.status_code == 403:
+                            st.error("❌ " + response.json().get("detail", "Email verify karein pehle."))
                         else:
                             st.error(f"❌ Error: {response.json().get('detail', 'Unknown error')}")
                     except requests.exceptions.ConnectionError:
@@ -250,7 +277,11 @@ def render_auth_page():
                         )
                         
                         if response.status_code == 200:
-                            st.success("✅ Account ban gaya! Ab login karein.")
+                            data = response.json()
+                            if data.get("email_verification_required"):
+                                st.success("✅ Account ban gaya! Apni email check karein — verification link bhej diya gaya.")
+                            else:
+                                st.success("✅ Account ban gaya! Ab login karein.")
                         elif response.status_code == 400:
                             st.error("❌ Ye email pehle se registered hai!")
                         else:
@@ -364,6 +395,48 @@ def get_user_stats_api():
         return None
     except Exception:
         return None
+
+
+def render_crop_pie_chart(crop_breakdown, title="Crop-wise Scans"):
+    if not HAS_PLOTLY or not crop_breakdown:
+        return
+    fig = px.pie(
+        names=[k.title() for k in crop_breakdown.keys()],
+        values=list(crop_breakdown.values()),
+        title=title,
+        hole=0.35,
+        color_discrete_sequence=px.colors.sequential.Greens,
+    )
+    fig.update_layout(margin=dict(t=45, b=10, l=10, r=10), height=360)
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def render_disease_bar_chart(disease_counts, title="Top Diseases Detected"):
+    if not HAS_PLOTLY or not disease_counts:
+        return
+    items = sorted(disease_counts.items(), key=lambda x: -x[1])[:8]
+    fig = px.bar(
+        x=[d[0] for d in items],
+        y=[d[1] for d in items],
+        title=title,
+        labels={"x": "Disease", "y": "Scans"},
+        color_discrete_sequence=["#dc2626"],
+    )
+    fig.update_layout(margin=dict(t=45, b=80, l=10, r=10), height=380)
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def render_role_pie_chart(roles, title="Users by Role"):
+    if not HAS_PLOTLY or not roles:
+        return
+    fig = px.pie(
+        names=[k.title() for k in roles.keys()],
+        values=list(roles.values()),
+        title=title,
+        color_discrete_sequence=px.colors.qualitative.Set2,
+    )
+    fig.update_layout(margin=dict(t=45, b=10, l=10, r=10), height=320)
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def compute_stats_from_history(scans):
@@ -2321,38 +2394,27 @@ def render_dashboard_page():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Crop breakdown
-    col_left, col_right = st.columns(2)
-    with col_left:
-        st.markdown("### 🌾 Crop-wise Breakdown")
-        crop_data = stats.get('crop_breakdown', {})
-        if crop_data:
-            emoji_map = {"potato": "🥔", "tomato": "🍅", "pepper": "🫑", "corn": "🌽"}
-            for crop, count in crop_data.items():
-                emoji = emoji_map.get(crop, "🌿")
-                pct = (count / max(stats['total_scans'], 1)) * 100
-                st.markdown(f"""
-                <div style="background:white;border-radius:12px;padding:14px 18px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.04);display:flex;align-items:center;justify-content:space-between;">
-                    <div style="display:flex;align-items:center;gap:10px;">
-                        <span style="font-size:1.5rem;">{emoji}</span>
-                        <span style="font-weight:700;color:#064e3b;">{crop.title()}</span>
-                    </div>
-                    <div style="text-align:right;">
-                        <span style="font-weight:800;color:#064e3b;font-size:1.1rem;">{count}</span>
-                        <span style="font-size:0.75rem;color:#6b7280;margin-left:4px;">({pct:.0f}%)</span>
-                    </div>
-                </div>""", unsafe_allow_html=True)
-        else:
-            st.info("Koi data nahi hai abhi.")
-
-    with col_right:
-        st.markdown("### 📅 Is Hafte Ki Activity")
-        st.markdown(f"""
-        <div style="background:white;border-radius:16px;padding:24px;box-shadow:0 4px 16px rgba(6,78,59,0.08);">
-            <div style="font-size:3rem;font-weight:900;color:#064e3b;text-align:center;">{stats['weekly_scans']}</div>
-            <div style="font-size:0.85rem;color:#6b7280;text-align:center;font-weight:600;">Scans pichle 7 din mein</div>
-        </div>
-        """, unsafe_allow_html=True)
+    crop_data = stats.get("crop_breakdown", {})
+    if crop_data and HAS_PLOTLY:
+        chart_l, chart_r = st.columns(2)
+        with chart_l:
+            render_crop_pie_chart(crop_data, "🌾 Crop-wise Scans")
+        with chart_r:
+            st.markdown("### 📅 Is Hafte Ki Activity")
+            st.metric("Weekly Scans", stats.get("weekly_scans", 0))
+    else:
+        col_left, col_right = st.columns(2)
+        with col_left:
+            st.markdown("### 🌾 Crop-wise Breakdown")
+            if crop_data:
+                for crop, count in crop_data.items():
+                    pct = (count / max(stats["total_scans"], 1)) * 100
+                    st.markdown(f"**{crop.title()}** — {count} scans ({pct:.0f}%)")
+            else:
+                st.info("Koi data nahi hai abhi.")
+        with col_right:
+            st.markdown("### 📅 Is Hafte Ki Activity")
+            st.metric("Weekly Scans", stats.get("weekly_scans", 0))
 
     # Full scan history table
     st.markdown("<br>", unsafe_allow_html=True)
@@ -2520,42 +2582,30 @@ def render_admin_page():
 
     with tab_diseases:
         st.markdown("### 📊 Platform Analytics")
-        # Crop distribution
-        crops = stats.get('scans_by_crop', {})
-        if crops:
-            st.markdown("#### 🌾 Crop Distribution")
-            for crop, cnt in sorted(crops.items(), key=lambda x: -x[1]):
-                pct = (cnt / max(stats['total_scans'], 1)) * 100
-                bar_width = max(pct, 5)
-                st.markdown(f"""
-                <div style="margin-bottom:8px;">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
-                        <span style="font-weight:700;color:#064e3b;font-size:0.85rem;">{crop.title()}</span>
-                        <span style="color:#6b7280;font-size:0.8rem;">{cnt} ({pct:.0f}%)</span>
-                    </div>
-                    <div style="background:#e5e7eb;border-radius:8px;height:8px;overflow:hidden;">
-                        <div style="background:linear-gradient(90deg,#10b981,#059669);width:{bar_width}%;height:100%;border-radius:8px;"></div>
-                    </div>
-                </div>""", unsafe_allow_html=True)
+        crops = stats.get("scans_by_crop", {})
+        diseases = stats.get("top_diseases", {})
+        roles = stats.get("users_by_role", {})
 
-        # Top diseases
-        diseases = stats.get('top_diseases', {})
-        if diseases:
-            st.markdown("#### 🦠 Top Diseases Detected")
-            for disease, cnt in diseases.items():
-                st.markdown(f"""
-                <div style="background:#fee2e2;border-radius:10px;padding:10px 16px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
-                    <span style="font-weight:700;color:#991b1b;">{disease}</span>
-                    <span style="background:#dc2626;color:white;padding:2px 12px;border-radius:14px;font-weight:700;font-size:0.8rem;">{cnt}</span>
-                </div>""", unsafe_allow_html=True)
-
-        # Role distribution
-        roles = stats.get('users_by_role', {})
-        if roles:
-            st.markdown("#### 👥 Users by Role")
-            for role, cnt in roles.items():
-                st.markdown(f"- **{role.title()}**: {cnt} users")
-
+        if HAS_PLOTLY:
+            ca, cb = st.columns(2)
+            with ca:
+                if crops:
+                    render_crop_pie_chart(crops, "🌾 Platform Crop Distribution")
+            with cb:
+                if diseases:
+                    render_disease_bar_chart(diseases, "🦠 Top Diseases (Platform)")
+            if roles:
+                render_role_pie_chart(roles)
+        else:
+            if crops:
+                for crop, cnt in sorted(crops.items(), key=lambda x: -x[1]):
+                    st.markdown(f"- **{crop.title()}**: {cnt} scans")
+            if diseases:
+                for disease, cnt in diseases.items():
+                    st.markdown(f"- **{disease}**: {cnt}")
+            if roles:
+                for role, cnt in roles.items():
+                    st.markdown(f"- **{role.title()}**: {cnt} users")
 
 # ===================== HOME PAGE =====================
 if nav == "🏠 Home Page":
