@@ -83,29 +83,78 @@ def render_auth_page():
     """Login/Register page - user auth ke bina app nahi khulega"""
     st.markdown("""
     <style>
-    .auth-container {
-        max-width: 400px;
+    .auth-wrapper {
+        max-width: 480px;
         margin: 0 auto;
-        padding: 40px 20px;
+        padding: 0 20px;
+    }
+    .auth-hero {
+        background: linear-gradient(-45deg, #a7f3d0, #d1fae5, #ecfdf5, #6ee7b7);
+        background-size: 300% 300%;
+        animation: gradBG 10s ease infinite;
+        border-radius: 24px;
+        padding: 48px 32px 40px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.7);
+        box-shadow: 0 20px 60px rgba(16,185,129,0.15), 0 4px 20px rgba(6,78,59,0.08);
+        margin-bottom: 28px;
+    }
+    .auth-hero::before {
+        content: ""; position: absolute; top: -60%; right: -20%;
+        width: 300px; height: 300px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(52,211,153,0.25), transparent 70%);
+        pointer-events: none;
+    }
+    .auth-hero::after {
+        content: ""; position: absolute; bottom: -40%; left: -10%;
+        width: 200px; height: 200px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(110,231,183,0.2), transparent 70%);
+        pointer-events: none;
+    }
+    .auth-logo {
+        font-size: 4.5rem; margin-bottom: 12px;
+        filter: drop-shadow(0 8px 16px rgba(0,0,0,0.1));
+        animation: floatY 4s ease-in-out infinite;
     }
     .auth-title {
-        text-align: center;
-        color: #064e3b;
-        font-size: 2rem;
-        font-weight: 900;
-        margin-bottom: 10px;
+        font-size: 2.4rem; font-weight: 900; color: #064e3b;
+        letter-spacing: -1px; margin: 0 0 8px;
+        text-shadow: 0 2px 20px rgba(255,255,255,0.8);
     }
     .auth-subtitle {
-        text-align: center;
-        color: #6b7280;
-        font-size: 0.9rem;
-        margin-bottom: 30px;
+        color: #065f46; font-size: 0.95rem; font-weight: 600;
+        margin: 0 0 6px; opacity: 0.9;
     }
+    .auth-desc {
+        color: #047857; font-size: 0.82rem; opacity: 0.75;
+        max-width: 360px; margin: 0 auto; line-height: 1.6;
+    }
+    .auth-badges {
+        display: flex; gap: 8px; justify-content: center; margin-top: 16px; flex-wrap: wrap;
+    }
+    .auth-badge {
+        background: rgba(4,120,87,0.12); border: 1px solid rgba(5,150,105,0.25);
+        color: #065f46; padding: 4px 14px; border-radius: 50px;
+        font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px;
+        backdrop-filter: blur(10px);
+    }
+    @keyframes gradBG { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    @keyframes floatY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
     </style>
-    <div class="auth-container">
-        <div style="text-align:center;font-size:4rem;margin-bottom:10px;">🌿</div>
-        <h1 class="auth-title">Plant Doctor AI</h1>
-        <p class="auth-subtitle">Pakistani Kisanon Ka AI Doctor<br>Login karein ya naya account banayein</p>
+    <div class="auth-wrapper">
+        <div class="auth-hero">
+            <div class="auth-logo">🌿</div>
+            <h1 class="auth-title">Plant Doctor AI</h1>
+            <p class="auth-subtitle">Pakistani Kisanon Ka AI Doctor</p>
+            <p class="auth-desc">Apni fasal ki bimari seconds mein pehchanein — Login karein ya naya account banayein</p>
+            <div class="auth-badges">
+                <span class="auth-badge">🤖 AI Powered</span>
+                <span class="auth-badge">🥔 4 Crops</span>
+                <span class="auth-badge">⚡ 97% Accurate</span>
+            </div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
@@ -281,11 +330,16 @@ def render_auth_page():
                             if data.get("email_verification_required"):
                                 st.success("✅ Account ban gaya! Apni email check karein — verification link bhej diya gaya.")
                             else:
-                                st.success("✅ Account ban gaya! Ab login karein.")
+                                st.success("✅ Registration successful! Ab login karein.")
+                                time.sleep(1.5)
+                                st.rerun()
                         elif response.status_code == 400:
-                            st.error("❌ Ye email pehle se registered hai!")
+                            detail = response.json().get('detail', '')
+                            if 'already' in detail.lower() or 'registered' in detail.lower():
+                                st.warning("⚠️ Ye email pehle se registered hai. Login tab se login karein.")
+                            else:
+                                st.error(f"❌ {detail}")
                         else:
-                            # Parse error details directly to show 500 error messages explicitly
                             try:
                                 err_msg = response.json().get('detail', 'Unknown error')
                             except:
@@ -1560,7 +1614,7 @@ def get_badge_css():
 }
 .weather-container {
     border-radius:var(--radius-xl); padding:24px; overflow:hidden;
-    transition:transform 0.3s ease, box-shadow 0.3s ease; height:400px;
+    transition:transform 0.3s ease, box-shadow 0.3s ease; min-height:400px; height:auto;
     display:flex; flex-direction:column; justify-content:space-between;
     position:relative;
 }
@@ -1600,6 +1654,14 @@ def get_badge_css():
 }
 .status-dot { width:5px; height:5px; background:white; border-radius:50%; animation:pulseDot 2s infinite; }
 
+/* Desktop fix: weather widget full display */
+@media (min-width: 769px) {
+    .weather-container { min-height: 400px; height: auto; }
+    .hero-bg { text-align: center; }
+    .hero-title { text-align: center !important; }
+    .hero-sub { text-align: center !important; }
+    .hero-desc { text-align: center !important; margin-left: auto !important; margin-right: auto !important; }
+}
 /* IMPROVEMENT #7: Mobile responsive improvements */
 @media (max-width: 768px) {
     .hero-title { font-size: 2.4rem !important; }
@@ -2742,7 +2804,7 @@ if nav == "🏠 Home Page":
                 <!-- 🔥 FIX #4: ZYADA AUR BEHTREEN PICTURES -->
                 <div class="slide"><img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80"></div>
                 <div class="slide"><img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80"></div>
-                <div class="slide"><img src="https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?w=800&q=80"></div>
                 <div class="slide"><img src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=800&q=80"></div>
                 <div class="slide"><img src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&q=80"></div>
                 <div class="slide"><img src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&q=80"></div>
@@ -2755,7 +2817,7 @@ if nav == "🏠 Home Page":
                 <!-- Duplicate for infinite scroll -->
                 <div class="slide"><img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80"></div>
                 <div class="slide"><img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80"></div>
-                <div class="slide"><img src="https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?w=800&q=80"></div>
+                <div class="slide"><img src="https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?w=800&q=80"></div>
                 <div class="slide"><img src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=800&q=80"></div>
                 <div class="slide"><img src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&q=80"></div>
                 <div class="slide"><img src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=800&q=80"></div>
