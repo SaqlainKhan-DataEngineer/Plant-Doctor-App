@@ -3,7 +3,7 @@ try:
 except ImportError:
     pyodbc = None
 
-from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Query, Form, Request
+from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Query, Form, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import Response
@@ -565,7 +565,7 @@ def require_admin(user=Depends(verify_token)):
 
 @app.post("/api/auth/register")
 @limiter.limit("5/minute")
-def register(request: Request, user: UserRegister):
+def register(request: Request, user: UserRegister, background_tasks: BackgroundTasks):
     """New user registration with optional email verification"""
     if len(user.password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
@@ -627,7 +627,7 @@ def register(request: Request, user: UserRegister):
             conn.commit()
 
         if email_verified == 0 and verify_token:
-            send_verification_email(email, user.full_name.strip(), verify_token)
+            background_tasks.add_task(send_verification_email, email, user.full_name.strip(), verify_token)
             return {
                 "message": "Account created. Please verify your email before login.",
                 "user_id": user_id,
@@ -740,7 +740,7 @@ def login(request: Request, user: UserLogin):
 
 @app.post("/api/auth/forgot-password")
 @limiter.limit("3/minute")
-def forgot_password(request: Request, req: ForgotPasswordRequest):
+def forgot_password(request: Request, req: ForgotPasswordRequest, background_tasks: BackgroundTasks):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT id, full_name FROM users WHERE email = ?", req.email.lower().strip())
@@ -763,7 +763,7 @@ def forgot_password(request: Request, req: ForgotPasswordRequest):
     # Send Email
     reset_link = f"https://plantdoctorapp.streamlit.app/?reset_token={reset_token}"
     body = f"Hello {row[1]},<br><br>Click the link below to reset your password:<br><a href='{reset_link}'>{reset_link}</a><br><br>If you did not request this, please ignore this email."
-    send_email(req.email.lower().strip(), "Plant Doctor AI - Password Reset", body)
+    background_tasks.add_task(send_email, req.email.lower().strip(), "Plant Doctor AI - Password Reset", body)
     
     return {"message": "If that email is registered, we have sent a reset link."}
 
