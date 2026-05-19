@@ -39,7 +39,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 APP_BASE_URL = os.getenv("APP_BASE_URL", "https://plantdoctorapp.streamlit.app")
-REQUIRE_EMAIL_VERIFY = os.getenv("REQUIRE_EMAIL_VERIFY", "true").lower() in ("1", "true", "yes")
+REQUIRE_EMAIL_VERIFY = os.getenv("REQUIRE_EMAIL_VERIFY", "false").lower() in ("1", "true", "yes")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
