@@ -2795,8 +2795,31 @@ if nav == "🏠 Home Page":
         </div>
         """, unsafe_allow_html=True)
 
-
     st.markdown("<br>", unsafe_allow_html=True)
+
+    # Universal upload zone — AI auto-detects crop
+    uploaded_file, detected_crop = render_universal_upload()
+    if uploaded_file and detected_crop:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color:#064e3b;font-weight:800;'>📊 {detected_crop.title()} Analysis Result</h3>", unsafe_allow_html=True)
+        with st.spinner("🔬 Analyzing..."):
+            result = analyze_image(uploaded_file, detected_crop)
+        if result:
+            ai_advice = show_result(result, detected_crop, CROP_CONFIG[detected_crop])
+            with st.spinner("💾 Scan database mein save ho raha hai..."):
+                success, msg = save_scan_to_backend(
+                    uploaded_file, 
+                    detected_crop, 
+                    result['label'], 
+                    result['conf'],
+                    ai_advice=ai_advice,
+                )
+                if success:
+                    st.toast("✅ Scan history mein save ho gaya!", icon="💾")
+                else:
+                    st.error(f"Scan save nahi hua: {msg}")
+
+
     st.markdown("<h2 style='text-align:center;color:#064e3b;font-weight:900;font-size:2rem;margin-bottom:6px;'>Supported Crops | Faslain</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align:center;color:#6b7280;font-size:0.9rem;margin-bottom:24px;'>Apni fasal chunein — AI fauran diagnose karega</p>", unsafe_allow_html=True)
 
