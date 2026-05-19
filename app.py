@@ -83,76 +83,178 @@ def render_auth_page():
     """Login/Register page - user auth ke bina app nahi khulega"""
     st.markdown("""
     <style>
-    .auth-wrapper {
-        max-width: 480px;
-        margin: 0 auto;
-        padding: 0 20px;
-    }
-    .auth-hero {
-        background: linear-gradient(-45deg, #a7f3d0, #d1fae5, #ecfdf5, #6ee7b7);
-        background-size: 300% 300%;
-        animation: gradBG 10s ease infinite;
-        border-radius: 24px;
-        padding: 48px 32px 40px;
-        text-align: center;
+    /* ===== PREMIUM AUTH PAGE ===== */
+    .auth-full-bg {
+        background: linear-gradient(135deg, #064e3b 0%, #065f46 25%, #047857 50%, #059669 75%, #10b981 100%);
+        border-radius: 28px;
+        padding: 0;
+        margin: -1rem -1rem 2rem -1rem;
         position: relative;
         overflow: hidden;
-        border: 1px solid rgba(255,255,255,0.7);
-        box-shadow: 0 20px 60px rgba(16,185,129,0.15), 0 4px 20px rgba(6,78,59,0.08);
-        margin-bottom: 28px;
+        min-height: 85vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
-    .auth-hero::before {
-        content: ""; position: absolute; top: -60%; right: -20%;
-        width: 300px; height: 300px; border-radius: 50%;
-        background: radial-gradient(circle, rgba(52,211,153,0.25), transparent 70%);
-        pointer-events: none;
+    .auth-full-bg::before {
+        content: ""; position: absolute; top: -30%; right: -15%;
+        width: 600px; height: 600px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(52,211,153,0.2), transparent 70%);
+        animation: authOrb1 15s ease-in-out infinite;
     }
-    .auth-hero::after {
-        content: ""; position: absolute; bottom: -40%; left: -10%;
-        width: 200px; height: 200px; border-radius: 50%;
-        background: radial-gradient(circle, rgba(110,231,183,0.2), transparent 70%);
-        pointer-events: none;
+    .auth-full-bg::after {
+        content: ""; position: absolute; bottom: -20%; left: -10%;
+        width: 500px; height: 500px; border-radius: 50%;
+        background: radial-gradient(circle, rgba(110,231,183,0.15), transparent 70%);
+        animation: authOrb2 12s ease-in-out infinite;
     }
-    .auth-logo {
-        font-size: 4.5rem; margin-bottom: 12px;
-        filter: drop-shadow(0 8px 16px rgba(0,0,0,0.1));
-        animation: floatY 4s ease-in-out infinite;
+    @keyframes authOrb1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,20px)} }
+    @keyframes authOrb2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-30px)} }
+    
+    .auth-glass-card {
+        background: rgba(255,255,255,0.12);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 28px;
+        padding: 48px 40px;
+        max-width: 520px;
+        width: 90%;
+        position: relative;
+        z-index: 10;
+        box-shadow: 0 32px 80px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+        text-align: center;
+        animation: authCardIn 0.8s ease-out both;
     }
-    .auth-title {
-        font-size: 2.4rem; font-weight: 900; color: #064e3b;
-        letter-spacing: -1px; margin: 0 0 8px;
-        text-shadow: 0 2px 20px rgba(255,255,255,0.8);
+    @keyframes authCardIn {
+        from { opacity:0; transform:translateY(30px) scale(0.95); }
+        to { opacity:1; transform:translateY(0) scale(1); }
     }
-    .auth-subtitle {
-        color: #065f46; font-size: 0.95rem; font-weight: 600;
-        margin: 0 0 6px; opacity: 0.9;
+    
+    .auth-icon-ring {
+        width: 90px; height: 90px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+        border: 2px solid rgba(255,255,255,0.3);
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 3.5rem;
+        animation: authFloat 4s ease-in-out infinite;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.2);
     }
-    .auth-desc {
-        color: #047857; font-size: 0.82rem; opacity: 0.75;
-        max-width: 360px; margin: 0 auto; line-height: 1.6;
+    @keyframes authFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    
+    .auth-card-title {
+        font-size: 2.6rem; font-weight: 900; color: white;
+        letter-spacing: -1.5px; margin: 0 0 6px;
+        text-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
-    .auth-badges {
-        display: flex; gap: 8px; justify-content: center; margin-top: 16px; flex-wrap: wrap;
+    .auth-card-sub {
+        color: rgba(255,255,255,0.85); font-size: 1rem; font-weight: 600;
+        margin: 0 0 4px;
     }
-    .auth-badge {
-        background: rgba(4,120,87,0.12); border: 1px solid rgba(5,150,105,0.25);
-        color: #065f46; padding: 4px 14px; border-radius: 50px;
-        font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px;
-        backdrop-filter: blur(10px);
+    .auth-card-desc {
+        color: rgba(255,255,255,0.6); font-size: 0.85rem;
+        max-width: 380px; margin: 0 auto 24px; line-height: 1.6;
     }
-    @keyframes gradBG { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
-    @keyframes floatY { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    
+    .auth-features {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+        margin-bottom: 24px;
+    }
+    .auth-feat-item {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 16px; padding: 16px 10px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    .auth-feat-item:hover {
+        background: rgba(255,255,255,0.15);
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+    .auth-feat-icon { font-size: 1.8rem; margin-bottom: 6px; }
+    .auth-feat-label { font-size: 0.7rem; color: rgba(255,255,255,0.8); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    .auth-stats-bar {
+        display: flex; justify-content: center; gap: 24px;
+        margin-bottom: 8px; flex-wrap: wrap;
+    }
+    .auth-stat {
+        text-align: center;
+    }
+    .auth-stat-val {
+        font-size: 1.5rem; font-weight: 900; color: white;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .auth-stat-lbl {
+        font-size: 0.6rem; color: rgba(255,255,255,0.6);
+        text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;
+    }
+    .auth-divider {
+        width: 1px; background: rgba(255,255,255,0.2);
+        align-self: stretch;
+    }
+    
+    .auth-trust {
+        display: flex; gap: 8px; justify-content: center; margin-top: 20px; flex-wrap: wrap;
+    }
+    .auth-trust-badge {
+        background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+        color: rgba(255,255,255,0.85); padding: 5px 14px; border-radius: 50px;
+        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px;
+    }
     </style>
-    <div class="auth-wrapper">
-        <div class="auth-hero">
-            <div class="auth-logo">🌿</div>
-            <h1 class="auth-title">Plant Doctor AI</h1>
-            <p class="auth-subtitle">Pakistani Kisanon Ka AI Doctor</p>
-            <p class="auth-desc">Apni fasal ki bimari seconds mein pehchanein — Login karein ya naya account banayein</p>
-            <div class="auth-badges">
-                <span class="auth-badge">🤖 AI Powered</span>
-                <span class="auth-badge">🥔 4 Crops</span>
-                <span class="auth-badge">⚡ 97% Accurate</span>
+    
+    <div class="auth-full-bg">
+        <div class="auth-glass-card">
+            <div class="auth-icon-ring">🌿</div>
+            <h1 class="auth-card-title">Plant Doctor AI</h1>
+            <p class="auth-card-sub">Pakistani Kisanon Ka AI Doctor</p>
+            <p class="auth-card-desc">Apni fasal ki bimari seconds mein pehchanein — Login ya register karein aur AI ki taqat se fasal bachayein</p>
+            
+            <div class="auth-features">
+                <div class="auth-feat-item">
+                    <div class="auth-feat-icon">🔬</div>
+                    <div class="auth-feat-label">AI Scan</div>
+                </div>
+                <div class="auth-feat-item">
+                    <div class="auth-feat-icon">📊</div>
+                    <div class="auth-feat-label">Dashboard</div>
+                </div>
+                <div class="auth-feat-item">
+                    <div class="auth-feat-icon">👨‍⚕️</div>
+                    <div class="auth-feat-label">Expert Chat</div>
+                </div>
+            </div>
+            
+            <div class="auth-stats-bar">
+                <div class="auth-stat">
+                    <div class="auth-stat-val">74K+</div>
+                    <div class="auth-stat-lbl">Images</div>
+                </div>
+                <div class="auth-divider"></div>
+                <div class="auth-stat">
+                    <div class="auth-stat-val">97%</div>
+                    <div class="auth-stat-lbl">Accuracy</div>
+                </div>
+                <div class="auth-divider"></div>
+                <div class="auth-stat">
+                    <div class="auth-stat-val">4</div>
+                    <div class="auth-stat-lbl">Crops</div>
+                </div>
+                <div class="auth-divider"></div>
+                <div class="auth-stat">
+                    <div class="auth-stat-val">&lt;3s</div>
+                    <div class="auth-stat-lbl">Speed</div>
+                </div>
+            </div>
+            
+            <div class="auth-trust">
+                <span class="auth-trust-badge">🔒 Secure</span>
+                <span class="auth-trust-badge">⚡ Fast</span>
+                <span class="auth-trust-badge">🌍 Free</span>
             </div>
         </div>
     </div>
@@ -1614,7 +1716,7 @@ def get_badge_css():
 }
 .weather-container {
     border-radius:var(--radius-xl); padding:24px; overflow:hidden;
-    transition:transform 0.3s ease, box-shadow 0.3s ease; min-height:400px; height:auto;
+    transition:transform 0.3s ease, box-shadow 0.3s ease; height:400px;
     display:flex; flex-direction:column; justify-content:space-between;
     position:relative;
 }
@@ -1656,7 +1758,7 @@ def get_badge_css():
 
 /* Desktop fix: weather widget full display */
 @media (min-width: 769px) {
-    .weather-container { min-height: 400px; height: auto; }
+    .weather-container { height: 400px; overflow: auto; }
     .hero-bg { text-align: center; }
     .hero-title { text-align: center !important; }
     .hero-sub { text-align: center !important; }
