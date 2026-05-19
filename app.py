@@ -2213,8 +2213,7 @@ def render_crop_page(crop_key):
                 )
                 
                 if success:
-                    st.success("Scan history mein save ho gaya!")
-                    st.rerun()
+                    st.toast("✅ Scan history mein save ho gaya!", icon="💾")
                 else:
                     st.error(f"Scan save nahi hua: {msg}")
 
@@ -2528,14 +2527,7 @@ def render_premium_page():
     except Exception as e:
         st.error(str(e))
 
-    with st.expander("✉️ Email verify kaise set karein?"):
-        st.markdown("""
-**Gmail (recommended):** Railway Variables → `SMTP_EMAIL` + `SMTP_PASSWORD` (App Password)
 
-**Resend:** `RESEND_API_KEY` set karein
-
-**Kuch nahi set?** Register ke baad bina email ke login (auto-verify)
-        """)
 
 
 
@@ -2736,7 +2728,7 @@ if nav == "🏠 Home Page":
     st.markdown("""
     <div class="stat-grid">
         <div class="stat-card" style="animation-delay:0.1s"><div class="stat-val">97%</div><div class="stat-lbl">Accuracy</div></div>
-        <div class="stat-card" style="animation-delay:0.2s"><div class="stat-val">18K+</div><div class="stat-lbl">Images Trained</div></div>
+        <div class="stat-card" style="animation-delay:0.2s"><div class="stat-val">74K+</div><div class="stat-lbl">Images Trained</div></div>
         <div class="stat-card" style="animation-delay:0.3s"><div class="stat-val">4</div><div class="stat-lbl">Crops</div></div>
         <div class="stat-card" style="animation-delay:0.4s"><div class="stat-val">&lt;3s</div><div class="stat-lbl">Result Time</div></div>
     </div>
@@ -2803,41 +2795,6 @@ if nav == "🏠 Home Page":
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="scan-cta-wrap">
-        <p style="color:rgba(255,255,255,0.65);font-size:0.75rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">🔬 Quick Scan</p>
-        <h2 style="color:white;font-size:1.9rem;font-weight:900;margin:0 0 10px;letter-spacing:-0.5px;">Koi bhi fasal — ek hi jagah scan karein</h2>
-        <p style="color:rgba(255,255,255,0.7);font-size:0.95rem;max-width:500px;margin:0 auto 24px;line-height:1.6;">Seedha yahan patta upload karein — AI khud crop detect karega</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Universal upload zone — AI auto-detects crop
-    uploaded_file, detected_crop = render_universal_upload()
-    if uploaded_file and detected_crop:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown(f"<h3 style='color:#064e3b;font-weight:800;'>📊 {detected_crop.title()} Analysis Result</h3>", unsafe_allow_html=True)
-        with st.spinner("🔬 Analyzing..."):
-            result = analyze_image(uploaded_file, detected_crop)
-        if result:
-            ai_advice = show_result(result, detected_crop, CROP_CONFIG[detected_crop])
-            # ==============================================================================
-            # 🔥 UNIVERSAL SCAN SAVE (NEW)
-            # ==============================================================================
-            with st.spinner("💾 Scan database mein save ho raha hai..."):
-                success, msg = save_scan_to_backend(
-                    uploaded_file, 
-                    detected_crop, 
-                    result['label'], 
-                    result['conf'],
-                    ai_advice=ai_advice,
-                )
-                if success:
-                    st.success("Scan history mein save ho gaya!")
-                    st.rerun()
-                else:
-                    st.error(f"Scan save nahi hua: {msg}")
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align:center;color:#064e3b;font-weight:900;font-size:2rem;margin-bottom:6px;'>Supported Crops | Faslain</h2>", unsafe_allow_html=True)
