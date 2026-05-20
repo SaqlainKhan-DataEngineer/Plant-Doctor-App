@@ -83,374 +83,963 @@ def render_auth_page():
     """Login/Register page - user auth ke bina app nahi khulega"""
     st.markdown("""
     <style>
-    /* ===== PREMIUM AUTH PAGE ===== */
-    .auth-full-bg {
-        background: linear-gradient(135deg, #064e3b 0%, #065f46 25%, #047857 50%, #059669 75%, #10b981 100%);
-        border-radius: 28px;
-        padding: 0;
-        margin: -1rem -1rem 2rem -1rem;
-        position: relative;
-        overflow: hidden;
-        min-height: 85vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .auth-full-bg::before {
-        content: ""; position: absolute; top: -30%; right: -15%;
-        width: 600px; height: 600px; border-radius: 50%;
-        background: radial-gradient(circle, rgba(52,211,153,0.2), transparent 70%);
-        animation: authOrb1 15s ease-in-out infinite;
-    }
-    .auth-full-bg::after {
-        content: ""; position: absolute; bottom: -20%; left: -10%;
-        width: 500px; height: 500px; border-radius: 50%;
-        background: radial-gradient(circle, rgba(110,231,183,0.15), transparent 70%);
-        animation: authOrb2 12s ease-in-out infinite;
-    }
-    @keyframes authOrb1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,20px)} }
-    @keyframes authOrb2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-30px)} }
-    
-    .auth-glass-card {
-        background: rgba(255,255,255,0.12);
-        backdrop-filter: blur(30px);
-        -webkit-backdrop-filter: blur(30px);
-        border: 1px solid rgba(255,255,255,0.2);
-        border-radius: 28px;
-        padding: 48px 40px;
-        max-width: 520px;
-        width: 90%;
-        position: relative;
-        z-index: 10;
-        box-shadow: 0 32px 80px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
-        text-align: center;
-        animation: authCardIn 0.8s ease-out both;
-    }
-    @keyframes authCardIn {
-        from { opacity:0; transform:translateY(30px) scale(0.95); }
-        to { opacity:1; transform:translateY(0) scale(1); }
+    /* Full page background styling */
+    .stApp {
+        background-color: #011c15 !important;
+        background-image: radial-gradient(circle at 80% 20%, #064e3b 0%, #011c15 60%) !important;
     }
     
-    .auth-icon-ring {
-        width: 90px; height: 90px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
-        border: 2px solid rgba(255,255,255,0.3);
-        display: flex; align-items: center; justify-content: center;
-        margin: 0 auto 20px;
-        font-size: 3.5rem;
-        animation: authFloat 4s ease-in-out infinite;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.2);
-    }
-    @keyframes authFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-    
-    .auth-card-title {
-        font-size: 2.6rem; font-weight: 900; color: white;
-        letter-spacing: -1.5px; margin: 0 0 6px;
-        text-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    }
-    .auth-card-sub {
-        color: rgba(255,255,255,0.85); font-size: 1rem; font-weight: 600;
-        margin: 0 0 4px;
-    }
-    .auth-card-desc {
-        color: rgba(255,255,255,0.6); font-size: 0.85rem;
-        max-width: 380px; margin: 0 auto 24px; line-height: 1.6;
+    /* Remove streamlit padding/margins on auth page */
+    [data-testid="block-container"] {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
     }
     
-    .auth-features {
-        display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
-        margin-bottom: 24px;
-    }
-    .auth-feat-item {
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.12);
-        border-radius: 16px; padding: 16px 10px;
-        text-align: center;
-        transition: all 0.3s ease;
-    }
-    .auth-feat-item:hover {
-        background: rgba(255,255,255,0.15);
-        transform: translateY(-4px);
-        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-    }
-    .auth-feat-icon { font-size: 1.8rem; margin-bottom: 6px; }
-    .auth-feat-label { font-size: 0.7rem; color: rgba(255,255,255,0.8); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    /* Hide Streamlit header & footer to look like a standalone app */
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
     
-    .auth-stats-bar {
-        display: flex; justify-content: center; gap: 24px;
-        margin-bottom: 8px; flex-wrap: wrap;
+    /* Custom Styling for the glassmorphic login card (right side) */
+    div[data-testid="stForm"] {
+        background: rgba(255, 255, 255, 0.04) !important;
+        backdrop-filter: blur(35px) !important;
+        -webkit-backdrop-filter: blur(35px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 28px !important;
+        padding: 40px 32px !important;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        margin-top: 15px;
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
     }
-    .auth-stat {
-        text-align: center;
-    }
-    .auth-stat-val {
-        font-size: 1.5rem; font-weight: 900; color: white;
-        text-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
-    .auth-stat-lbl {
-        font-size: 0.6rem; color: rgba(255,255,255,0.6);
-        text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;
-    }
-    .auth-divider {
-        width: 1px; background: rgba(255,255,255,0.2);
-        align-self: stretch;
+    div[data-testid="stForm"]:hover {
+        border-color: rgba(52, 211, 153, 0.3) !important;
+        box-shadow: 0 30px 80px rgba(4, 120, 87, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
     }
     
-    .auth-trust {
-        display: flex; gap: 8px; justify-content: center; margin-top: 20px; flex-wrap: wrap;
+    /* Input formatting */
+    div[data-testid="stTextInput"] input {
+        background: rgba(0, 0, 0, 0.35) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 14px !important;
+        color: #ffffff !important;
+        padding: 14px 18px !important;
+        font-size: 1rem !important;
+        transition: all 0.3s ease !important;
     }
-    .auth-trust-badge {
-        background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
-        color: rgba(255,255,255,0.85); padding: 5px 14px; border-radius: 50px;
-        font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px;
+    div[data-testid="stTextInput"] input:focus {
+        border-color: #10b981 !important;
+        box-shadow: 0 0 14px rgba(16, 185, 129, 0.4) !important;
+        background: rgba(0, 0, 0, 0.5) !important;
+    }
+    div[data-testid="stTextInput"] label {
+        color: rgba(255, 255, 255, 0.85) !important;
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
+        letter-spacing: 0.3px;
+        margin-bottom: 8px !important;
+    }
+    
+    /* Submit button formatting */
+    div[data-testid="stFormSubmitButton"] button {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+        border: none !important;
+        border-radius: 14px !important;
+        color: white !important;
+        font-weight: 800 !important;
+        font-size: 1.15rem !important;
+        letter-spacing: 0.5px !important;
+        padding: 14px 28px !important;
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35) !important;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        width: 100% !important;
+    }
+    div[data-testid="stFormSubmitButton"] button:hover {
+        background: linear-gradient(135deg, #047857 0%, #059669 100%) !important;
+        box-shadow: 0 14px 35px rgba(16, 185, 129, 0.55) !important;
+        transform: translateY(-3px) !important;
+    }
+    div[data-testid="stFormSubmitButton"] button:active {
+        transform: translateY(1px) !important;
+    }
+    
+    /* Tabs styling */
+    div[data-testid="stTabs"] {
+        background: transparent !important;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.08) !important;
+        margin-bottom: 10px !important;
+    }
+    button[data-baseweb="tab"] {
+        color: rgba(255, 255, 255, 0.5) !important;
+        font-size: 1.15rem !important;
+        font-weight: 800 !important;
+        background: transparent !important;
+        padding: 12px 24px !important;
+        transition: all 0.3s ease !important;
+        border-bottom-width: 3px !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #34d399 !important;
+        border-bottom-color: #34d399 !important;
+        font-size: 1.2rem !important;
+        text-shadow: 0 0 10px rgba(52, 211, 153, 0.3);
+    }
+    
+    /* Styled header info alerts */
+    .stAlert {
+        background: rgba(4, 120, 87, 0.15) !important;
+        color: #a7f3d0 !important;
+        border: 1px solid rgba(52, 211, 153, 0.25) !important;
+        border-radius: 16px !important;
+    }
+    
+    /* Forgot password button styling */
+    button[data-testid="stBaseButton-tertiary"] {
+        color: rgba(255, 255, 255, 0.6) !important;
+        font-size: 0.9rem !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+    }
+    button[data-testid="stBaseButton-tertiary"]:hover {
+        color: #34d399 !important;
+        text-shadow: 0 0 8px rgba(52, 211, 153, 0.3);
     }
     </style>
+    """, unsafe_allow_html=True)
+
+    col1, col2 = st.columns([1.3, 1], gap="large")
     
-    <div class="auth-full-bg">
-        <div class="auth-glass-card">
-            <div class="auth-icon-ring">🌿</div>
-            <h1 class="auth-card-title">Plant Doctor AI</h1>
-            <p class="auth-card-sub">Pakistani Kisanon Ka AI Doctor</p>
-            <p class="auth-card-desc">Apni fasal ki bimari seconds mein pehchanein — Login ya register karein aur AI ki taqat se fasal bachayein</p>
-            
-            <div class="auth-features">
-                <div class="auth-feat-item">
-                    <div class="auth-feat-icon">🔬</div>
-                    <div class="auth-feat-label">AI Scan</div>
-                </div>
-                <div class="auth-feat-item">
-                    <div class="auth-feat-icon">📊</div>
-                    <div class="auth-feat-label">Dashboard</div>
-                </div>
-                <div class="auth-feat-item">
-                    <div class="auth-feat-icon">👨‍⚕️</div>
-                    <div class="auth-feat-label">Expert Chat</div>
-                </div>
-            </div>
-            
-            <div class="auth-stats-bar">
-                <div class="auth-stat">
-                    <div class="auth-stat-val">74K+</div>
-                    <div class="auth-stat-lbl">Images</div>
-                </div>
-                <div class="auth-divider"></div>
-                <div class="auth-stat">
-                    <div class="auth-stat-val">97%</div>
-                    <div class="auth-stat-lbl">Accuracy</div>
-                </div>
-                <div class="auth-divider"></div>
-                <div class="auth-stat">
-                    <div class="auth-stat-val">4</div>
-                    <div class="auth-stat-lbl">Crops</div>
-                </div>
-                <div class="auth-divider"></div>
-                <div class="auth-stat">
-                    <div class="auth-stat-val">&lt;3s</div>
-                    <div class="auth-stat-lbl">Speed</div>
-                </div>
-            </div>
-            
-            <div class="auth-trust">
-                <span class="auth-trust-badge">🔒 Secure</span>
-                <span class="auth-trust-badge">⚡ Fast</span>
-                <span class="auth-trust-badge">🌍 Free</span>
-            </div>
+    with col1:
+        # Mascot canvas interactive code inside an iframe
+        html_mascot = """
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: linear-gradient(135deg, #022c22 0%, #064e3b 50%, #022c22 100%);
+        font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        color: white;
+        height: 100vh;
+        user-select: none;
+    }
+    #canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+    }
+    .hud {
+        position: absolute;
+        top: 24px;
+        left: 24px;
+        z-index: 10;
+        pointer-events: none;
+        animation: fadeIn 1s ease-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .logo-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+    .logo-badge {
+        background: rgba(16, 185, 129, 0.2);
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #34d399;
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+    }
+    .hud h1 {
+        font-size: 2.2rem;
+        font-weight: 900;
+        margin: 0;
+        background: linear-gradient(135deg, #ffffff 0%, #a7f3d0 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -1px;
+    }
+    .hud p {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin: 4px 0 0 0;
+    }
+    .stats-container {
+        position: absolute;
+        bottom: 24px;
+        left: 24px;
+        right: 24px;
+        z-index: 10;
+        display: flex;
+        justify-content: space-between;
+        pointer-events: none;
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 16px 20px;
+        border-radius: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    .stat-box {
+        text-align: center;
+        flex: 1;
+    }
+    .stat-box:not(:last-child) {
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .stat-val {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #34d399;
+    }
+    .stat-lbl {
+        font-size: 0.65rem;
+        color: rgba(255, 255, 255, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 2px;
+    }
+    .interaction-tip {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        z-index: 10;
+        background: rgba(0,0,0,0.4);
+        padding: 6px 12px;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        border: 1px solid rgba(255,255,255,0.1);
+        color: rgba(255,255,255,0.8);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+</style>
+</head>
+<body>
+    <div class="hud">
+        <div class="logo-container">
+            <span class="logo-badge">AgriTech AI</span>
+        </div>
+        <h1>Plant Doctor AI</h1>
+        <p>Pakistani Kisanon Ka AI Doctor</p>
+    </div>
+    
+    <div class="interaction-tip">
+        <span>🖱️ Hover to interact</span>
+    </div>
+
+    <div class="stats-container">
+        <div class="stat-box">
+            <div class="stat-val">74K+</div>
+            <div class="stat-lbl">Images</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-val">97%</div>
+            <div class="stat-lbl">Accuracy</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-val">4 Crops</div>
+            <div class="stat-lbl">Scanned</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-val">&lt;3s</div>
+            <div class="stat-lbl">Speed</div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
-    
-    # --------------------------------------------------------------------------
-    # EMAIL VERIFICATION (URL mein verify_token ho)
-    # --------------------------------------------------------------------------
-    if "verify_token" in st.query_params:
-        st.subheader("✉️ Email Verification")
-        vtoken = st.query_params.get("verify_token")
-        try:
-            resp = requests.get(f"{API_URL}/auth/verify-email", params={"token": vtoken}, timeout=10)
-            if resp.status_code == 200:
-                st.success("✅ " + resp.json().get("message", "Email verified!"))
-            else:
-                st.error(f"❌ {resp.json().get('detail', 'Verification failed')}")
-        except Exception as e:
-            st.error(f"❌ API Error: {e}")
-        if st.button("⬅️ Login par jayein"):
-            st.query_params.clear()
-            st.rerun()
-        return
 
-    # --------------------------------------------------------------------------
-    # RESET PASSWORD FLOW (URL mein reset_token ho)
-    # --------------------------------------------------------------------------
-    if "reset_token" in st.query_params:
-        st.subheader("🔑 Reset Password")
-        reset_token = st.query_params.get("reset_token")
-        with st.form("reset_password_form"):
-            new_pass = st.text_input("New Password", type="password")
-            confirm_pass = st.text_input("Confirm New Password", type="password")
-            submitted = st.form_submit_button("Reset Password", type="primary", use_container_width=True)
-            
-            if submitted:
-                if len(new_pass) < 6:
-                    st.error("⚠️ Password kam az kam 6 characters ka hona chahiye!")
-                elif new_pass != confirm_pass:
-                    st.error("❌ Passwords match nahi kar rahe!")
-                else:
-                    try:
-                        resp = requests.post(
-                            f"{API_URL}/auth/reset-password",
-                            json={"token": reset_token, "new_password": new_pass},
-                            timeout=10
-                        )
-                        if resp.status_code == 200:
-                            st.success("✅ Password successfully reset ho gaya hai! Ab aap login kar sakte hain.")
-                            # Remove token from URL so they can login
-                            st.query_params.clear()
-                            time.sleep(2)
-                            st.rerun()
-                        else:
-                            st.error(f"❌ Error: {resp.json().get('detail', 'Invalid token')}")
-                    except Exception as e:
-                        st.error(f"❌ API Error: {str(e)}")
-                        
-        if st.button("⬅️ Back to Login"):
-            st.query_params.clear()
-            st.rerun()
-        return
+    <canvas id="canvas"></canvas>
 
-    # --------------------------------------------------------------------------
-    # FORGOT PASSWORD FLOW (Button click se)
-    # --------------------------------------------------------------------------
-    if st.session_state.get("show_forgot_password"):
-        st.subheader("📧 Forgot Password")
-        st.info("Apna email daalein, hum aapko password reset karne ka link bhejenge.")
-        with st.form("forgot_password_form"):
-            forgot_email = st.text_input("Registered Email")
-            submitted = st.form_submit_button("Send Reset Link", type="primary", use_container_width=True)
-            
-            if submitted:
-                if not forgot_email:
-                    st.error("⚠️ Email zaroori hai!")
-                else:
-                    try:
-                        resp = requests.post(
-                            f"{API_URL}/auth/forgot-password",
-                            json={"email": forgot_email},
-                            timeout=10
-                        )
-                        if resp.status_code == 200:
-                            st.success("✅ " + resp.json().get("message", "Link sent!"))
-                        else:
-                            st.error(f"❌ Error: {resp.json().get('detail', 'Failed')}")
-                    except Exception as e:
-                        st.error(f"❌ API Error: {str(e)}")
-                        
-        if st.button("⬅️ Back to Login"):
-            st.session_state.show_forgot_password = False
-            st.rerun()
-        return
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
 
-    # --------------------------------------------------------------------------
-    # STANDARD LOGIN / REGISTER
-    # --------------------------------------------------------------------------
-    tab1, tab2 = st.tabs(["🔑 Login", "📝 Register"])
-    
-    with tab1:
-        st.markdown("<br>", unsafe_allow_html=True)
-    with tab1:
-        st.markdown("<br>", unsafe_allow_html=True)
-        with st.form("login_form"):
-            email = st.text_input("📧 Email")
-            password = st.text_input("🔒 Password", type="password")
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        const mouse = { x: width / 2, y: height / 2, active: false };
+
+        window.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+            mouse.active = true;
+        });
+
+        window.addEventListener('mouseleave', () => {
+            mouse.active = false;
+        });
+
+        // Background spores
+        const spores = [];
+        for (let i = 0; i < 40; i++) {
+            spores.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                size: Math.random() * 2 + 1,
+                speedX: (Math.random() - 0.5) * 0.4,
+                speedY: -Math.random() * 0.5 - 0.2,
+                opacity: Math.random() * 0.5 + 0.2,
+                pulse: Math.random() * Math.PI
+            });
+        }
+
+        // Bioluminescent neural nodes (for plant vine network)
+        const nodes = [];
+        const numNodes = 25;
+        for (let i = 0; i < numNodes; i++) {
+            nodes.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                baseX: 0,
+                baseY: 0,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: (Math.random() - 0.5) * 0.5,
+                radius: Math.random() * 3 + 2,
+                glow: Math.random() * 10 + 5
+            });
+            nodes[i].baseX = nodes[i].x;
+            nodes[i].baseY = nodes[i].y;
+        }
+
+        // Mascot status
+        const mascot = {
+            x: width / 2,
+            y: height / 2,
+            targetX: width / 2,
+            targetY: height / 2,
+            vx: 0,
+            vy: 0,
+            size: 45,
+            floatingTime: 0,
+            eyeLeft: { x: -14, y: -4 },
+            eyeRight: { x: 14, y: -4 },
+            wingAngle: 0
+        };
+
+        // Spore particles running along the vines
+        const vineSpores = [];
+
+        function drawBackground() {
+            // Draw gradient background
+            const bgGrad = ctx.createRadialGradient(width/2, height/2, 10, width/2, height/2, Math.max(width, height));
+            bgGrad.addColorStop(0, '#064e3b');
+            bgGrad.addColorStop(0.5, '#022c22');
+            bgGrad.addColorStop(1, '#011c15');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw spore particles
+            ctx.shadowBlur = 0;
+            for (let i = 0; i < spores.length; i++) {
+                const s = spores[i];
+                s.y += s.speedY;
+                s.x += s.speedX;
+                s.pulse += 0.02;
+
+                if (s.y < -10) s.y = height + 10;
+                if (s.x < -10 || s.x > width + 10) s.x = Math.random() * width;
+
+                const currentOpacity = s.opacity + Math.sin(s.pulse) * 0.15;
+                ctx.fillStyle = `rgba(52, 211, 153, ${Math.max(0.1, currentOpacity)})`;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function updateNodes() {
+            for (let i = 0; i < nodes.length; i++) {
+                const n = nodes[i];
+                
+                // Drift slightly
+                n.x += n.vx;
+                n.y += n.vy;
+
+                if (n.x < 0 || n.x > width) n.vx *= -1;
+                if (n.y < 0 || n.y > height) n.vy *= -1;
+
+                // Mouse interaction
+                if (mouse.active) {
+                    const dx = mouse.x - n.x;
+                    const dy = mouse.y - n.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 150) {
+                        const force = (150 - dist) / 150;
+                        n.x -= (dx / dist) * force * 1.5;
+                        n.y -= (dy / dist) * force * 1.5;
+                    } else {
+                        // Return to base behavior smoothly
+                        const dbx = n.baseX - n.x;
+                        const dby = n.baseY - n.y;
+                        n.x += dbx * 0.01;
+                        n.y += dby * 0.01;
+                    }
+                }
+            }
+        }
+
+        function drawVinesAndNeuralNetwork() {
+            // Draw connection between nodes (neural network / plant roots)
+            ctx.lineWidth = 1;
+            for (let i = 0; i < nodes.length; i++) {
+                const n1 = nodes[i];
+                
+                // Draw glowing dots
+                ctx.shadowColor = '#10b981';
+                ctx.shadowBlur = n1.glow;
+                ctx.fillStyle = 'rgba(52, 211, 153, 0.8)';
+                ctx.beginPath();
+                ctx.arc(n1.x, n1.y, n1.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw lines between nodes
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const n2 = nodes[j];
+                    const dx = n1.x - n2.x;
+                    const dy = n1.y - n2.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+
+                    if (dist < 120) {
+                        const alpha = (120 - dist) / 120 * 0.25;
+                        ctx.shadowBlur = 0;
+                        ctx.strokeStyle = `rgba(16, 185, 129, ${alpha})`;
+                        ctx.beginPath();
+                        ctx.moveTo(n1.x, n1.y);
+                        ctx.lineTo(n2.x, n2.y);
+                        ctx.stroke();
+                    }
+                }
+
+                // Connect nodes to mascot
+                const mdx = n1.x - mascot.x;
+                const mdy = n1.y - mascot.y;
+                const mdist = Math.sqrt(mdx*mdx + mdy*mdy);
+                if (mdist < 180) {
+                    const malpha = (180 - mdist) / 180 * 0.2;
+                    ctx.shadowBlur = 0;
+                    ctx.strokeStyle = `rgba(16, 185, 129, ${malpha})`;
+                    ctx.beginPath();
+                    ctx.moveTo(n1.x, n1.y);
+                    ctx.lineTo(mascot.x, mascot.y);
+                    ctx.stroke();
+                }
+
+                // Connect closest nodes to mouse (The glowing organic connections like a spider web)
+                if (mouse.active) {
+                    const mdx = n1.x - mouse.x;
+                    const mdy = n1.y - mouse.y;
+                    const mdist = Math.sqrt(mdx*mdx + mdy*mdy);
+
+                    if (mdist < 180) {
+                        const alpha = (180 - mdist) / 180 * 0.65;
+                        ctx.shadowColor = '#34d399';
+                        ctx.shadowBlur = 8;
+                        ctx.strokeStyle = `rgba(52, 211, 153, ${alpha})`;
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(n1.x, n1.y);
+                        // Draw slight curve for organic look
+                        const cx = (n1.x + mouse.x) / 2 + Math.sin(n1.y * 0.05) * 15;
+                        const cy = (n1.y + mouse.y) / 2 + Math.cos(n1.x * 0.05) * 15;
+                        ctx.quadraticCurveTo(cx, cy, mouse.x, mouse.y);
+                        ctx.stroke();
+
+                        // Spores running along these active connections
+                        if (Math.random() < 0.015 && vineSpores.length < 30) {
+                            vineSpores.push({
+                                startX: n1.x,
+                                startY: n1.y,
+                                endX: mouse.x,
+                                endY: mouse.y,
+                                cx: cx,
+                                cy: cy,
+                                progress: 0,
+                                speed: Math.random() * 0.03 + 0.015,
+                                size: Math.random() * 3 + 2
+                            });
+                        }
+                    }
+                }
+            }
             
-            submitted = st.form_submit_button("🔓 Login", type="primary", use_container_width=True)
-            if submitted:
-                if not email or not password:
-                    st.error("⚠️ Email aur password dono daalein!")
-                else:
-                    try:
-                        response = requests.post(
-                            f"{API_URL}/auth/login", 
-                            json={"email": email, "password": password},
-                            timeout=5
-                        )
-                        
-                        if response.status_code == 200:
-                            data = response.json()
-                            st.session_state.token = data['token']
-                            st.session_state.user = data['role']
-                            st.session_state.user_email = email 
-                            persist_auth_token()  # 🔥 URL mein save karo
-                            st.success("✅ Login successful!")
-                            time.sleep(0.5)
-                            st.rerun()
-                        elif response.status_code == 401:
-                            st.error("❌ Galat email ya password!")
-                        elif response.status_code == 403:
-                            st.error("❌ " + response.json().get("detail", "Email verify karein pehle."))
-                        else:
-                            st.error(f"❌ Error: {response.json().get('detail', 'Unknown error')}")
-                    except requests.exceptions.ConnectionError:
-                        st.error("❌ Backend server nahi chal raha! Terminal mein `uvicorn main:app --reload --port 8000` run karein.")
-                    except Exception as e:
-                        st.error(f"❌ Error: {str(e)}")
-                        
-        if st.button("Forgot Password?", type="tertiary"):
-            st.session_state.show_forgot_password = True
-            st.rerun()
-    
-    with tab2:
-        st.markdown("<br>", unsafe_allow_html=True)
-        with st.form("register_form"):
-            name = st.text_input("👤 Full Name")
-            email = st.text_input("📧 Email")
-            phone = st.text_input("📱 Phone (optional)")
-            password = st.text_input("🔒 Password", type="password")
-            confirm_password = st.text_input("🔒 Confirm Password", type="password")
+            // Draw traveling vine spores
+            ctx.shadowColor = '#6ee7b7';
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = '#6ee7b7';
+            for (let i = vineSpores.length - 1; i >= 0; i--) {
+                const p = vineSpores[i];
+                p.progress += p.speed;
+                if (p.progress >= 1) {
+                    vineSpores.splice(i, 1);
+                    continue;
+                }
+                
+                // Quadratic bezier interpolation
+                const t = p.progress;
+                const mt = 1 - t;
+                const px = mt * mt * p.startX + 2 * mt * t * p.cx + t * t * p.endX;
+                const py = mt * mt * p.startY + 2 * mt * t * p.cy + t * t * p.endY;
+
+                ctx.beginPath();
+                ctx.arc(px, py, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function updateMascot() {
+            // Easing position to follow the mouse
+            mascot.floatingTime += 0.035;
             
-            submitted = st.form_submit_button("📝 Register", type="primary", use_container_width=True)
-            if submitted:
-                if not name or not email or not password:
-                    st.error("⚠️ Name, email aur password zaroori hain!")
-                elif password != confirm_password:
-                    st.error("❌ Passwords match nahi kar rahe!")
+            // Float offsets (idle bobbing)
+            const floatOffset = Math.sin(mascot.floatingTime) * 15;
+            
+            if (mouse.active) {
+                // If mouse is active, follow the mouse gently but stay a bit away
+                const dx = mouse.x - mascot.x;
+                const dy = mouse.y - mascot.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                // Let's float towards the mouse but maintain at least 80px distance, or just float close
+                if (dist > 80) {
+                    mascot.targetX = mouse.x - (dx / dist) * 80;
+                    mascot.targetY = mouse.y - (dy / dist) * 80 + floatOffset;
+                } else {
+                    mascot.targetX = mascot.x;
+                    mascot.targetY = mascot.y + floatOffset;
+                }
+            } else {
+                // Return to center of left screen
+                mascot.targetX = width / 2;
+                mascot.targetY = height / 2 + floatOffset;
+            }
+
+            // Smooth interpolation
+            mascot.vx += (mascot.targetX - mascot.x) * 0.035;
+            mascot.vy += (mascot.targetY - mascot.y) * 0.035;
+            
+            // Friction
+            mascot.vx *= 0.82;
+            mascot.vy *= 0.82;
+
+            mascot.x += mascot.vx;
+            mascot.y += mascot.vy;
+
+            // Flutter wings
+            mascot.wingAngle = Math.sin(mascot.floatingTime * 4) * 0.25;
+        }
+
+        function drawMascot() {
+            const mx = mascot.x;
+            const my = mascot.y;
+
+            ctx.save();
+            ctx.translate(mx, my);
+
+            // Draw glowing aura
+            const auraGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, mascot.size * 2);
+            auraGrad.addColorStop(0, 'rgba(52, 211, 153, 0.25)');
+            auraGrad.addColorStop(0.5, 'rgba(52, 211, 153, 0.08)');
+            auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = auraGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, mascot.size * 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw organic leafy wings (fluttering)
+            ctx.shadowBlur = 0;
+            
+            // Left Wing (Leaf shape)
+            ctx.save();
+            ctx.translate(-mascot.size * 0.7, -mascot.size * 0.1);
+            ctx.rotate(-0.5 + mascot.wingAngle);
+            const leftWingGrad = ctx.createLinearGradient(-30, 0, 0, 0);
+            leftWingGrad.addColorStop(0, '#10b981');
+            leftWingGrad.addColorStop(1, '#047857');
+            ctx.fillStyle = leftWingGrad;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(-45, -25, -55, 0);
+            ctx.quadraticCurveTo(-25, 25, 0, 0);
+            ctx.fill();
+            // Wing glow veins
+            ctx.strokeStyle = '#6ee7b7';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-45, -5);
+            ctx.stroke();
+            ctx.restore();
+
+            // Right Wing
+            ctx.save();
+            ctx.translate(mascot.size * 0.7, -mascot.size * 0.1);
+            ctx.rotate(0.5 - mascot.wingAngle);
+            const rightWingGrad = ctx.createLinearGradient(0, 0, 30, 0);
+            rightWingGrad.addColorStop(0, '#047857');
+            rightWingGrad.addColorStop(1, '#10b981');
+            ctx.fillStyle = rightWingGrad;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(45, -25, 55, 0);
+            ctx.quadraticCurveTo(25, 25, 0, 0);
+            ctx.fill();
+            // Wing veins
+            ctx.strokeStyle = '#6ee7b7';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(45, -5);
+            ctx.stroke();
+            ctx.restore();
+            ctx.restore();
+
+            // Draw Mascot Body (Sleek Glassmorphic Seed Core)
+            const bodyGrad = ctx.createRadialGradient(-10, -10, 5, 0, 0, mascot.size);
+            bodyGrad.addColorStop(0, '#10b981');
+            bodyGrad.addColorStop(0.6, '#065f46');
+            bodyGrad.addColorStop(1, '#022c22');
+            ctx.fillStyle = bodyGrad;
+            ctx.shadowColor = '#10b981';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(0, 0, mascot.size, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Metallic highlights on outer rim
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, mascot.size - 1, Math.PI * 1.25, Math.PI * 1.75);
+            ctx.stroke();
+
+            // Mascot Leaf Antenna / Hair
+            ctx.save();
+            ctx.translate(0, -mascot.size + 2);
+            ctx.rotate(Math.sin(mascot.floatingTime * 2) * 0.1);
+            const leafGrad = ctx.createLinearGradient(0, -30, 0, 0);
+            leafGrad.addColorStop(0, '#34d399');
+            leafGrad.addColorStop(1, '#10b981');
+            ctx.fillStyle = leafGrad;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(-15, -25, 0, -35);
+            ctx.quadraticCurveTo(15, -25, 0, 0);
+            ctx.fill();
+            // Blinking LED on antenna tip
+            const ledPulse = Math.abs(Math.sin(mascot.floatingTime * 5));
+            ctx.fillStyle = `rgba(110, 231, 183, ${0.4 + ledPulse * 0.6})`;
+            ctx.shadowColor = '#6ee7b7';
+            ctx.shadowBlur = 8 * ledPulse;
+            ctx.beginPath();
+            ctx.arc(0, -35, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Calculate Eye Tracking (Eyes look towards the mouse cursor)
+            let eyeOffsetX = 0;
+            let eyeOffsetY = 0;
+            
+            const dx = mouse.x - mx;
+            const dy = mouse.y - my;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            
+            if (dist > 0) {
+                // Max look distance is 8px
+                const lookFactor = Math.min(8, dist / 25);
+                eyeOffsetX = (dx / dist) * lookFactor;
+                eyeOffsetY = (dy / dist) * lookFactor;
+            }
+
+            // Left Eye
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#011c15';
+            ctx.beginPath();
+            ctx.arc(mascot.eyeLeft.x, mascot.eyeLeft.y, 11, 0, Math.PI * 2);
+            ctx.fill();
+            // Eye Glow
+            ctx.fillStyle = '#34d399';
+            ctx.shadowColor = '#34d399';
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.arc(mascot.eyeLeft.x + eyeOffsetX, mascot.eyeLeft.y + eyeOffsetY, 6, 0, Math.PI * 2);
+            ctx.fill();
+            // Eye catchlight (sparkle)
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(mascot.eyeLeft.x + eyeOffsetX - 2, mascot.eyeLeft.y + eyeOffsetY - 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Right Eye
+            ctx.fillStyle = '#011c15';
+            ctx.beginPath();
+            ctx.arc(mascot.eyeRight.x, mascot.eyeRight.y, 11, 0, Math.PI * 2);
+            ctx.fill();
+            // Eye Glow
+            ctx.fillStyle = '#34d399';
+            ctx.shadowColor = '#34d399';
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.arc(mascot.eyeRight.x + eyeOffsetX, mascot.eyeRight.y + eyeOffsetY, 6, 0, Math.PI * 2);
+            ctx.fill();
+            // Eye catchlight
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(mascot.eyeRight.x + eyeOffsetX - 2, mascot.eyeRight.y + eyeOffsetY - 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Cute Glowing Digital Blush
+            ctx.fillStyle = 'rgba(52, 211, 153, 0.35)';
+            ctx.beginPath();
+            ctx.arc(-22, 6, 6, 0, Math.PI * 2);
+            ctx.arc(22, 6, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Cute Happy Digital Mouth
+            ctx.strokeStyle = '#34d399';
+            ctx.lineWidth = 3.5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            if (mouse.active && dist < 180) {
+                // Happy open mouth when mouse is close!
+                ctx.arc(0, 4, 6, 0, Math.PI);
+            } else {
+                // Sweet smile when idle
+                ctx.arc(0, 3, 5, 0.1 * Math.PI, 0.9 * Math.PI);
+            }
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function animate() {
+            drawBackground();
+            updateNodes();
+            drawVinesAndNeuralNetwork();
+            updateMascot();
+            drawMascot();
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
+        """
+        st.components.v1.html(html_mascot, height=650, scrolling=False)
+        
+    with col2:
+        # --------------------------------------------------------------------------
+        # EMAIL VERIFICATION (URL mein verify_token ho)
+        # --------------------------------------------------------------------------
+        if "verify_token" in st.query_params:
+            st.subheader("✉️ Email Verification")
+            vtoken = st.query_params.get("verify_token")
+            try:
+                resp = requests.get(f"{API_URL}/auth/verify-email", params={"token": vtoken}, timeout=10)
+                if resp.status_code == 200:
+                    st.success("✅ " + resp.json().get("message", "Email verified!"))
                 else:
-                    try:
-                        response = requests.post(
-                            f"{API_URL}/auth/register",
-                            json={
-                                "full_name": name,
-                                "email": email,
-                                "password": password,
-                                "phone": phone
-                            },
-                            timeout=5
-                        )
-                        
-                        if response.status_code == 200:
-                            data = response.json()
-                            if data.get("email_verification_required"):
-                                st.success("✅ Account ban gaya! Apni email check karein — verification link bhej diya gaya.")
-                            else:
-                                st.success("✅ Registration successful! Ab login karein.")
-                                time.sleep(1.5)
+                    st.error(f"❌ {resp.json().get('detail', 'Verification failed')}")
+            except Exception as e:
+                st.error(f"❌ API Error: {e}")
+            if st.button("⬅️ Login par jayein"):
+                st.query_params.clear()
+                st.rerun()
+            return
+
+        # --------------------------------------------------------------------------
+        # RESET PASSWORD FLOW (URL mein reset_token ho)
+        # --------------------------------------------------------------------------
+        if "reset_token" in st.query_params:
+            st.subheader("🔑 Reset Password")
+            reset_token = st.query_params.get("reset_token")
+            with st.form("reset_password_form"):
+                new_pass = st.text_input("New Password", type="password")
+                confirm_pass = st.text_input("Confirm New Password", type="password")
+                submitted = st.form_submit_button("Reset Password", type="primary", use_container_width=True)
+                
+                if submitted:
+                    if len(new_pass) < 6:
+                        st.error("⚠️ Password kam az kam 6 characters ka hona chahiye!")
+                    elif new_pass != confirm_pass:
+                        st.error("❌ Passwords match nahi kar rahe!")
+                    else:
+                        try:
+                            resp = requests.post(
+                                f"{API_URL}/auth/reset-password",
+                                json={"token": reset_token, "new_password": new_pass},
+                                timeout=10
+                            )
+                            if resp.status_code == 200:
+                                st.success("✅ Password successfully reset ho gaya hai! Ab aap login kar sakte hain.")
+                                # Remove token from URL so they can login
+                                st.query_params.clear()
+                                time.sleep(2)
                                 st.rerun()
-                        elif response.status_code == 400:
-                            detail = response.json().get('detail', '')
-                            if 'already' in detail.lower() or 'registered' in detail.lower():
-                                st.warning("⚠️ Ye email pehle se registered hai. Login tab se login karein.")
                             else:
-                                st.error(f"❌ {detail}")
-                        else:
-                            try:
-                                err_msg = response.json().get('detail', 'Unknown error')
-                            except:
-                                err_msg = response.text
-                            st.error(f"❌ Error: {err_msg}")
-                    except requests.exceptions.ConnectionError:
-                        st.error("❌ Backend server nahi chal raha! Terminal mein `uvicorn main:app --reload --port 8000` run karein.")
-                    except Exception as e:
-                        st.error(f"❌ Error: {str(e)}") 
+                                st.error(f"❌ Error: {resp.json().get('detail', 'Invalid token')}")
+                        except Exception as e:
+                            st.error(f"❌ API Error: {str(e)}")
+                            
+            if st.button("⬅️ Back to Login"):
+                st.query_params.clear()
+                st.rerun()
+            return
+
+        # --------------------------------------------------------------------------
+        # FORGOT PASSWORD FLOW (Button click se)
+        # --------------------------------------------------------------------------
+        if st.session_state.get("show_forgot_password"):
+            st.subheader("📧 Forgot Password")
+            st.info("Apna email daalein, hum aapko password reset karne ka link bhejenge.")
+            with st.form("forgot_password_form"):
+                forgot_email = st.text_input("Registered Email")
+                submitted = st.form_submit_button("Send Reset Link", type="primary", use_container_width=True)
+                
+                if submitted:
+                    if not forgot_email:
+                        st.error("⚠️ Email zaroori hai!")
+                    else:
+                        try:
+                            resp = requests.post(
+                                f"{API_URL}/auth/forgot-password",
+                                json={"email": forgot_email},
+                                timeout=10
+                            )
+                            if resp.status_code == 200:
+                                st.success("✅ " + resp.json().get("message", "Link sent!"))
+                            else:
+                                st.error(f"❌ Error: {resp.json().get('detail', 'Failed')}")
+                        except Exception as e:
+                            st.error(f"❌ API Error: {str(e)}")
+                            
+            if st.button("⬅️ Back to Login"):
+                st.session_state.show_forgot_password = False
+                st.rerun()
+            return
+
+        # --------------------------------------------------------------------------
+        # STANDARD LOGIN / REGISTER
+        # --------------------------------------------------------------------------
+        tab1, tab2 = st.tabs(["🔑 Login", "📝 Register"])
+        
+        with tab1:
+            st.markdown("<br>", unsafe_allow_html=True)
+            with st.form("login_form"):
+                email = st.text_input("📧 Email")
+                password = st.text_input("🔒 Password", type="password")
+                
+                submitted = st.form_submit_button("🔓 Login", type="primary", use_container_width=True)
+                if submitted:
+                    if not email or not password:
+                        st.error("⚠️ Email aur password dono daalein!")
+                    else:
+                        try:
+                            response = requests.post(
+                                f"{API_URL}/auth/login", 
+                                json={"email": email, "password": password},
+                                timeout=5
+                            )
+                            
+                            if response.status_code == 200:
+                                data = response.json()
+                                st.session_state.token = data['token']
+                                st.session_state.user = data['role']
+                                st.session_state.user_email = email 
+                                persist_auth_token()  # 🔥 URL mein save karo
+                                st.success("✅ Login successful!")
+                                time.sleep(0.5)
+                                st.rerun()
+                            elif response.status_code == 401:
+                                st.error("❌ Galat email ya password!")
+                            elif response.status_code == 403:
+                                st.error("❌ " + response.json().get("detail", "Email verify karein pehle."))
+                            else:
+                                st.error(f"❌ Error: {response.json().get('detail', 'Unknown error')}")
+                        except requests.exceptions.ConnectionError:
+                            st.error("❌ Backend server nahi chal raha! Terminal mein `uvicorn main:app --reload --port 8000` run karein.")
+                        except Exception as e:
+                            st.error(f"❌ Error: {str(e)}")
+                            
+            if st.button("Forgot Password?", type="tertiary"):
+                st.session_state.show_forgot_password = True
+                st.rerun()
+        
+        with tab2:
+            st.markdown("<br>", unsafe_allow_html=True)
+            with st.form("register_form"):
+                name = st.text_input("👤 Full Name")
+                email = st.text_input("📧 Email")
+                phone = st.text_input("📱 Phone (optional)")
+                password = st.text_input("🔒 Password", type="password")
+                confirm_password = st.text_input("🔒 Confirm Password", type="password")
+                
+                submitted = st.form_submit_button("📝 Register", type="primary", use_container_width=True)
+                if submitted:
+                    if not name or not email or not password:
+                        st.error("⚠️ Name, email aur password zaroori hain!")
+                    elif password != confirm_password:
+                        st.error("❌ Passwords match nahi kar rahe!")
+                    else:
+                        try:
+                            response = requests.post(
+                                f"{API_URL}/auth/register",
+                                json={
+                                    "full_name": name,
+                                    "email": email,
+                                    "password": password,
+                                    "phone": phone
+                                },
+                                timeout=5
+                            )
+                            
+                            if response.status_code == 200:
+                                data = response.json()
+                                if data.get("email_verification_required"):
+                                    st.success("✅ Account ban gaya! Apni email check karein — verification link bhej diya gaya.")
+                                else:
+                                    st.success("✅ Registration successful! Ab login karein.")
+                                    time.sleep(1.5)
+                                    st.rerun()
+                            elif response.status_code == 400:
+                                detail = response.json().get('detail', '')
+                                if 'already' in detail.lower() or 'registered' in detail.lower():
+                                    st.warning("⚠️ Ye email pehle se registered hai. Login tab se login karein.")
+                                else:
+                                    st.error(f"❌ {detail}")
+                            else:
+                                try:
+                                    err_msg = response.json().get('detail', 'Unknown error')
+                                except:
+                                    err_msg = response.text
+                                st.error(f"❌ Error: {err_msg}")
+                        except requests.exceptions.ConnectionError:
+                            st.error("❌ Backend server nahi chal raha! Terminal mein `uvicorn main:app --reload --port 8000` run karein.")
+                        except Exception as e:
+                            st.error(f"❌ Error: {str(e)}") 
 
 def logout():
     """User logout - URL se bhi token hatao"""
@@ -1719,6 +2308,7 @@ def get_badge_css():
     transition:transform 0.3s ease, box-shadow 0.3s ease; height:400px;
     display:flex; flex-direction:column; justify-content:space-between;
     position:relative;
+    box-sizing: border-box !important;
 }
 .weather-container:hover { transform:translateY(-6px); box-shadow:0 30px 70px rgba(0,0,0,0.2); }
 .weather-glow { position:absolute; top:-50%; left:-50%; width:200%; height:200%; background:radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 60%); pointer-events:none; }
@@ -1758,7 +2348,7 @@ def get_badge_css():
 
 /* Desktop fix: weather widget full display */
 @media (min-width: 769px) {
-    .weather-container { height: 400px; overflow: auto; }
+    .weather-container { height: 400px; overflow: auto; box-sizing: border-box !important; }
     .hero-bg { text-align: center; }
     .hero-title { text-align: center !important; }
     .hero-sub { text-align: center !important; }
