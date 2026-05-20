@@ -664,16 +664,6 @@ if not st.session_state.token:
     render_auth_page()
     st.stop()
 
-# Payment return from Stripe
-_pay = st.query_params.get("payment")
-if _pay == "success" and not st.session_state.get("_pay_success_shown"):
-    st.session_state._pay_success_shown = True
-    st.success("👑 Payment successful! Premium features ab activate ho rahe hain — page refresh ho jayega.")
-elif _pay == "cancel" and not st.session_state.get("_pay_cancel_shown"):
-    st.session_state._pay_cancel_shown = True
-    st.warning("Payment cancel ho gayi. Aap baad mein Premium se upgrade kar sakte hain.")
-
-
 # --- 2. WEATHER ---
 def get_real_weather():
     """Fetch live temperature, wind speed, AND real humidity from Open-Meteo."""
@@ -773,14 +763,13 @@ CROP_CONFIG = {
 # --- 4. MODEL LOADING — Graceful degradation (v3 improvement) ---
 @st.cache_resource
 def safe_load_models():
-    """Load all crop models + master crop detector. Missing models don't crash app."""
+    """Load all crop models. Missing models don't crash app."""
     models = {}
     model_files = {
         "potato": ("potato_disease_model_v3.pkl",        "class_names"),
         "tomato": ("tomato_disease_model_v3.pkl", "class_names"),
         "pepper": ("pepper_disease_model_v3.pkl",        "class_names"),
         "corn":   ("corn_disease_model_v3.pkl",          "class_names"),
-        "master": ("crop_detector_v3_ultimate.pkl",      "classes"),
     }
     for crop_key, (file_path, cls_key) in model_files.items():
         try:
@@ -996,220 +985,72 @@ def extract_features_v3(image_bytes):
 
     return result
 
-# --- 8. CROP AUTO-DETECTOR (v3: Universal upload, AI detects crop type) ---
-class CropAutoDetector:
-    """
-    ML-based crop detection using the Master Crop Detector model (93% accuracy).
-    Falls back to color/shape heuristics if master model is unavailable.
-    """
-
-    @staticmethod
-    def detect(image_bytes):
-        """
-        Returns (detected_crop_key, confidence_float, message_str).
-        First tries ML master model, then falls back to heuristics.
-        """
-        # --- Try ML Master Model first ---
-        # ✅ FIX #4: Handle 6 items from pipeline
-        master_data = MODELS.get("master", (None, None, None, None, None, None))
-        if len(master_data) == 6:
-            master_model, master_scaler, master_vt, master_pca, master_sel, master_classes = master_data
-        else:
-            master_model = master_data[0] if master_data else None
-            master_scaler = master_vt = master_pca = master_sel = master_classes = None
-
-        if master_model:
-            try:
-                # ✅ FIX #5: Use extract_features_v3 — SAME as training!
-                features = extract_features_v3(image_bytes)
-                if features is not None:
-                    features = np.nan_to_num(features).reshape(1, -1)
-                    # ✅ Apply full 4-step pipeline
-                    if master_scaler:
-                        features = master_scaler.transform(features)
-                    if master_vt:
-                        features = master_vt.transform(features)
-                    if master_pca:
-                        features = master_pca.transform(features)
-                    if master_sel:
-                        features = master_sel.transform(features)
-                    probs = master_model.predict_proba(features)[0]
-                    max_idx = np.argmax(probs)
-                    conf = float(probs[max_idx])
-                    best_crop = master_classes[max_idx]
-
-                    if conf >= 0.5:
-                        crop_names = {"potato": "Aloo (Potato)", "tomato": "Tamatar (Tomato)",
-                                      "pepper": "Mirch (Pepper)", "corn": "Makki (Corn)"}
-                        msg = f"{crop_names.get(best_crop, best_crop.title())} detect hua — {conf:.0%} confidence"
-                        return best_crop, conf, msg
-            except Exception:
-                pass  # Fall through to heuristics
-
-        # --- Fallback: Color + Shape Heuristics ---
-        try:
-            nparr = np.frombuffer(image_bytes, np.uint8)
-            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            if img is None:
-                return None, 0.0, "Image decode failed."
-
-            img_resized = cv2.resize(img, (128, 128))
-            hsv = cv2.cvtColor(img_resized, cv2.COLOR_BGR2HSV)
-            mean_hue = float(np.mean(hsv[:, :, 0]))
-            mean_sat = float(np.mean(hsv[:, :, 1])) / 255.0
-            mean_val = float(np.mean(hsv[:, :, 2])) / 255.0
-            h, w = img.shape[:2]
-            aspect = w / max(h, 1)
-
-            scores = {"potato": 0.0, "tomato": 0.0, "pepper": 0.0, "corn": 0.0}
-
-            if 30 <= mean_hue <= 90 and 0.8 <= aspect <= 1.6:
-                scores["potato"] += 0.5
-            if mean_sat > 0.2:   scores["potato"] += 0.2
-            if mean_val > 0.3:   scores["potato"] += 0.1
-
-            if 30 <= mean_hue <= 80 and mean_sat > 0.28:
-                scores["tomato"] += 0.5
-            if 0.9 <= aspect <= 1.7: scores["tomato"] += 0.15
-            if mean_val > 0.35:      scores["tomato"] += 0.1
-
-            if 35 <= mean_hue <= 85 and 0.7 <= aspect <= 1.5:
-                scores["pepper"] += 0.4
-            if mean_sat > 0.3:   scores["pepper"] += 0.15
-            if mean_val > 0.2:   scores["pepper"] += 0.15
-
-            if 30 <= mean_hue <= 85 and (aspect > 1.8 or aspect < 0.6):
-                scores["corn"] += 0.6
-            if mean_sat > 0.15:  scores["corn"] += 0.1
-
-            best = max(scores, key=scores.get)
-            conf = round(min(scores[best], 0.95), 2)
-
-            if conf < 0.5:
-                return None, conf, "Could not confidently detect crop. Please select manually."
-
-            crop_names = {"potato": "Aloo (Potato)", "tomato": "Tamatar (Tomato)",
-                          "pepper": "Mirch (Pepper)", "corn": "Makki (Corn)"}
-            msg = f"{crop_names[best]} detect hua — {conf:.0%} confidence"
-            return best, conf, msg
-
-        except Exception:
-            return None, 0.0, "Detection error. Please select crop manually."
-
-
-def render_universal_upload():
-    """
-    Single drag-and-drop zone for any leaf.
-    AI auto-detects crop; user can override manually.
-    Returns (uploaded_file, crop_key) or (None, None).
-    """
-    st.markdown("""
-    <style>
-    .univ-upload-box {
-        border: 3px dashed #34d399;
-        border-radius: 24px;
-        padding: 40px 32px;
-        text-align: center;
-        background: linear-gradient(135deg, #ecfdf5, #f0fdf4);
-        transition: all 0.3s ease;
-        margin-bottom: 20px;
-    }
-    .univ-upload-box:hover {
-        border-color: #059669;
-        background: linear-gradient(135deg, #d1fae5, #ecfdf5);
-    }
-    .univ-upload-title { font-size: 1.2rem; font-weight: 800; color: #064e3b; margin-bottom: 6px; }
-    .univ-upload-sub   { color: #6b7280; font-size: 0.88rem; }
-    .detect-result-box {
-        background: white; border-radius: 16px; padding: 18px 22px;
-        border: 2px solid #d1fae5; margin-top: 14px;
-        box-shadow: 0 4px 16px rgba(16,185,129,0.1);
-    }
-    .detect-label  { font-size: 0.65rem; color: #6b7280; font-weight: 700;
-                     text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-    .detect-crop   { font-size: 1.4rem; font-weight: 900; color: #064e3b; }
-    .detect-conf   { font-size: 0.82rem; color: #059669; font-weight: 600; margin-top: 2px; }
-    </style>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="univ-upload-box">
-        <div style="font-size:3rem;margin-bottom:10px;">🌿</div>
-        <div class="univ-upload-title">Koi bhi fasal ka patta drop karein</div>
-        <div class="univ-upload-sub">AI khud detect karega — Potato, Tomato, Pepper, Corn · Ya manually select karein</div>
-        <div style="display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
-            <span style="background:#d1fae5;color:#065f46;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;">🥔 Potato</span>
-            <span style="background:#fee2e2;color:#991b1b;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;">🍅 Tomato</span>
-            <span style="background:#ede9fe;color:#4c1d95;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;">🫑 Pepper</span>
-            <span style="background:#fef3c7;color:#92400e;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;">🌽 Corn</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    uploaded_file = st.file_uploader(
-        "Patta upload karein / Drop leaf photo here",
-        type=["jpg", "png", "jpeg", "webp", "jfif"],
-        key="universal_uploader"
-    )
-
-    if not uploaded_file:
-        return None, None
-
-    # Auto-detect crop
-    detected_crop, conf, msg = CropAutoDetector.detect(uploaded_file.getvalue())
-
-    col_img, col_detect = st.columns([1, 1.4])
-    with col_img:
-        pil_img = Image.open(uploaded_file).convert('RGB')
-        st.image(pil_img, caption="📷 Uploaded Leaf", use_column_width=True)
-
-    with col_detect:
-        if detected_crop and conf >= 0.5:
-            emoji_map = {"potato": "🥔", "tomato": "🍅", "pepper": "🫑", "corn": "🌽"}
-            emoji = emoji_map.get(detected_crop, "🌿")
-            st.markdown(f"""
-            <div class="detect-result-box">
-                <div class="detect-label">🤖 AI Detection Result</div>
-                <div class="detect-crop">{emoji} {detected_crop.title()} Detect Hua!</div>
-                <div class="detect-conf">✅ Confidence: {conf:.0%}</div>
-                <div style="font-size:0.78rem;color:#6b7280;margin-top:6px;">{msg}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown("""
-            <div class="detect-result-box" style="border-color:#fde68a;">
-                <div class="detect-label">⚠️ Manual Selection Required</div>
-                <div style="font-size:0.88rem;color:#6b7280;margin-top:4px;">AI confidently detect nahi kar saka. Neeche se crop chunein.</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        # Manual override — always visible
-        st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
-        options = ["🥔 Potato (Aloo)", "🍅 Tomato (Tamatar)", "🫑 Pepper (Mirch)", "🌽 Corn (Makki)"]
-        default_idx = 0
-        if detected_crop == "tomato": default_idx = 1
-        elif detected_crop == "pepper": default_idx = 2
-        elif detected_crop == "corn": default_idx = 3
-        manual = st.selectbox(
-            "Crop confirm karein ya change karein:",
-            options,
-            index=default_idx,
-            key="universal_crop_select"
-        )
-        if "Potato" in manual: final_crop = "potato"
-        elif "Tomato" in manual: final_crop = "tomato"
-        elif "Pepper" in manual: final_crop = "pepper"
-        else: final_crop = "corn"
-
-        if st.button("🔬 Is Patte Ka Analysis Karein", type="primary", use_container_width=True, key="universal_analyze_btn"):
-            return uploaded_file, final_crop
-
-    return None, None
+# --- 8. CROP AUTO-DETECTOR (REMOVED) ---
+# Auto crop detection was removed by user request to focus entirely on targeted manual selection.
 # --- call api 
 def get_ai_doctor_advice(disease_name):
     if "healthy" in disease_name.lower():
         return "✅ **Fasal bilkul theek hai!** Waqat par paani dein aur khet ko saaf rakhein taake koi aane wali bimari se bacha ja sake."
     
+    # Precise agricultural knowledge base in Roman Urdu
+    fallback_knowledge_base = {
+        "early blight": (
+            "🧪 **Chemical Spray:** Mancozeb (2.5g per Liter) ya Chlorothalonil ka spray 7-10 din ke fasle se karein.\n\n"
+            "🌱 **Desi/Organic Ilaj:** Neem oil (5ml per Liter) ko thode detergent ke sath mila kar patton par spray karein.\n\n"
+            "✂️ **Ehtiyati Tadabeer:** Khet ke niche wale patton ko kaat kar saaf rakhein taake spores mitti se patton tak na pahuchein."
+        ),
+        "late blight": (
+            "🧪 **Chemical Spray:** Metalaxyl + Mancozeb (Ridomil Gold) 2.5g per Liter pani mein mix kar ke foran spray karein.\n\n"
+            "🌱 **Desi/Organic Ilaj:** Khatti lassi (sour buttermilk) ko 1:10 ke ratio mein pani ke sath dilute kar ke spray karein.\n\n"
+            "✂️ **Ehtiyati Tadabeer:** Mutasira poudon ko fauran ukhaar kar mitti mein daba dein aur khet mein pani khara na hone dein."
+        ),
+        "bacterial spot": (
+            "🧪 **Chemical Spray:** Copper Oxychloride (2g/L) ke sath Kasugamycin ya Streptomycin ka mix spray karein.\n\n"
+            "🌱 **Desi/Organic Ilaj:** Beej ko kasht karne se pehle garam pani (50°C) mein 25 minutes ke liye treat karein.\n\n"
+            "✂️ **Ehtiyati Tadabeer:** Barish ya khet geela hone par patton ko haath na lagayein kyunki bacterial spot pani se tezi se phelta hai."
+        ),
+        "leaf mold": (
+            "🧪 **Chemical Spray:** Chlorothalonil ya Difenoconazole fungicide ka spray patton ke dono sides par karein.\n\n"
+            "🌱 **Desi/Organic Ilaj:** Baking soda (3g) aur thoda sa liquid soap 1 Liter pani mein mix kar ke spray karein.\n\n"
+            "✂️ **Ehtiyati Tadabeer:** Khet ya tunnel mein ventilation (hawa ka guzar) behtar karein aur poudon ke darmiyan fasla barhayein."
+        ),
+        "septoria leaf spot": (
+            "🧪 **Chemical Spray:** Copper-based fungicides ya Chlorothalonil ka 10-14 din ke fasle se spray karein.\n\n"
+            "🌱 **Desi/Organic Ilaj:** Compost tea ka spray karein taake poudon ki quwat-e-mudafiat (immunity) behtar ho sake.\n\n"
+            "✂️ **Ehtiyati Tadabeer:** Zameen par plastic ya organic mulch lagayein taake pani lagate waqt mitti patton par bounce na kare."
+        ),
+        "target spot": (
+            "🧪 **Chemical Spray:** Azoxystrobin (Amistar) ya Pyraclostrobin fungicide ka spray shuruati marhale mein karein.\n\n"
+            "🌱 **Desi/Organic Ilaj:** Lehsan (garlic) aur adrak ka juice pani mein extract kar ke spray karein.\n\n"
+            "✂️ **Ehtiyati Tadabeer:** Purani fasal ke baqaya-jaat ko khet se mukammal tor par saaf kar ke jala dein."
+        ),
+        "yellow leaf curl virus": (
+            "🧪 **Chemical Spray:** Sufaid Makhi (Whitefly) ko control karne ke liye Imidacloprid ya Acetamiprid ka spray karein.\n\n"
+            "🌱 **Desi/Organic Ilaj:** Khet mein Yellow Sticky Traps lagayein taake makhi un par chipak kar khatam ho jaye.\n\n"
+            "✂️ **Ehtiyati Tadabeer:** Har weeds (zari bootiya) ko khet ke ird-gird se saaf karein aur virus-resistant beej kasht karein."
+        ),
+        "mosaic virus": (
+            "🧪 **Chemical Spray:** Virus ka koi elaj nahi. Aphids ko control karne ke liye Acetamiprid ya neem extract spray karein.\n\n"
+            "🌱 **Desi/Organic Ilaj:** Skimmed milk (doodh) ko 1:9 ke ratio mein pani ke sath mila kar patton par spray karein.\n\n"
+            "✂️ **Ehtiyati Tadabeer:** Khet mein kaam karne se pehle haathon aur tools ko achi tarah soap ya sanitizer se wash karein."
+        ),
+        "blight": (
+            "🧪 **Chemical Spray:** Mancozeb ya Propiconazole fungicide ka spray 10 din ke gap se karein.\n\n"
+            "🌱 **Desi/Organic Ilaj:** Aloe vera juice ko thode se pani mein mix kar ke spray karein taake antifungal asar ho.\n\n"
+            "✂️ **Ehtiyati Tadabeer:** Crop rotation (fasal ki tabdeeli) apnayein aur agle saal corn ki jagah dalhein lagayein."
+        ),
+        "common rust": (
+            "🧪 **Chemical Spray:** Pyraclostrobin ya Tebuconazole fungicide ka spray kangi ke orange spots dikhte hi karein.\n\n"
+            "🌱 **Desi/Organic Ilaj:** Baking soda solution aur thoda sa vinegar (sirka) mix kar ke subah ke waqt spray karein.\n\n"
+            "✂️ **Ehtiyati Tadabeer:** Nitrogen khad ka istemal munasib had tak karein aur fasal mein moisture control karein."
+        ),
+        "gray leaf spot": (
+            "🧪 **Chemical Spray:** Strobilurin class ke fungicides (e.g. Azoxystrobin) ka spray shuruati spots par karein.\n\n"
+            "🌱 **Desi/Organic Ilaj:** Neem extract (neem leaf boil water) ka thanda kar ke spray karein.\n\n"
+            "✂️ **Ehtiyati Tadabeer:** Zameen ki gehri hal-chalai karein taake purani fasal ke residues mitti ke niche dab kar khatam ho ske."
+        ),
+    }
+
     try:
         model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"""
@@ -1225,8 +1066,18 @@ def get_ai_doctor_advice(disease_name):
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        # Agar internet band ho ya API issue ho toh yeh emergency text chalega
-        return f"⚠️ **{disease_name} ka Ilaj:**\n- Fauran kisi qareebi zaraee markaz (agriculture center) se rabta karein.\n- Mutasira patton ko kaat kar khet se door phenk dein taake bimari phelne se ruk jaye."
+        # Structured high-quality crop specific local fallback if Gemini is offline or API key is suspended
+        cleaned_name = disease_name.lower().strip()
+        for key, advice in fallback_knowledge_base.items():
+            if key in cleaned_name:
+                return f"🤖 **[Local Backup Advice] {disease_name} ka Ilaj:**\n\n{advice}"
+        
+        return (
+            f"⚠️ **{disease_name} ka Ilaj:**\n\n"
+            "🧪 **Chemical Spray:** Fauran qareebi agriculture store se rabta kar ke is bimari ke liye suitable fungicide spray karein.\n\n"
+            "🌱 **Desi/Organic Ilaj:** Neem oil spray (5ml per Liter) ka use karein.\n\n"
+            "✂️ **Ehtiyati Tadabeer:** Mutasira patton aur poudon ko foran khet se nikal kar door jala dein taake mazeed na phele."
+        )
 
 # --- 10. CSS (Split into critical + component CSS) ---
 def get_critical_css():
@@ -1790,7 +1641,7 @@ st.sidebar.markdown("""
 
 st.sidebar.write("---")
 # Build nav list dynamically based on role
-nav_options = ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🫑 Pepper (Mirch)", "🌽 Corn Field", "👤 My Profile", "📊 Dashboard", "👑 Premium", "💬 Expert Chat"]
+nav_options = ["🏠 Home Page", "🥔 Potato (Aloo)", "🍅 Tomato Check", "🫑 Pepper (Mirch)", "🌽 Corn Field", "👤 My Profile", "📊 Dashboard", "💬 Expert Chat"]
 if st.session_state.user and st.session_state.user.lower() == "admin":
     nav_options.append("🛡️ Admin Panel")
 
@@ -1809,7 +1660,7 @@ if st.sidebar.button("🚪 Logout", use_container_width=True):
     logout()
 
 # ==============================================================================
-# 🔥 SIDEBAR HISTORY — Premium Card UI
+# 🔥 SIDEBAR HISTORY
 # ==============================================================================
 
 st.sidebar.write("---")
@@ -1908,11 +1759,11 @@ st.sidebar.markdown("""
     <p style="font-size:0.72rem;opacity:0.6;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px;font-weight:700;">Developers</p>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:800;color:white;">SK</div>
-        <div><div style="font-size:0.85rem;font-weight:700;color:white;">Saqlain Khan</div><div style="font-size:0.7rem;opacity:0.6;">Data Engineer</div></div>
+        <div><div style="font-size:0.85rem;font-weight:700;color:white;line-height:1.2;margin-top:6px;">Saqlain Khan</div></div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
         <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:800;color:white;">RC</div>
-        <div><div style="font-size:0.85rem;font-weight:700;color:white;">Raheel Chishti</div><div style="font-size:0.7rem;opacity:0.6;">Team Member</div></div>
+        <div><div style="font-size:0.85rem;font-weight:700;color:white;line-height:1.2;margin-top:6px;">Raheel Chishti</div></div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -2234,7 +2085,7 @@ def show_low_confidence_warning():
 
 def show_result(result, crop_key, config):
     """Render report + AI treatment from a result dict. Used by both pages."""
-    if result['conf'] < 46:
+    if result['conf'] < 60:
         show_low_confidence_warning()
         return None
         
@@ -2546,19 +2397,12 @@ def render_profile_page():
 # 📊 DASHBOARD PAGE
 # ==============================================================================
 def render_dashboard_page():
-    profile = fetch_user_profile()
-    is_premium = profile and profile.get("is_premium")
-    badge = "PREMIUM" if is_premium else "FREE PLAN"
-
-    st.markdown(f"""
+    st.markdown("""
     <div style="background:linear-gradient(135deg,#064e3b,#059669,#10b981);border-radius:20px;padding:28px 32px;margin-bottom:20px;color:white;">
         <h2 style="margin:0;font-weight:900;">📊 Mera Dashboard</h2>
-        <p style="margin:6px 0 0;opacity:0.9;">Scan history, trends aur crop analytics · {badge}</p>
+        <p style="margin:6px 0 0;opacity:0.9;">Scan history, trends aur crop analytics</p>
     </div>
     """, unsafe_allow_html=True)
-
-    if not is_premium:
-        st.info("👑 Premium se unlimited scans + priority expert — sidebar **Premium** kholein.")
 
     stats = get_user_stats_api()
     stats_from_history = False
@@ -2623,34 +2467,6 @@ def render_dashboard_page():
             st.markdown(f"**{emoji_map.get(crop,'🌿')} {disease}** — {crop.title()} · {date} · **{conf:.0f}%**")
     else:
         st.info("Koi scan history nahi.")
-
-
-def render_premium_page():
-    profile = fetch_user_profile()
-    is_premium = profile and profile.get("is_premium")
-    headers = {"Authorization": f"Bearer {st.session_state.token}"}
-
-    st.markdown("## 👑 Plant Doctor Premium")
-    if is_premium:
-        st.success(f"Premium active until {str(profile.get('premium_until',''))[:10]}")
-        st.balloons()
-        return
-
-    st.markdown("| Feature | Free | Premium |\n|---------|------|---------|\n| Scans | Limited | Unlimited |\n| Expert | Normal | Priority |\n| Charts | Basic | Full |")
-
-    try:
-        resp = requests.post(f"{API_URL}/payments/create-checkout", headers=headers, timeout=15)
-        if resp.status_code == 200:
-            st.link_button("🚀 Upgrade with Stripe", resp.json()["checkout_url"], type="primary")
-        elif resp.status_code == 503:
-            st.warning("Stripe keys Railway par set karein: STRIPE_SECRET_KEY, STRIPE_PRICE_ID")
-        else:
-            st.error(resp.json().get("detail", "Error"))
-    except Exception as e:
-        st.error(str(e))
-
-
-
 
 
 # ==============================================================================
@@ -2919,28 +2735,6 @@ if nav == "🏠 Home Page":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Universal upload zone — AI auto-detects crop
-    uploaded_file, detected_crop = render_universal_upload()
-    if uploaded_file and detected_crop:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown(f"<h3 style='color:#064e3b;font-weight:800;'>📊 {detected_crop.title()} Analysis Result</h3>", unsafe_allow_html=True)
-        with st.spinner("🔬 Analyzing..."):
-            result = analyze_image(uploaded_file, detected_crop)
-        if result:
-            ai_advice = show_result(result, detected_crop, CROP_CONFIG[detected_crop])
-            with st.spinner("💾 Scan database mein save ho raha hai..."):
-                success, msg = save_scan_to_backend(
-                    uploaded_file, 
-                    detected_crop, 
-                    result['label'], 
-                    result['conf'],
-                    ai_advice=ai_advice,
-                )
-                if success:
-                    st.toast("✅ Scan history mein save ho gaya!", icon="💾")
-                else:
-                    st.error(f"Scan save nahi hua: {msg}")
-
 
     st.markdown("<h2 style='text-align:center;color:#064e3b;font-weight:900;font-size:2rem;margin-bottom:6px;'>Supported Crops | Faslain</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align:center;color:#6b7280;font-size:0.9rem;margin-bottom:24px;'>Apni fasal chunein — AI fauran diagnose karega</p>", unsafe_allow_html=True)
@@ -3033,12 +2827,12 @@ if nav == "🏠 Home Page":
         <p style="font-size:0.85rem;color:#9ca3af;margin-bottom:12px;">Built with ❤️ for Pakistani farmers | پاکستانی کسانوں کے لیے</p>
         <div style="margin-top:10px;">
             <span class="tech-tag" style="background:#fce7f3;color:#be185d;">🎈 Streamlit</span>
-            <span class="tech-tag" style="background:#e0e7ff;color:#4338ca;">🤖 Scikit-Learn</span>
-            <span class="tech-tag" style="background:#fef3c7;color:#b45309;">🌲 Random Forest</span>
-            <span class="tech-tag" style="background:#d1fae5;color:#065f46;">👁️ OpenCV</span>
-            <span class="tech-tag" style="background:#ede9fe;color:#5b21b6;">🖼️ Scikit-Image</span>
+            <span class="tech-tag" style="background:#e0e7ff;color:#4338ca;">⚡ FastAPI</span>
+            <span class="tech-tag" style="background:#d1fae5;color:#065f46;">🐬 MySQL Cloud</span>
+            <span class="tech-tag" style="background:#fef3c7;color:#b45309;">🚀 XGBoost & RF</span>
+            <span class="tech-tag" style="background:#ede9fe;color:#5b21b6;">🧠 Gemini AI</span>
         </div>
-        <p style="font-size:0.75rem;margin-top:14px;color:#cbd5e1;">Developed by <b>Saqlain Khan</b> (Data Engineer) & <b>Raheel Chishti</b></p>
+        <p style="font-size:0.75rem;margin-top:14px;color:#cbd5e1;">Developed by <b>Saqlain Khan</b> & <b>Raheel Chishti</b></p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -3073,11 +2867,6 @@ elif nav == "👤 My Profile":
 elif nav == "📊 Dashboard":
     render_persistent_header()
     render_dashboard_page()
-
-elif nav == "👑 Premium":
-    render_persistent_header()
-    render_premium_page()
-
 
 # ===================== EXPERT CHAT PAGE =====================
 elif nav == "💬 Expert Chat":

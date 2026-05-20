@@ -43,10 +43,6 @@ In `app.py`, uncomment `API_URL = "http://localhost:8000/api"` for local API tes
 | `RESEND_FROM` | Sender e.g. `Plant Doctor <onboarding@resend.dev>` |
 | `APP_BASE_URL` | Streamlit app URL for email links |
 | `REQUIRE_EMAIL_VERIFY` | `true` (default) or `false` for dev |
-| `STRIPE_SECRET_KEY` | Stripe secret (Premium payments) |
-| `STRIPE_PRICE_ID` | Stripe Price ID for Premium product |
-| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
-| `PREMIUM_DAYS` | Premium duration after payment (default: 30) |
 
 ## Email verify — simple guide (Urdu)
 
@@ -61,15 +57,6 @@ In `app.py`, uncomment `API_URL = "http://localhost:8000/api"` for local API tes
 3. User register kare → email mein link → click → login
 
 **Resend use karna ho:** `RESEND_API_KEY` + optional `RESEND_FROM`
-
-## Premium (Stripe)
-
-1. [stripe.com](https://stripe.com) account → Product + Price banao
-2. Railway Variables: `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`
-3. Stripe Dashboard → Webhooks → endpoint:  
-   `https://plant-doctor-app-production.up.railway.app/api/payments/webhook`  
-   Event: `checkout.session.completed`
-4. App → sidebar **Premium** → Upgrade button
 
 ## Project structure
 

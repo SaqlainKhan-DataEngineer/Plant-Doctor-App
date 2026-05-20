@@ -8,7 +8,7 @@
    - Restored universal upload zone on the homepage, removed duplicate banners.
    - Updated homepage statistics to accurately reflect **74K+ images trained**.
    - Disabled infinite re-scans upon saving history (`st.rerun()` replaced with `st.toast()`).
-   - Cleaned up Premium page by removing the email setup instructions since it's now automated and async.
+   - Email verification is async via FastAPI BackgroundTasks.
 2. **Backend Optimization:** 
    - Email verification is now completely **async** using FastAPI `BackgroundTasks`.
    - Disabled forced email verification by default (`REQUIRE_EMAIL_VERIFY = False`), allowing users to login instantly after registration without waiting for SMTP delays or getting locked out.
@@ -25,7 +25,7 @@
 | 1 | **AI Models (4 crops)** | Trained on **74K+ images** (Potato, Tomato, Pepper, Corn) with an accuracy of **97%**. Uses custom XGBoost models. |
 | 2 | **Infrastructure** | Fully deployed: **FastAPI** backend on **Railway**, **Streamlit** frontend on **Streamlit Cloud**. |
 | 3 | **Auth & Security** | JWT-based auth, secure password hashing (Bcrypt), login/register/forgot-password workflows. |
-| 4 | **Admin & Expert Panels** | Fully functional analytics dashboard. Expert consultation UI for premium users. |
+| 4 | **Admin & Expert Panels** | Fully functional analytics dashboard. Expert consultation UI for all users. |
 | 5 | **Database Layer** | **MySQL** cloud integration with dynamic query translation ensuring DB agnosticism. |
 | 6 | **GenAI Integration** | **Google Gemini AI** powers personalized treatment plans and advice in Urdu/Roman Urdu. |
 

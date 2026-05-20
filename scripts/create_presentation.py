@@ -371,7 +371,7 @@ def build():
             "Upload leaf photo → diagnosis in under 3 seconds",
             "Roman Urdu + Urdu treatment advice via Google Gemini AI",
             "Live Lahore weather widget for safe spray timing",
-            "Expert chat & Premium tier for priority support",
+            "Expert chat for farmer ↔ agricultural expert support",
             "Live: plantdoctorapp.streamlit.app",
         ],
     )
@@ -385,7 +385,6 @@ def build():
             "Database: MySQL on Railway (users, scans, consultations, diseases)",
             "ML Inference: XGBoost .pkl models loaded in Streamlit (<3s)",
             "Generative AI: Gemini API for farmer-friendly advice text",
-            "Payments: Stripe Checkout + webhook → Premium activation",
             "Email: SMTP / Resend for optional account verification",
         ],
     )
@@ -426,7 +425,6 @@ def build():
             "💬 Expert consultation requests",
             "📊 User dashboard — Plotly charts, crop & disease analytics",
             "🛡️ Admin panel — users, scans, platform stats",
-            "👑 Premium — Stripe payments, unlimited scans priority",
         ],
     )
 
@@ -436,7 +434,7 @@ def build():
         [
             "Cloud MySQL (Railway) — production",
             "SQL Server — optional local dev (agnostic query wrapper)",
-            "Table: users — auth, roles, premium, email verification",
+            "Table: users — auth, roles, email verification",
             "Table: scans — crop, disease, confidence, ai_advice, image (base64 JPEG)",
             "Table: consultations — farmer ↔ expert messages",
             "Table: diseases — knowledge base (symptoms, treatment, prevention)",
@@ -459,7 +457,7 @@ def build():
             "AI: Google Gemini API",
             "DB: MySQL (Railway), pymysql",
             "Deploy: GitHub → Streamlit Cloud + Railway Docker",
-            "Integrations: Stripe, SMTP/Resend, Open-Meteo",
+            "Integrations: SMTP/Resend, Open-Meteo",
         ],
     )
 
@@ -472,7 +470,7 @@ def build():
             "3. Upload sick leaf image → XGBoost predicts disease",
             "4. Gemini generates Roman Urdu treatment steps",
             "5. Scan saved to cloud history + dashboard charts",
-            "6. Optional: Expert chat or Premium upgrade via Stripe",
+            "6. Optional: Expert chat for second opinion",
         ],
     )
 
@@ -490,22 +488,10 @@ def build():
 
     content_slide(
         prs,
-        "Monetization — Premium Tier",
-        [
-            "Freemium: basic scan + AI advice free for all farmers",
-            "Premium: unlimited scans, priority expert, full charts",
-            "Stripe Checkout on Railway backend",
-            "Webhook activates is_premium + premium_until (30 days)",
-            "Sustainable model for hosting & expert payouts",
-        ],
-    )
-
-    content_slide(
-        prs,
         "Conclusion & Future Scope",
         [
             "Delivered end-to-end AI crop doctor for Pakistani farmers",
-            "4 crops, 18 diseases, cloud auth, history, admin, payments",
+            "4 crops, 18 diseases, cloud auth, history, admin, expert chat",
             "Future: Wheat, Rice, Cotton models",
             "Mobile app / PWA offline with Edge AI on phone",
             "Regional disease heatmaps & Urdu full UI toggle",

@@ -39,7 +39,7 @@
 - 🔬 **AI Quick Scan:** Auto-detects crops (Potato, Tomato, Pepper, Corn) and identifies diseases.
 - 👨‍⚕️ **AI Doctor Advice:** Generates dynamic, step-by-step treatment plans.
 - 🌧️ **Weather Integration:** Live weather data to advise on safe spraying conditions.
-- 💬 **Expert Consultation:** A premium feature connecting farmers with real human experts.
+- 💬 **Expert Consultation:** Connects farmers with real human agricultural experts.
 
 ---
 
@@ -78,7 +78,7 @@
 ---
 
 ## Slide 8: Frontend Architecture
-**Title:** Premium User Experience
+**Title:** Modern User Experience
 **Content:**
 - **Framework:** **Streamlit Cloud** paired with heavy Custom CSS injection.
 - **Design Language:** Modern glassmorphism, responsive grids, and vibrant agricultural color palettes.
@@ -101,22 +101,13 @@
 **Title:** Platform Management
 **Content:**
 - Dedicated dashboard restricted to `Admin` users.
-- **Real-time Analytics:** Visualizes total users, total scans, and premium subscriptions.
+- **Real-time Analytics:** Visualizes total users, total scans, and disease trends.
 - **Disease Trends:** Tracks which diseases are spreading in which regions.
 - **Role Management:** Admins can promote users to 'Experts' to answer farmer queries.
 
 ---
 
-## Slide 11: Monetization & Premium Tier
-**Title:** Sustainable Business Model
-**Content:**
-- **Freemium Model:** Basic scanning and AI advice is free.
-- **Premium Tier:** Unlimited scans, detailed historical charts, and priority Expert Consultations.
-- **Payment Gateway:** Infrastructure integrated with **Stripe** for seamless checkout.
-
----
-
-## Slide 12: Technology Stack Summary
+## Slide 11: Technology Stack Summary
 **Title:** Tools & Technologies
 **Visual:** A visually appealing grid of logos:
 - **Frontend:** Streamlit, HTML5, CSS3.

@@ -13,4 +13,3 @@ Pillow
 slowapi
 pytest
 httpx
-stripe

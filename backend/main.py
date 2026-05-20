@@ -40,18 +40,6 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 APP_BASE_URL = os.getenv("APP_BASE_URL", "https://plantdoctorapp.streamlit.app")
 REQUIRE_EMAIL_VERIFY = os.getenv("REQUIRE_EMAIL_VERIFY", "false").lower() in ("1", "true", "yes")
-STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
-STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
-PREMIUM_DAYS = int(os.getenv("PREMIUM_DAYS", "30"))
-
-try:
-    import stripe as stripe_sdk
-except ImportError:
-    stripe_sdk = None
-
-if stripe_sdk and STRIPE_SECRET_KEY:
-    stripe_sdk.api_key = STRIPE_SECRET_KEY
 
 # Mount PWA static files
 import os
@@ -348,18 +336,6 @@ def create_tables():
                     cursor.execute("ALTER TABLE users ADD email_verified BIT DEFAULT 1")
                     cursor.execute("ALTER TABLE users ADD verification_token NVARCHAR(255) NULL")
                     cursor.execute("ALTER TABLE users ADD verification_expires DATETIME NULL")
-                conn.commit()
-            except Exception:
-                pass
-
-            # Premium subscription columns
-            try:
-                if is_mysql:
-                    cursor.execute("ALTER TABLE users ADD COLUMN is_premium BOOLEAN DEFAULT 0")
-                    cursor.execute("ALTER TABLE users ADD COLUMN premium_until DATETIME NULL")
-                else:
-                    cursor.execute("ALTER TABLE users ADD is_premium BIT DEFAULT 0")
-                    cursor.execute("ALTER TABLE users ADD premium_until DATETIME NULL")
                 conn.commit()
             except Exception:
                 pass
@@ -808,60 +784,22 @@ def reset_password(req: ResetPasswordRequest):
     return {"message": "Password has been reset successfully"}
 
 
-def _user_premium_active(row, has_premium_cols: bool) -> bool:
-    if not has_premium_cols or len(row) < 9:
-        return False
-    is_prem = row[7]
-    until = row[8]
-    if not is_prem:
-        return False
-    if until is None:
-        return True
-    if isinstance(until, str):
-        for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S"):
-            try:
-                until = datetime.datetime.strptime(until[:26], fmt)
-                break
-            except ValueError:
-                continue
-    if isinstance(until, datetime.datetime):
-        return until > datetime.datetime.now()
-    return bool(is_prem)
-
-
 @app.get("/api/auth/me")
 def get_current_user(user=Depends(verify_token)):
     """Current logged-in user ki info"""
     with get_db() as conn:
         cursor = conn.cursor()
-        try:
-            cursor.execute(
-                """
-                SELECT id, full_name, email, phone, role, location, created_at,
-                       is_premium, premium_until
-                FROM users WHERE id = ?
-            """,
-                user["user_id"],
-            )
-            has_premium = True
-        except Exception:
-            cursor.execute(
-                """
-                SELECT id, full_name, email, phone, role, location, created_at
-                FROM users WHERE id = ?
-            """,
-                user["user_id"],
-            )
-            has_premium = False
+        cursor.execute(
+            """
+            SELECT id, full_name, email, phone, role, location, created_at
+            FROM users WHERE id = ?
+        """,
+            user["user_id"],
+        )
         row = cursor.fetchone()
 
     if not row:
         raise HTTPException(status_code=404, detail="User not found")
-
-    premium_active = _user_premium_active(row, has_premium)
-    premium_until = None
-    if has_premium and len(row) > 8 and row[8]:
-        premium_until = str(row[8])
 
     return {
         "id": str(row[0]),
@@ -871,8 +809,6 @@ def get_current_user(user=Depends(verify_token)):
         "role": row[4],
         "location": row[5],
         "created_at": str(row[6]) if row[6] else None,
-        "is_premium": premium_active,
-        "premium_until": premium_until,
     }
 
 
@@ -1506,83 +1442,6 @@ def admin_get_scans(
             scans.append(scan)
 
     return {"scans": scans}
-
-
-# ==============================================================================
-# PREMIUM PAYMENTS (Stripe)
-# ==============================================================================
-
-def _activate_premium(user_id: str, days: int = PREMIUM_DAYS):
-    expiry = datetime.datetime.now() + datetime.timedelta(days=days)
-    with get_db() as conn:
-        cursor = conn.cursor()
-        try:
-            cursor.execute(
-                """
-                UPDATE users SET is_premium = 1, premium_until = ?
-                WHERE id = ?
-            """,
-                expiry,
-                user_id,
-            )
-        except Exception:
-            pass
-        conn.commit()
-
-
-@app.get("/api/payments/status")
-def payments_status(user=Depends(verify_token)):
-    """Check if user has active premium"""
-    me = get_current_user(user)
-    return {
-        "is_premium": me["is_premium"],
-        "premium_until": me.get("premium_until"),
-        "stripe_configured": bool(STRIPE_SECRET_KEY and STRIPE_PRICE_ID),
-    }
-
-
-@app.post("/api/payments/create-checkout")
-def create_checkout(user=Depends(verify_token)):
-    """Stripe Checkout — Premium tier (one-time, 30 days)"""
-    if not stripe_sdk or not STRIPE_SECRET_KEY or not STRIPE_PRICE_ID:
-        raise HTTPException(
-            status_code=503,
-            detail="Payment not configured. Set STRIPE_SECRET_KEY and STRIPE_PRICE_ID on Railway.",
-        )
-    try:
-        session = stripe_sdk.checkout.Session.create(
-            mode="payment",
-            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
-            success_url=f"{APP_BASE_URL}/?payment=success",
-            cancel_url=f"{APP_BASE_URL}/?payment=cancel",
-            customer_email=user.get("email"),
-            metadata={"user_id": str(user["user_id"])},
-        )
-        return {"checkout_url": session.url}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Stripe error: {e}")
-
-
-@app.post("/api/payments/webhook")
-async def stripe_webhook(request: Request):
-    """Stripe webhook — activates premium after successful payment"""
-    if not stripe_sdk or not STRIPE_WEBHOOK_SECRET:
-        raise HTTPException(status_code=503, detail="Webhook not configured")
-
-    payload = await request.body()
-    sig = request.headers.get("stripe-signature", "")
-    try:
-        event = stripe_sdk.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Webhook error: {e}")
-
-    if event["type"] == "checkout.session.completed":
-        session = event["data"]["object"]
-        user_id = (session.get("metadata") or {}).get("user_id")
-        if user_id:
-            _activate_premium(user_id)
-
-    return {"received": True}
 
 
 # ==============================================================================

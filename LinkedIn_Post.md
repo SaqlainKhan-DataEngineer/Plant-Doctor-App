@@ -34,7 +34,7 @@ Here’s a deep dive into the technology stack and architecture that powers Plan
 
 ### 🌟 Future-Ready Features
 - **PWA (Progressive Web App):** Users can install the app directly to their home screens for native-like access.
-- **Premium Tier:** Built-in Stripe payment architecture for expert agricultural consultations.
+- **Expert Consultations:** Farmers can connect with agricultural experts for second opinions.
 
 Building a production-ready application involves countless hours of debugging, optimizing dependencies, resolving deployment crashes, and fine-tuning AI models. I'm incredibly proud of how this complete ecosystem came together!
 
