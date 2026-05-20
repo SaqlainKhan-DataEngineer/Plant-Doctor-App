@@ -83,7 +83,7 @@
 - **Framework:** **Streamlit Cloud** paired with heavy Custom CSS injection.
 - **Design Language:** Modern glassmorphism, responsive grids, and vibrant agricultural color palettes.
 - **Accessibility:** Designed to be easily navigable by farmers with minimal tech experience.
-- **PWA Ready:** Installable directly to mobile home screens for native app-like access.
+- **Responsive Mobile Layout:** Optimised for standard smartphones and web browsers.
 
 ---
 

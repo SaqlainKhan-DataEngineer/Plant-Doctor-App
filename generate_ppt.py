@@ -406,7 +406,7 @@ def create_presentation():
     widths_tech = Inches(2.633)
     
     tech_data = [
-        {"title": "🎈 Client Frontend", "techs": ["Streamlit Framework", "HTML5 Custom Components", "Custom HSL CSS styling", "PyPlot / Plotly charts", "PWA Install configuration"]},
+        {"title": "🎈 Client Frontend", "techs": ["Streamlit Framework", "HTML5 Custom Components", "Custom HSL CSS styling", "PyPlot / Plotly charts", "Responsive mobile layout"]},
         {"title": "⚡ Backend APIs", "techs": ["FastAPI Asynchronous Engine", "SlowAPI rate limiters", "PyJWT session tokens", "Bcrypt security systems", "SMTP background mailers"]},
         {"title": "👁️ Computer Vision / ML", "techs": ["Python Scikit-Learn", "Scikit-Image processing", "OpenCV Image Manipulation", "XGBoost Classifier pipelines", "Joblib model serializers"]},
         {"title": "☁️ DevOps & Database", "techs": ["MySQL Relational Database", "Railway App cloud hosting", "Git version control", "GitHub automated flow", "Streamlit Cloud staging"]}

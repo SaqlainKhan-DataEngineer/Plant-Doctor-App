@@ -471,7 +471,7 @@ def build():
     bullets_slide(prs, "Conclusion & Future Scope", None, [
         "End-to-end AI crop doctor delivered for Pakistani farmers",
         "4 crops · 18 diseases · cloud auth · scan history · expert chat",
-        "Future: Wheat, Rice, Cotton models · mobile PWA · offline Edge AI",
+        "Future: Wheat, Rice, Cotton models · mobile app · offline Edge AI",
         "Regional disease heatmaps · full Urdu UI · drone field scanning",
     ], tag="ROADMAP 🚀")
 

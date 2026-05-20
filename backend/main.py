@@ -41,11 +41,6 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 APP_BASE_URL = os.getenv("APP_BASE_URL", "https://plantdoctorapp.streamlit.app")
 REQUIRE_EMAIL_VERIFY = os.getenv("REQUIRE_EMAIL_VERIFY", "false").lower() in ("1", "true", "yes")
 
-# Mount PWA static files
-import os
-pwa_dir = os.path.join(os.path.dirname(__file__), "pwa")
-if os.path.exists(pwa_dir):
-    app.mount("/pwa", StaticFiles(directory=pwa_dir, html=True), name="pwa")
 
 # CORS — production Streamlit + local dev (override via CORS_ORIGINS env)
 _cors_raw = os.getenv(

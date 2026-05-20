@@ -63,7 +63,6 @@ In `app.py`, uncomment `API_URL = "http://localhost:8000/api"` for local API tes
 ```
 app.py                 # Streamlit UI + ML inference
 backend/main.py        # FastAPI REST API
-backend/pwa/           # Installable PWA shell
 *.pkl                  # Trained XGBoost models (Git LFS)
 database.sql           # SQL Server schema reference
 current_state_analysis.md  # Feature checklist (updated)

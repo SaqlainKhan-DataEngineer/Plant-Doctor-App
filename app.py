@@ -1609,17 +1609,6 @@ st.sidebar.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-st.sidebar.markdown("""
-<div style="background:rgba(255,255,255,0.1);border-radius:12px;padding:15px;margin-bottom:20px;border:1px solid rgba(255,255,255,0.2);">
-    <h3 style="margin:0 0 10px;font-size:1rem;color:white;display:flex;align-items:center;gap:6px;">📱 Install App (PWA)</h3>
-    <p style="font-size:0.8rem;color:#d1d5db;margin:0 0 10px;">Aap isay apne mobile ki home screen par laga sakte hain:</p>
-    <ul style="font-size:0.75rem;color:#d1d5db;margin:0;padding-left:15px;">
-        <li>Mobile Browser mein menu (⋮) dabayen</li>
-        <li>"Add to Home Screen" ya "Install App" par click karein</li>
-    </ul>
-    <a href="/pwa/index.html" target="_blank" style="display:block;margin-top:10px;text-align:center;background:#10b981;color:white;text-decoration:none;padding:6px;border-radius:6px;font-size:0.8rem;font-weight:bold;">Test App Experience</a>
-</div>
-""", unsafe_allow_html=True)
 
 st.sidebar.markdown("""
 <h1 style='text-align:center;color:white;font-weight:900;margin-top:-6px;font-size:1.9rem;letter-spacing:-0.5px;'>Plant Doctor</h1>
