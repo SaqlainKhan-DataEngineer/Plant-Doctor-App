@@ -709,13 +709,13 @@ CROP_CONFIG = {
         "local_names": TOMATO_LOCAL_NAMES,
         "emoji": "🍅",
         "display_name": "Tomato — ٹماٹر",
-        "accuracy": "95%",
+        "accuracy": "87%",
         "diseases": 9,
         "nav_key": "🍅 Tomato Check",
         "uploader_label": "Upload Tomato Leaf Photo / ٹماٹر کا پتہ اپلوڈ کریں",
         "model_missing_msg": "⚠️ **Tomato Model File Missing!** Please ensure `tomato_disease_model_v3.pkl` is in the project directory.",
         "header_title": "Tomato Disease Scan | ٹماٹر کی بیماری",
-        "header_sub": "Random Forest · HOG + LBP + GLCM + Color · 95% Accuracy · 9 Classes",
+        "header_sub": "XGBoost v3 · HOG+LBP+GLCM+ORB · 87% Accuracy · 9 Classes",
     },
     "pepper": {
         "model_file": "pepper_disease_model_v3.pkl",
@@ -737,13 +737,13 @@ CROP_CONFIG = {
         "local_names": CORN_LOCAL_NAMES,
         "emoji": "🌽",
         "display_name": "Corn — مکئی",
-        "accuracy": "87%",
+        "accuracy": "97%",
         "diseases": 4,
         "nav_key": "🌽 Corn Field",
         "uploader_label": "Upload Corn Leaf Photo / مکئی کا پتہ اپلوڈ کریں",
         "model_missing_msg": "⚠️ **Corn Model File Missing!** Please ensure `corn_disease_model_v3.pkl` is in the project directory.",
         "header_title": "Corn Disease Scan | مکئی کی بیماری",
-        "header_sub": "XGBoost v3 · HOG+LBP+GLCM+ORB · 87% Accuracy",
+        "header_sub": "XGBoost v3 · HOG+LBP+GLCM+ORB · 97% Accuracy",
     },
 }
 
@@ -2723,7 +2723,7 @@ if nav == "🏠 Home Page":
             <h3 style="color:#064e3b;font-weight:800;margin:0 0 4px;font-size:1.3rem;">Potato — آلو</h3>
             <p style="color:#6b7280;font-size:0.85rem;margin:0 0 6px;">3 Diseases Detected</p>
             <p style="color:#9ca3af;font-size:0.78rem;margin:0 0 12px;line-height:1.5;">Early Blight · Late Blight · Healthy</p>
-            <span class="badge-live">✅ Live &nbsp;|&nbsp; 97% Accuracy</span>
+            <span class="badge-live">✅ Live &nbsp;|&nbsp; 99% Accuracy</span>
         </div>
         """, unsafe_allow_html=True)
         if st.button("🥔 Potato Scan Karein →", use_container_width=True, type="primary", key="btn_potato"):
@@ -2737,7 +2737,7 @@ if nav == "🏠 Home Page":
             <h3 style="color:#064e3b;font-weight:800;margin:0 0 4px;font-size:1.3rem;">Tomato — ٹماٹر</h3>
             <p style="color:#6b7280;font-size:0.85rem;margin:0 0 6px;">9 Diseases Detected</p>
             <p style="color:#9ca3af;font-size:0.78rem;margin:0 0 12px;line-height:1.5;">Blight · Virus · Mold · Bacterial Spot & more</p>
-            <span class="badge-live">✅ Live &nbsp;|&nbsp; 95% Accuracy</span>
+            <span class="badge-live">✅ Live &nbsp;|&nbsp; 87% Accuracy</span>
         </div>
         """, unsafe_allow_html=True)
         if st.button("🍅 Tomato Scan Karein →", use_container_width=True, type="primary", key="btn_tomato"):
@@ -2767,7 +2767,7 @@ if nav == "🏠 Home Page":
             <h3 style="color:#064e3b;font-weight:800;margin:0 0 4px;font-size:1.3rem;">Corn — مکئی</h3>
             <p style="color:#6b7280;font-size:0.85rem;margin:0 0 6px;">4 Diseases Detected</p>
             <p style="color:#9ca3af;font-size:0.78rem;margin:0 0 12px;line-height:1.5;">Blight · Common Rust · Gray Leaf Spot · Healthy</p>
-            <span class="badge-live">✅ Live &nbsp;|&nbsp; 87% Accuracy</span>
+            <span class="badge-live">✅ Live &nbsp;|&nbsp; 97% Accuracy</span>
         </div>
         """, unsafe_allow_html=True)
         if st.button("🌽 Corn Scan Karein →", use_container_width=True, type="primary", key="btn_corn"):
