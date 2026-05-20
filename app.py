@@ -510,19 +510,6 @@ def get_user_stats_api():
         return None
 
 
-def fetch_user_profile():
-    if not st.session_state.token:
-        return None
-    try:
-        headers = {"Authorization": f"Bearer {st.session_state.token}"}
-        resp = requests.get(f"{API_URL}/auth/me", headers=headers, timeout=10)
-        if resp.status_code == 200:
-            return resp.json()
-    except Exception:
-        pass
-    return None
-
-
 CHART_COLORS = ["#047857", "#059669", "#10b981", "#fbbf24", "#ea580c", "#dc2626", "#7c3aed"]
 
 
