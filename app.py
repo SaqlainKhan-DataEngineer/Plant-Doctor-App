@@ -1,6 +1,5 @@
 import streamlit as st 
 import google.generativeai as genai
-# Code se hardcoded key hata dein, aur Streamlit secrets use karein
 GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 import xgboost as xgb
 genai.configure(api_key=GEMINI_API_KEY)
@@ -40,32 +39,29 @@ else:
 # Handle quick scan target
 quick_scan_target = st.session_state.pop('quick_scan_target', None)
 
-# ==============================================================================
-# 🔥 AUTHENTICATION CODE (NEW ADDITION)
-# ==============================================================================
-# Use cloud backend for production (Railway)
-API_URL = "https://plant-doctor-app-production.up.railway.app/api"
-# API_URL = "http://localhost:8000/api" # Use this for local testing
 
-# ==============================================================================
-# 🔥 FIX #1: REFRESH PE LOGOUT NA HO - URL QUERY PARAMS SE TOKEN PERSIST KARO
-# ==============================================================================
+#  AUTHENTICATION CODE 
+
+API_URL = "https://plant-doctor-app-production.up.railway.app/api"
+# API_URL = "http://localhost:8000/api" 
+
+# Persist token across URL parameters
 def persist_auth_token():
-    """Token ko URL query params mein save karo taake refresh pe na jaye"""
+
     if st.session_state.token:
         st.query_params["token"] = st.session_state.token
         st.query_params["user"] = st.session_state.user or "farmer"
         st.query_params["email"] = st.session_state.user_email or ""
 
 def restore_auth_from_url():
-    """URL se token wapas lao agar session empty ho"""
+    """Restore authentication token from URL parameters"""
     params = st.query_params
     if not st.session_state.get("token") and params.get("token"):
         st.session_state.token = params.get("token")
         st.session_state.user = params.get("user", "farmer")
         st.session_state.user_email = params.get("email", "")
 
-# Pehle restore karo
+# Restore session if token exists in URL
 restore_auth_from_url()
 
 # Session state for auth (init with restored values if any)
@@ -76,11 +72,11 @@ if 'user' not in st.session_state:
 if 'user_email' not in st.session_state:
     st.session_state.user_email = None
 
-# Token ko URL mein sync karo
+# Synchronize token to URL
 persist_auth_token()
 
 def render_auth_page():
-    """Login/Register page - user auth ke bina app nahi khulega"""
+    """Render the login and registration portal"""
     st.markdown("""
     <style>
     /* Full page background styling */
@@ -218,10 +214,7 @@ def render_auth_page():
         </div>
         """, unsafe_allow_html=True)
         
-    with col2:
-        # --------------------------------------------------------------------------
-        # EMAIL VERIFICATION (URL mein verify_token ho)
-        # --------------------------------------------------------------------------
+        # Email Verification Flow
         if "verify_token" in st.query_params:
             st.subheader("✉️ Email Verification")
             vtoken = st.query_params.get("verify_token")
@@ -238,9 +231,7 @@ def render_auth_page():
                 st.rerun()
             return
 
-        # --------------------------------------------------------------------------
-        # RESET PASSWORD FLOW (URL mein reset_token ho)
-        # --------------------------------------------------------------------------
+        # Reset Password Flow
         if "reset_token" in st.query_params:
             st.subheader("🔑 Reset Password")
             reset_token = st.query_params.get("reset_token")
@@ -263,7 +254,6 @@ def render_auth_page():
                             )
                             if resp.status_code == 200:
                                 st.success("✅ Password successfully reset ho gaya hai! Ab aap login kar sakte hain.")
-                                # Remove token from URL so they can login
                                 st.query_params.clear()
                                 time.sleep(2)
                                 st.rerun()
@@ -277,9 +267,7 @@ def render_auth_page():
                 st.rerun()
             return
 
-        # --------------------------------------------------------------------------
-        # FORGOT PASSWORD FLOW (Button click se)
-        # --------------------------------------------------------------------------
+        # Forgot Password Flow
         if st.session_state.get("show_forgot_password"):
             st.subheader("📧 Forgot Password")
             st.info("Apna email daalein, hum aapko password reset karne ka link bhejenge.")
@@ -309,9 +297,7 @@ def render_auth_page():
                 st.rerun()
             return
 
-        # --------------------------------------------------------------------------
-        # STANDARD LOGIN / REGISTER
-        # --------------------------------------------------------------------------
+        # Standard Login / Register Flow
         tab1, tab2 = st.tabs(["🔑 Login", "📝 Register"])
         
         with tab1:
@@ -337,7 +323,7 @@ def render_auth_page():
                                 st.session_state.token = data['token']
                                 st.session_state.user = data['role']
                                 st.session_state.user_email = email 
-                                persist_auth_token()  # 🔥 URL mein save karo
+                                persist_auth_token()
                                 st.success("✅ Login successful!")
                                 time.sleep(0.5)
                                 st.rerun()
@@ -398,6 +384,7 @@ def render_auth_page():
                                     st.warning("⚠️ Ye email pehle se registered hai. Login tab se login karein.")
                                 else:
                                     st.error(f"❌ {detail}")
+                              
                             else:
                                 try:
                                     err_msg = response.json().get('detail', 'Unknown error')
@@ -410,11 +397,11 @@ def render_auth_page():
                             st.error(f"❌ Error: {str(e)}") 
 
 def logout():
-    """User logout - URL se bhi token hatao"""
+    """User logout and session cleanup"""
     st.session_state.token = None
     st.session_state.user = None
     st.session_state.user_email = None
-    st.query_params.clear()  # 🔥 URL se bhi clear karo
+    st.query_params.clear()
     st.rerun()
 
 def fetch_disease_from_kb(crop, disease_label):
@@ -695,13 +682,13 @@ CROP_CONFIG = {
         "local_names": POTATO_LOCAL_NAMES,
         "emoji": "🥔",
         "display_name": "Potato — آلو",
-        "accuracy": "99%",  # <-- Isay 99% kar lein
+        "accuracy": "99%",
         "diseases": 3,
         "nav_key": "🥔 Potato (Aloo)",
         "uploader_label": "Upload Potato Leaf Photo / آلو کا پتہ اپلوڈ کریں",
         "model_missing_msg": "⚠️ **Model File Missing!** Please ensure `potato_disease_model_v3.pkl` is in the project directory.",
         "header_title": "Potato Disease Scan | آلو کی بیماری",
-        "header_sub": "XGBoost v3 · HOG+LBP+GLCM+ORB · 99% Accuracy", # <-- Nayi Details
+        "header_sub": "XGBoost v3 · HOG+LBP+GLCM+ORB · 99% Accuracy",
     },
     "tomato": {
         "model_file": "tomato_disease_model_v3.pkl",
@@ -820,15 +807,15 @@ def extract_all_features(image_bytes):
 
     img = cv2.resize(img, (128, 128))
 
-    # ✅ STEP 1: CLAHE — lighting normalize karo
-    # Real photos mein lighting uneven hoti hai
+    # Step 1: CLAHE lighting normalization
+    # Normalizes uneven lighting in real leaf photos
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     lab[:, :, 0] = clahe.apply(lab[:, :, 0])
     img = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
 
-    # ✅ STEP 2: Color Normalization
-    # Dataset images ka color balance alag hota hai real se
+    # Step 2: Color Normalization
+    # Standardizes color balance across input images
     img = img.astype(np.float32)
     for c in range(3):
         ch = img[:, :, c]
@@ -839,7 +826,7 @@ def extract_all_features(image_bytes):
 
     gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # Features — same as before
+    # Feature extraction
     hist_bgr = cv2.calcHist([img], [0,1,2], None,
                              [8,8,8], [0,256,0,256,0,256])
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -971,9 +958,6 @@ def extract_features_v3(image_bytes):
     gc.collect()
 
     return result
-
-# --- 8. CROP AUTO-DETECTOR (REMOVED) ---
-# Auto crop detection was removed by user request to focus entirely on targeted manual selection.
 # --- call api 
 def get_ai_doctor_advice(disease_name):
     if "healthy" in disease_name.lower():
@@ -2080,15 +2064,15 @@ def show_result(result, crop_key, config):
     if is_healthy:
         st.balloons()
         
-    # --- YAHAN SE AI DOCTOR KA MAGIC SHURU HOTA HAI ---
+    # --- AI Doctor Advice Section ---
     
     st.markdown("<h3 style='color:#064e3b;font-weight:800;margin-bottom:10px;'>👨‍⚕️ AI Doctor Ki Tajaweez (Live Advice)</h3>", unsafe_allow_html=True)
     
-    # Spinner lagaya taake jab tak API se jawab aaye, user ko lage doctor soch raha hai
+    # Query AI Doctor
     with st.spinner('AI Doctor aapki fasal ka nuskha tayyar kar raha hai... (Is mein 2-3 sec lagenge)'):
         ai_advice = get_ai_doctor_advice(result['label'])
         
-    # AI ka jawab ek khoobsurat green box mein show hoga
+    # Render response
     st.info(ai_advice)
 
     render_treatment(result['label'], is_healthy, crop_key)
@@ -2275,7 +2259,7 @@ if 'view_history_detail' in st.session_state and st.session_state['view_history_
             except Exception as e:
                 st.error("❌ Backend error!")
     
-    st.stop() # <--- YEH MAGIC LINE HAI (Baaki app ko render hone se rok degi)
+    st.stop() # Prevent subsequent rendering
 
 
 # ==============================================================================

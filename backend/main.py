@@ -1108,12 +1108,12 @@ def create_consultation(data: ConsultationCreate, user=Depends(verify_token)):
 
 @app.get("/api/consultations")
 def get_consultations(user=Depends(verify_token)):
-    """Consultations list — farmer apni dekhega, expert pending dekhega"""
+    """Retrieve consultations list for the authenticated user"""
     with get_db() as conn:
         cursor = conn.cursor()
 
         if user['role'] == 'expert':
-            # Expert ko pending consultations dikhao
+            # Retrieve pending or assigned consultations for expert
             cursor.execute("""
                 SELECT c.id, c.scan_id, c.farmer_id, c.message, c.status, c.created_at,
                        u.full_name as farmer_name, s.crop_type, s.predicted_disease
@@ -1124,7 +1124,7 @@ def get_consultations(user=Depends(verify_token)):
                 ORDER BY c.created_at DESC
             """, user['user_id'])
         else:
-            # Farmer apni consultations dekhega
+            # Retrieve farmer's own consultations
             cursor.execute("""
                 SELECT c.id, c.scan_id, c.message, c.expert_reply, c.status, c.created_at,
                        s.crop_type, s.predicted_disease
