@@ -40,10 +40,18 @@ else:
 quick_scan_target = st.session_state.pop('quick_scan_target', None)
 
 
-#  AUTHENTICATION CODE 
+# API URL Configuration - Auto-detect local backend, fallback to production
+def get_api_url():
+    import socket
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(0.2)
+            s.connect(("127.0.0.1", 8000))
+        return "http://localhost:8000/api"
+    except Exception:
+        return "https://plant-doctor-app-production.up.railway.app/api"
 
-API_URL = "https://plant-doctor-app-production.up.railway.app/api"
-# API_URL = "http://localhost:8000/api" 
+API_URL = get_api_url()
 
 # Persist token across URL parameters
 def persist_auth_token():
